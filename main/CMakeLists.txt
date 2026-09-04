@@ -4,6 +4,7 @@ idf_component_register(SRCS "main.c"
                              "paddle_input.c"
                              "ui_menu.c"
                              "ui_practice.c"
+                             "ui_settings.c"
                        INCLUDE_DIRS "."
                        REQUIRES example_component
                                 iambic_keyer

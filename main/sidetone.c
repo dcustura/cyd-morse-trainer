@@ -10,7 +10,6 @@
 #define SIDETONE_DUTY_RES   LEDC_TIMER_10_BIT
 #define SIDETONE_DUTY_ON    (1u << 9) /* 50% duty at 10-bit resolution: a square wave */
 #define SIDETONE_DUTY_OFF   0
-#define SIDETONE_DEFAULT_HZ 600
 
 void sidetone_init(void)
 {

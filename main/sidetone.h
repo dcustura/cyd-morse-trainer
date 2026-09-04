@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define SIDETONE_DEFAULT_HZ 600
+
 /** Configure the LEDC timer/channel driving the speaker GPIO. */
 void sidetone_init(void);
 
