@@ -1,17 +1,23 @@
-#include <stddef.h>
 #include "esp_log.h"
-#include "example_component.h"
+#include "display_init.h"
+#include "esp_lvgl_port.h"
 
 static const char *TAG = "template_project";
 
 void app_main(void)
 {
-    example_component_debounce_t button;
-    example_component_debounce_init(&button, 3, false);
-
-    const bool samples[] = { true, true, true, false, false };
-    for (size_t i = 0; i < sizeof(samples) / sizeof(samples[0]); ++i) {
-        bool debounced = example_component_debounce_feed(&button, samples[i]);
-        ESP_LOGI(TAG, "sample=%d debounced_state=%d", samples[i], debounced);
+    lv_display_t *disp = display_init();
+    if (disp == NULL) {
+        ESP_LOGE(TAG, "display_init failed, halting");
+        return;
     }
+
+    lvgl_port_lock(0);
+
+    lv_obj_t *scr = lv_display_get_screen_active(disp);
+    lv_obj_t *label = lv_label_create(scr);
+    lv_label_set_text(label, "Morse Trainer");
+    lv_obj_center(label);
+
+    lvgl_port_unlock();
 }
