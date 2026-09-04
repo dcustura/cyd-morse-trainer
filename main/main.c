@@ -2,23 +2,19 @@
 #include "display_init.h"
 #include "esp_lvgl_port.h"
 #include "paddle_input.h"
+#include "ui_menu.h"
+#include "ui_practice.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 /* Hardcoded until the Settings screen (US7) and NVS persistence (US8) exist. */
 #define DEFAULT_WPM 15
 #define DEFAULT_KEY_MODE IAMBIC_KEYER_MODE_B
 #define DEFAULT_PADDLE_SWAP false
 
-static const char *TAG = "template_project";
+#define DECODED_CHAR_QUEUE_DEPTH 32
 
-/* Throwaway touch smoke test: toggles the label on tap. Replaced by the
- * real menu screen once US6 wires up ui_menu.c. */
-static void toggle_button_cb(lv_event_t *e)
-{
-    lv_obj_t *label = (lv_obj_t *)lv_event_get_user_data(e);
-    static bool toggled = false;
-    toggled = !toggled;
-    lv_label_set_text(label, toggled ? "Touched!" : "Morse Trainer");
-}
+static const char *TAG = "template_project";
 
 void app_main(void)
 {
@@ -28,23 +24,17 @@ void app_main(void)
         return;
     }
 
+    QueueHandle_t decoded_char_queue = xQueueCreate(DECODED_CHAR_QUEUE_DEPTH, sizeof(char));
+
     lvgl_port_lock(0);
 
-    lv_obj_t *scr = lv_display_get_screen_active(disp);
-
-    lv_obj_t *label = lv_label_create(scr);
-    lv_label_set_text(label, "Morse Trainer");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 20);
-
-    lv_obj_t *btn = lv_button_create(scr);
-    lv_obj_align(btn, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_add_event_cb(btn, toggle_button_cb, LV_EVENT_CLICKED, label);
-
-    lv_obj_t *btn_label = lv_label_create(btn);
-    lv_label_set_text(btn_label, "Tap me");
-    lv_obj_center(btn_label);
+    lv_obj_t *menu_screen = lv_obj_create(NULL);
+    lv_obj_t *practice_screen = ui_practice_create(decoded_char_queue, menu_screen,
+                                                    DEFAULT_KEY_MODE, DEFAULT_WPM);
+    ui_menu_populate(menu_screen, practice_screen);
+    lv_scr_load(menu_screen);
 
     lvgl_port_unlock();
 
-    paddle_input_start(DEFAULT_KEY_MODE, DEFAULT_WPM, DEFAULT_PADDLE_SWAP);
+    paddle_input_start(decoded_char_queue, DEFAULT_KEY_MODE, DEFAULT_WPM, DEFAULT_PADDLE_SWAP);
 }

@@ -23,6 +23,7 @@ static const char *TAG = "paddle_input";
 static iambic_keyer_t s_keyer;
 static morse_codec_t s_codec;
 static volatile bool s_paddle_swap;
+static QueueHandle_t s_decoded_char_queue;
 
 static void configure_input_gpio(int gpio)
 {
@@ -34,20 +35,29 @@ static void configure_input_gpio(int gpio)
     ESP_ERROR_CHECK(gpio_config(&cfg));
 }
 
-static void log_decode_event(morse_codec_event_t event, char out_char)
+static void handle_decode_event(morse_codec_event_t event, char out_char)
 {
+    char queued_char;
+
     switch (event) {
     case MORSE_CODEC_EVENT_CHAR:
         ESP_LOGI(TAG, "decoded: %c", out_char);
+        queued_char = out_char;
         break;
     case MORSE_CODEC_EVENT_UNKNOWN:
         ESP_LOGI(TAG, "decoded: ? (unknown sequence)");
+        queued_char = '?';
         break;
     case MORSE_CODEC_EVENT_SPACE:
         ESP_LOGI(TAG, "decoded: <space>");
+        queued_char = ' ';
         break;
     default:
-        break;
+        return;
+    }
+
+    if (s_decoded_char_queue != NULL) {
+        xQueueSend(s_decoded_char_queue, &queued_char, 0);
     }
 }
 
@@ -82,7 +92,7 @@ static void paddle_task(void *arg)
             sidetone_key(key_down);
             char out_char = 0;
             morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now_ms, &out_char);
-            log_decode_event(event, out_char);
+            handle_decode_event(event, out_char);
             prev_key_down = key_down;
         }
 
@@ -90,22 +100,28 @@ static void paddle_task(void *arg)
             last_morse_tick_ms = now_ms;
             char out_char = 0;
             morse_codec_event_t event = morse_codec_tick(&s_codec, now_ms, &out_char);
-            log_decode_event(event, out_char);
+            handle_decode_event(event, out_char);
         }
 
         vTaskDelay(pdMS_TO_TICKS(PADDLE_TICK_MS));
     }
 }
 
-void paddle_input_start(iambic_keyer_mode_t mode, uint16_t wpm, bool paddle_swap)
+void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm, bool paddle_swap)
 {
     iambic_keyer_init(&s_keyer, mode, wpm);
     morse_codec_init(&s_codec, wpm);
     s_paddle_swap = paddle_swap;
+    s_decoded_char_queue = decoded_char_queue;
 
     sidetone_init();
 
     xTaskCreate(paddle_task, "paddle_input", PADDLE_TASK_STACK, NULL, PADDLE_TASK_PRIO, NULL);
+}
+
+void paddle_input_reset_decoder(void)
+{
+    morse_codec_reset(&s_codec);
 }
 
 void paddle_input_set_mode(iambic_keyer_mode_t mode)
