@@ -9,6 +9,8 @@
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_ili9341.h"
+#include "esp_lcd_touch.h"
+#include "esp_lcd_touch_xpt2046.h"
 #include "esp_lvgl_port.h"
 
 static const char *TAG = "display_init";
@@ -31,6 +33,8 @@ static const char *TAG = "display_init";
 
 static esp_lcd_panel_io_handle_t s_tft_io_handle;
 static esp_lcd_panel_handle_t s_tft_panel_handle;
+static esp_lcd_panel_io_handle_t s_touch_io_handle;
+static esp_lcd_touch_handle_t s_touch_handle;
 
 static void init_backlight(void)
 {
@@ -70,10 +74,46 @@ static void init_tft_panel(void)
     ESP_LOGI(TAG, "TFT panel initialized");
 }
 
+static void init_touch(void)
+{
+    spi_bus_config_t bus_cfg = {
+        .mosi_io_num = BOARD_TOUCH_MOSI_GPIO,
+        .miso_io_num = BOARD_TOUCH_MISO_GPIO,
+        .sclk_io_num = BOARD_TOUCH_SCLK_GPIO,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 0,
+    };
+    ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &bus_cfg, SPI_DMA_DISABLED));
+
+    esp_lcd_panel_io_spi_config_t io_cfg = ESP_LCD_TOUCH_IO_SPI_XPT2046_CONFIG(BOARD_TOUCH_CS_GPIO);
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)SPI3_HOST, &io_cfg, &s_touch_io_handle));
+
+    esp_lcd_touch_config_t touch_cfg = {
+        .x_max = LCD_H_RES,
+        .y_max = LCD_V_RES,
+        .rst_gpio_num = GPIO_NUM_NC,
+        .int_gpio_num = (BOARD_TOUCH_IRQ_GPIO >= 0) ? (gpio_num_t)BOARD_TOUCH_IRQ_GPIO : GPIO_NUM_NC,
+        .levels = {
+            .reset = 0,
+            .interrupt = 0,
+        },
+        .flags = {
+            .swap_xy = LCD_SWAP_XY,
+            .mirror_x = LCD_MIRROR_X,
+            .mirror_y = LCD_MIRROR_Y,
+        },
+    };
+    ESP_ERROR_CHECK(esp_lcd_touch_new_spi_xpt2046(s_touch_io_handle, &touch_cfg, &s_touch_handle));
+
+    ESP_LOGI(TAG, "Touch controller initialized");
+}
+
 lv_display_t *display_init(void)
 {
     init_backlight();
     init_tft_panel();
+    init_touch();
 
     const lvgl_port_cfg_t lvgl_cfg = ESP_LVGL_PORT_INIT_CONFIG();
     ESP_ERROR_CHECK(lvgl_port_init(&lvgl_cfg));
@@ -104,6 +144,15 @@ lv_display_t *display_init(void)
         return NULL;
     }
 
-    ESP_LOGI(TAG, "LVGL display ready");
+    const lvgl_port_touch_cfg_t touch_port_cfg = {
+        .disp = disp,
+        .handle = s_touch_handle,
+    };
+    if (lvgl_port_add_touch(&touch_port_cfg) == NULL) {
+        ESP_LOGE(TAG, "lvgl_port_add_touch failed");
+        return NULL;
+    }
+
+    ESP_LOGI(TAG, "LVGL display + touch ready");
     return disp;
 }
