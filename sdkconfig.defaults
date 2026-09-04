@@ -1,1 +1,8 @@
 CONFIG_IDF_TARGET="esp32"
+
+# ESP32-2432S028R (Cheap Yellow Display): 4MB flash, custom partition table
+# (see partitions.csv) since LVGL + esp_lcd + touch driver code is close to
+# the default ~1MB factory app partition ceiling.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

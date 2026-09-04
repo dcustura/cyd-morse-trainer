@@ -1,0 +1,70 @@
+menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
+
+    comment "Community-sourced pinout - verify against your board's silkscreen before wiring."
+
+    config MORSE_TFT_MOSI_GPIO
+        int "TFT MOSI GPIO"
+        default 13
+
+    config MORSE_TFT_MISO_GPIO
+        int "TFT MISO GPIO"
+        default 12
+
+    config MORSE_TFT_SCLK_GPIO
+        int "TFT SCLK GPIO"
+        default 14
+
+    config MORSE_TFT_CS_GPIO
+        int "TFT CS GPIO"
+        default 15
+
+    config MORSE_TFT_DC_GPIO
+        int "TFT DC (data/command) GPIO"
+        default 2
+
+    config MORSE_TFT_RST_GPIO
+        int "TFT RST GPIO (-1 if not wired)"
+        default -1
+        help
+            Most ESP32-2432S028R units do not wire a dedicated reset GPIO to
+            the ILI9341 (the panel driver falls back to a software reset).
+            Some board revisions wire RST to GPIO4 instead - if the display
+            fails to initialize, try that value.
+
+    config MORSE_TFT_BL_GPIO
+        int "TFT backlight GPIO"
+        default 21
+
+    config MORSE_TOUCH_MOSI_GPIO
+        int "Touch (XPT2046) MOSI GPIO"
+        default 32
+
+    config MORSE_TOUCH_MISO_GPIO
+        int "Touch (XPT2046) MISO GPIO"
+        default 39
+
+    config MORSE_TOUCH_SCLK_GPIO
+        int "Touch (XPT2046) SCLK GPIO"
+        default 25
+
+    config MORSE_TOUCH_CS_GPIO
+        int "Touch (XPT2046) CS GPIO"
+        default 33
+
+    config MORSE_TOUCH_IRQ_GPIO
+        int "Touch (XPT2046) IRQ GPIO (-1 to poll instead)"
+        default 36
+
+    config MORSE_SPEAKER_GPIO
+        int "Speaker / sidetone LEDC GPIO"
+        default 26
+
+    config MORSE_PADDLE_DIT_GPIO
+        int "Paddle DIT GPIO (also the straight-key input)"
+        default 22
+
+    config MORSE_PADDLE_DAH_GPIO
+        int "Paddle DAH GPIO"
+        default 27
+
+endmenu
