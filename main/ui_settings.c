@@ -1,14 +1,15 @@
 #include "ui_settings.h"
 
 #include "paddle_input.h"
+#include "settings_store.h"
 #include "sidetone.h"
 
 #include <stdio.h>
 
-#define WPM_MIN 5
-#define WPM_MAX 40
-#define TONE_HZ_MIN 300
-#define TONE_HZ_MAX 1200
+#define WPM_MIN MORSE_SETTINGS_WPM_MIN
+#define WPM_MAX MORSE_SETTINGS_WPM_MAX
+#define TONE_HZ_MIN MORSE_SETTINGS_TONE_HZ_MIN
+#define TONE_HZ_MAX MORSE_SETTINGS_TONE_HZ_MAX
 #define TEST_TONE_DURATION_MS 300
 
 static lv_obj_t *s_wpm_slider;
@@ -71,6 +72,14 @@ static void save_btn_cb(lv_event_t *e)
     paddle_input_set_mode(mode);
     paddle_input_set_swap(swap);
     sidetone_set_freq(tone_hz);
+
+    const morse_settings_t settings = {
+        .wpm = wpm,
+        .keymode = mode,
+        .paddle_swap = swap,
+        .tone_hz = tone_hz,
+    };
+    settings_store_save(&settings);
 }
 
 static void back_btn_cb(lv_event_t *e)

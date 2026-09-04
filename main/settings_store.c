@@ -1,0 +1,83 @@
+#include "settings_store.h"
+
+#include "esp_err.h"
+#include "esp_log.h"
+#include "nvs.h"
+#include "nvs_flash.h"
+
+#define NVS_NAMESPACE "morse_cfg"
+#define NVS_KEY_WPM "wpm"
+#define NVS_KEY_KEYMODE "keymode"
+#define NVS_KEY_SWAP "swap"
+#define NVS_KEY_TONE_HZ "tone_hz"
+
+static const char *TAG = "settings_store";
+
+static esp_err_t load_from_nvs(morse_settings_t *out)
+{
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        ESP_LOGI(TAG, "no saved settings, using defaults");
+        return ESP_OK;
+    }
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "nvs_open failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    uint16_t raw_wpm;
+    if (nvs_get_u16(handle, NVS_KEY_WPM, &raw_wpm) == ESP_OK) {
+        out->wpm = morse_settings_clamp_wpm(raw_wpm);
+    }
+
+    uint8_t raw_keymode;
+    if (nvs_get_u8(handle, NVS_KEY_KEYMODE, &raw_keymode) == ESP_OK) {
+        out->keymode = morse_settings_validate_keymode(raw_keymode);
+    }
+
+    uint8_t raw_swap;
+    if (nvs_get_u8(handle, NVS_KEY_SWAP, &raw_swap) == ESP_OK) {
+        out->paddle_swap = (raw_swap != 0);
+    }
+
+    uint16_t raw_tone_hz;
+    if (nvs_get_u16(handle, NVS_KEY_TONE_HZ, &raw_tone_hz) == ESP_OK) {
+        out->tone_hz = morse_settings_clamp_tone_hz(raw_tone_hz);
+    }
+
+    nvs_close(handle);
+    return ESP_OK;
+}
+
+esp_err_t settings_store_init_and_load(morse_settings_t *out)
+{
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+
+    morse_settings_set_defaults(out);
+    return load_from_nvs(out);
+}
+
+esp_err_t settings_store_save(const morse_settings_t *in)
+{
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "nvs_open failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    nvs_set_u16(handle, NVS_KEY_WPM, in->wpm);
+    nvs_set_u8(handle, NVS_KEY_KEYMODE, (uint8_t)in->keymode);
+    nvs_set_u8(handle, NVS_KEY_SWAP, in->paddle_swap ? 1 : 0);
+    nvs_set_u16(handle, NVS_KEY_TONE_HZ, in->tone_hz);
+
+    err = nvs_commit(handle);
+    nvs_close(handle);
+    return err;
+}

@@ -2,6 +2,7 @@ idf_component_register(SRCS "main.c"
                              "display_init.c"
                              "sidetone.c"
                              "paddle_input.c"
+                             "settings_store.c"
                              "ui_menu.c"
                              "ui_practice.c"
                              "ui_settings.c"
@@ -9,6 +10,7 @@ idf_component_register(SRCS "main.c"
                        REQUIRES example_component
                                 iambic_keyer
                                 morse_codec
+                                morse_settings
                                 driver
                                 esp_driver_ledc
                                 esp_lcd
@@ -17,4 +19,5 @@ idf_component_register(SRCS "main.c"
                                 esp_lcd_touch_xpt2046
                                 esp_lvgl_port
                                 esp_timer
-                                lvgl)
+                                lvgl
+                                nvs_flash)
