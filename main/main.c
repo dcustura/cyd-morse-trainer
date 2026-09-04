@@ -1,6 +1,12 @@
 #include "esp_log.h"
 #include "display_init.h"
 #include "esp_lvgl_port.h"
+#include "paddle_input.h"
+
+/* Hardcoded until the Settings screen (US7) and NVS persistence (US8) exist. */
+#define DEFAULT_WPM 15
+#define DEFAULT_KEY_MODE IAMBIC_KEYER_MODE_B
+#define DEFAULT_PADDLE_SWAP false
 
 static const char *TAG = "template_project";
 
@@ -39,4 +45,6 @@ void app_main(void)
     lv_obj_center(btn_label);
 
     lvgl_port_unlock();
+
+    paddle_input_start(DEFAULT_KEY_MODE, DEFAULT_WPM, DEFAULT_PADDLE_SWAP);
 }
