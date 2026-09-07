@@ -44,11 +44,11 @@ static const char *TAG = "display_init";
  * LVGL. Confirmed on hardware: a pure-red lv_obj background rendered as
  * pure yellow. Black/white/grey content (the only colors used before the
  * keying dot in ui_practice.c) is a fixed point of that transform, so it
- * went unnoticed until the first saturated color was added. To get a color
- * C on screen, feed LVGL invert_channels(swap_rb(C)) instead of C - e.g.
- * screen-red is software-yellow (255,255,0). Don't "fix" this by flipping
- * these two defines without re-testing swap_xy/mirror/touch calibration,
- * which were tuned against the current values.
+ * went unnoticed until the first saturated color was added. Use
+ * display_compensate_color() below to get a given logical color to actually
+ * appear on screen. Don't "fix" this by flipping these two defines without
+ * re-testing swap_xy/mirror/touch calibration, which were tuned against the
+ * current values.
  */
 
 static esp_lcd_panel_io_handle_t s_tft_io_handle;
@@ -266,4 +266,10 @@ bool display_touch_read_point(uint16_t *x, uint16_t *y)
 void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16_t *x, uint16_t *y)
 {
     touch_calibration_apply(&s_touch_cal, raw_horiz, raw_vert, LCD_H_RES, LCD_V_RES, x, y);
+}
+
+lv_color_t display_compensate_color(lv_color_t c)
+{
+    /* Swap R/B and invert each channel; this transform is its own inverse. */
+    return lv_color_make(255 - c.blue, 255 - c.green, 255 - c.red);
 }

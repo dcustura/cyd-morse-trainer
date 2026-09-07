@@ -52,6 +52,14 @@ bool display_touch_read_point(uint16_t *x, uint16_t *y);
  */
 void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16_t *x, uint16_t *y);
 
+/**
+ * Map a logical LVGL color to the raw color that must be fed to LVGL for it
+ * to actually appear as `c` on screen, compensating for this panel's
+ * rgb_ele_order(BGR) + invert_color config (see the comment above
+ * LCD_RGB_ORDER in display_init.c). A no-op for black, white, and grays.
+ */
+lv_color_t display_compensate_color(lv_color_t c);
+
 #ifdef __cplusplus
 }
 #endif

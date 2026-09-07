@@ -1,5 +1,6 @@
 #include "ui_practice.h"
 
+#include "display_init.h"
 #include "paddle_input.h"
 
 #include <stdio.h>
@@ -97,14 +98,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_add_flag(s_keying_dot, LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(s_keying_dot, dot_diameter, dot_diameter);
     lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
-    /*
-     * This panel's rgb_ele_order(BGR) + invert_color config (display_init.c)
-     * combine to swap R/B and complement every channel for anything but
-     * pure black/white/grey (which that transform leaves unchanged - why no
-     * earlier UI color exposed this). Compensate by feeding the transform's
-     * inverse: pure yellow in software renders as pure red on screen.
-     */
-    lv_obj_set_style_bg_color(s_keying_dot, lv_color_make(255, 255, 0), 0);
+    lv_obj_set_style_bg_color(s_keying_dot, display_compensate_color(lv_palette_main(LV_PALETTE_RED)), 0);
     lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_COVER, 0);
     lv_obj_align(s_keying_dot, LV_ALIGN_RIGHT_MID, 0, 0);
 
