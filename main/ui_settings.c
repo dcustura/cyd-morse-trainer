@@ -103,7 +103,7 @@ static void test_tone_btn_cb(lv_event_t *e)
 
 static void save_btn_cb(lv_event_t *e)
 {
-    (void)e;
+    lv_obj_t *menu_screen = (lv_obj_t *)lv_event_get_user_data(e);
 
     uint16_t wpm = (uint16_t)lv_slider_get_value(s_wpm_slider);
     iambic_keyer_mode_t mode = (iambic_keyer_mode_t)lv_dropdown_get_selected(s_mode_dropdown);
@@ -128,6 +128,8 @@ static void save_btn_cb(lv_event_t *e)
         .envelope_ms = envelope_ms,
     };
     settings_store_save(&settings);
+
+    lv_scr_load(menu_screen);
 }
 
 static void nav_btn_cb(lv_event_t *e)
@@ -256,7 +258,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *save_btn = lv_button_create(btn_row);
-    lv_obj_add_event_cb(save_btn, save_btn_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(save_btn, save_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *save_label = lv_label_create(save_btn);
     lv_label_set_text(save_label, "OK");
 
