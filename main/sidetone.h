@@ -24,9 +24,17 @@ void sidetone_set_freq(uint16_t hz);
 void sidetone_set_volume(uint8_t percent);
 
 /**
+ * Set the raised-cosine keying envelope's attack/decay duration in
+ * milliseconds (clamped to the driver's supported range). Takes effect on
+ * the next key transition; a change made mid-tone does not disturb a ramp
+ * already in progress.
+ */
+void sidetone_set_envelope_ms(uint16_t ms);
+
+/**
  * Turn the sidetone on (key down) or off (key up). The transition is shaped
- * by a fixed-length raised-cosine attack/decay envelope rather than
- * switching instantly, to avoid audible keying clicks.
+ * by a raised-cosine attack/decay envelope (see sidetone_set_envelope_ms())
+ * rather than switching instantly, to avoid audible keying clicks.
  */
 void sidetone_key(bool down);
 

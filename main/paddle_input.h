@@ -18,7 +18,7 @@ extern "C" {
  * Practice screen to display.
  */
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
-                         bool paddle_swap, uint16_t tone_hz, uint8_t volume_pct);
+                         bool paddle_swap, uint16_t tone_hz, uint8_t volume_pct, uint16_t envelope_ms);
 
 /* Live-apply setting changes (called from the Settings screen). */
 void paddle_input_set_mode(iambic_keyer_mode_t mode);

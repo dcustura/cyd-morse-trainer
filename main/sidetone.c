@@ -32,14 +32,15 @@ _Static_assert(BOARD_SPEAKER_GPIO == 26,
 
 /*
  * Raised-cosine keying envelope (avoids the key clicks a hard on/off would
- * produce; ~5-10ms is the commonly used range for amateur CW shaping).
- * Fixed for now, per project decision - not yet exposed as a setting.
- * To make it runtime-configurable later: turn SIDETONE_ENVELOPE_SAMPLES into
- * a variable, size s_envelope_ramp for the largest supported duration, and
- * regenerate it (see the loop below) whenever the duration changes.
+ * produce). Runtime-adjustable via sidetone_set_envelope_ms(); MS_MIN/MAX
+ * here just bound the fixed-size table below and should stay in sync with
+ * MORSE_SETTINGS_ENVELOPE_MS_MIN/MAX in morse_settings.h, which own the
+ * user-facing range.
  */
-#define SIDETONE_ENVELOPE_MS       10u
-#define SIDETONE_ENVELOPE_SAMPLES  ((SIDETONE_SAMPLE_RATE_HZ * SIDETONE_ENVELOPE_MS) / 1000u)
+#define SIDETONE_ENVELOPE_MS_MIN    2u
+#define SIDETONE_ENVELOPE_MS_MAX    100u
+#define SIDETONE_ENVELOPE_MS_DEFAULT 10u
+#define SIDETONE_ENVELOPE_SAMPLES_MAX  ((SIDETONE_SAMPLE_RATE_HZ * SIDETONE_ENVELOPE_MS_MAX) / 1000u)
 
 typedef enum {
     ENV_IDLE,
@@ -50,10 +51,11 @@ typedef enum {
 
 static dac_continuous_handle_t s_dac_handle;
 static int8_t s_sine_table[SIDETONE_SINE_TABLE_LEN];
-static float s_envelope_ramp[SIDETONE_ENVELOPE_SAMPLES]; /* monotonic 0 -> 1 */
+static float s_envelope_ramp[SIDETONE_ENVELOPE_SAMPLES_MAX]; /* monotonic 0 -> 1, first s_envelope_len entries valid */
 
 static _Atomic uint32_t s_phase_incr;
 static _Atomic uint32_t s_volume_q16; /* volume fraction in Q16 fixed point, 0..65536 */
+static _Atomic uint32_t s_envelope_len; /* number of valid entries in s_envelope_ramp */
 static _Atomic bool s_key_down;
 static TaskHandle_t s_audio_task_handle;
 
@@ -74,17 +76,36 @@ static void generate_sine_table(void)
     }
 }
 
-static void generate_envelope_ramp(void)
+/* Regenerates s_envelope_ramp for a new duration and atomically publishes its length last. */
+static void generate_envelope_ramp(uint32_t len)
 {
-    for (uint32_t i = 0; i < SIDETONE_ENVELOPE_SAMPLES; i++) {
-        s_envelope_ramp[i] = 0.5f * (1.0f - cosf((float)M_PI * (float)(i + 1) / (float)SIDETONE_ENVELOPE_SAMPLES));
+    for (uint32_t i = 0; i < len; i++) {
+        s_envelope_ramp[i] = 0.5f * (1.0f - cosf((float)M_PI * (float)(i + 1) / (float)len));
     }
+    atomic_store_explicit(&s_envelope_len, len, memory_order_relaxed);
 }
 
 /* Advances the envelope by one sample and returns its current value (0..1). */
 static float next_envelope_value(void)
 {
     bool key_down = atomic_load_explicit(&s_key_down, memory_order_relaxed);
+    /*
+     * Captured once per sample so a concurrent sidetone_set_envelope_ms()
+     * can't tear mid-calculation; s_envelope_ramp always has at least `len`
+     * valid entries for whatever `len` was current when read, so this stays
+     * in-bounds even if the length changes between samples.
+     */
+    uint32_t len = atomic_load_explicit(&s_envelope_len, memory_order_relaxed);
+    /*
+     * s_env_idx persists across calls, but len can shrink between calls (a
+     * concurrent sidetone_set_envelope_ms()). Clamp before using it as an
+     * index or in a (len - 1) - idx subtraction, otherwise a stale idx from
+     * a longer envelope would underflow that subtraction into a huge
+     * out-of-bounds index.
+     */
+    if (s_env_idx >= len) {
+        s_env_idx = len - 1;
+    }
 
     switch (s_env_state) {
     case ENV_IDLE:
@@ -97,7 +118,7 @@ static float next_envelope_value(void)
         if (!key_down) {
             /* Continue smoothly from the current level instead of jumping. */
             s_env_state = ENV_RELEASE;
-            s_env_idx = (SIDETONE_ENVELOPE_SAMPLES - 1) - s_env_idx;
+            s_env_idx = (len - 1) - s_env_idx;
         }
         break;
     case ENV_SUSTAIN:
@@ -109,7 +130,7 @@ static float next_envelope_value(void)
     case ENV_RELEASE:
         if (key_down) {
             s_env_state = ENV_ATTACK;
-            s_env_idx = (SIDETONE_ENVELOPE_SAMPLES - 1) - s_env_idx;
+            s_env_idx = (len - 1) - s_env_idx;
         }
         break;
     }
@@ -119,7 +140,7 @@ static float next_envelope_value(void)
     case ENV_ATTACK:
         value = s_envelope_ramp[s_env_idx];
         s_env_idx++;
-        if (s_env_idx >= SIDETONE_ENVELOPE_SAMPLES) {
+        if (s_env_idx >= len) {
             s_env_state = ENV_SUSTAIN;
         }
         break;
@@ -127,9 +148,9 @@ static float next_envelope_value(void)
         value = 1.0f;
         break;
     case ENV_RELEASE:
-        value = s_envelope_ramp[(SIDETONE_ENVELOPE_SAMPLES - 1) - s_env_idx];
+        value = s_envelope_ramp[(len - 1) - s_env_idx];
         s_env_idx++;
-        if (s_env_idx >= SIDETONE_ENVELOPE_SAMPLES) {
+        if (s_env_idx >= len) {
             s_env_state = ENV_IDLE;
         }
         break;
@@ -179,7 +200,7 @@ static void audio_task(void *arg)
 void sidetone_init(void)
 {
     generate_sine_table();
-    generate_envelope_ramp();
+    generate_envelope_ramp((SIDETONE_SAMPLE_RATE_HZ * SIDETONE_ENVELOPE_MS_DEFAULT) / 1000u);
 
     atomic_store_explicit(&s_phase_incr, freq_to_phase_incr(SIDETONE_DEFAULT_HZ), memory_order_relaxed);
     atomic_store_explicit(&s_volume_q16, 65536u, memory_order_relaxed); /* full volume until sidetone_set_volume() runs */
@@ -203,6 +224,16 @@ void sidetone_init(void)
 void sidetone_set_freq(uint16_t hz)
 {
     atomic_store_explicit(&s_phase_incr, freq_to_phase_incr(hz), memory_order_relaxed);
+}
+
+void sidetone_set_envelope_ms(uint16_t ms)
+{
+    if (ms < SIDETONE_ENVELOPE_MS_MIN) {
+        ms = SIDETONE_ENVELOPE_MS_MIN;
+    } else if (ms > SIDETONE_ENVELOPE_MS_MAX) {
+        ms = SIDETONE_ENVELOPE_MS_MAX;
+    }
+    generate_envelope_ramp((SIDETONE_SAMPLE_RATE_HZ * ms) / 1000u);
 }
 
 void sidetone_set_volume(uint8_t percent)

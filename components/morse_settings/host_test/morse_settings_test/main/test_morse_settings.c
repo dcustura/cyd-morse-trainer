@@ -55,6 +55,21 @@ TEST(morse_settings, clamp_volume_pct_clamps_out_of_range_values)
     TEST_ASSERT_EQUAL_UINT8(100, morse_settings_clamp_volume_pct(255));
 }
 
+TEST(morse_settings, clamp_envelope_ms_passes_in_range_values_through)
+{
+    TEST_ASSERT_EQUAL_UINT16(2, morse_settings_clamp_envelope_ms(2));
+    TEST_ASSERT_EQUAL_UINT16(10, morse_settings_clamp_envelope_ms(10));
+    TEST_ASSERT_EQUAL_UINT16(100, morse_settings_clamp_envelope_ms(100));
+}
+
+TEST(morse_settings, clamp_envelope_ms_clamps_out_of_range_values)
+{
+    TEST_ASSERT_EQUAL_UINT16(2, morse_settings_clamp_envelope_ms(0));
+    TEST_ASSERT_EQUAL_UINT16(2, morse_settings_clamp_envelope_ms(1));
+    TEST_ASSERT_EQUAL_UINT16(100, morse_settings_clamp_envelope_ms(101));
+    TEST_ASSERT_EQUAL_UINT16(100, morse_settings_clamp_envelope_ms(65535));
+}
+
 TEST(morse_settings, validate_keymode_passes_valid_values_through)
 {
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_MODE_A, morse_settings_validate_keymode(IAMBIC_KEYER_MODE_A));
@@ -80,6 +95,7 @@ TEST(morse_settings, set_defaults_populates_the_compiled_in_defaults)
     TEST_ASSERT_EQUAL(MORSE_SETTINGS_DEFAULT_PADDLE_SWAP, settings.paddle_swap);
     TEST_ASSERT_EQUAL_UINT16(MORSE_SETTINGS_DEFAULT_TONE_HZ, settings.tone_hz);
     TEST_ASSERT_EQUAL_UINT8(MORSE_SETTINGS_DEFAULT_VOLUME_PCT, settings.volume_pct);
+    TEST_ASSERT_EQUAL_UINT16(MORSE_SETTINGS_DEFAULT_ENVELOPE_MS, settings.envelope_ms);
 }
 
 TEST_GROUP_RUNNER(morse_settings)
@@ -90,6 +106,8 @@ TEST_GROUP_RUNNER(morse_settings)
     RUN_TEST_CASE(morse_settings, clamp_tone_hz_clamps_out_of_range_values);
     RUN_TEST_CASE(morse_settings, clamp_volume_pct_passes_in_range_values_through);
     RUN_TEST_CASE(morse_settings, clamp_volume_pct_clamps_out_of_range_values);
+    RUN_TEST_CASE(morse_settings, clamp_envelope_ms_passes_in_range_values_through);
+    RUN_TEST_CASE(morse_settings, clamp_envelope_ms_clamps_out_of_range_values);
     RUN_TEST_CASE(morse_settings, validate_keymode_passes_valid_values_through);
     RUN_TEST_CASE(morse_settings, validate_keymode_falls_back_to_default_for_invalid_bytes);
     RUN_TEST_CASE(morse_settings, set_defaults_populates_the_compiled_in_defaults);

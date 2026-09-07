@@ -17,6 +17,8 @@
 #define TONE_HZ_MAX MORSE_SETTINGS_TONE_HZ_MAX
 #define VOLUME_PCT_MIN MORSE_SETTINGS_VOLUME_PCT_MIN
 #define VOLUME_PCT_MAX MORSE_SETTINGS_VOLUME_PCT_MAX
+#define ENVELOPE_MS_MIN MORSE_SETTINGS_ENVELOPE_MS_MIN
+#define ENVELOPE_MS_MAX MORSE_SETTINGS_ENVELOPE_MS_MAX
 #define TEST_TONE_DURATION_MS 300
 
 static lv_obj_t *s_settings_screen;
@@ -26,6 +28,8 @@ static lv_obj_t *s_mode_dropdown;
 static lv_obj_t *s_swap_switch;
 static lv_obj_t *s_tone_slider;
 static lv_obj_t *s_tone_value_label;
+static lv_obj_t *s_envelope_slider;
+static lv_obj_t *s_envelope_value_label;
 static lv_obj_t *s_volume_slider;
 static lv_obj_t *s_volume_value_label;
 
@@ -50,6 +54,13 @@ static void update_volume_label(int32_t pct)
     lv_label_set_text(s_volume_value_label, text);
 }
 
+static void update_envelope_label(int32_t ms)
+{
+    char text[32];
+    snprintf(text, sizeof(text), "Envelope: %d ms", (int)ms);
+    lv_label_set_text(s_envelope_value_label, text);
+}
+
 static void wpm_slider_cb(lv_event_t *e)
 {
     (void)e;
@@ -68,6 +79,12 @@ static void volume_slider_cb(lv_event_t *e)
     update_volume_label(lv_slider_get_value(s_volume_slider));
 }
 
+static void envelope_slider_cb(lv_event_t *e)
+{
+    (void)e;
+    update_envelope_label(lv_slider_get_value(s_envelope_slider));
+}
+
 static void test_tone_stop_cb(lv_timer_t *timer)
 {
     sidetone_key(false);
@@ -79,6 +96,7 @@ static void test_tone_btn_cb(lv_event_t *e)
     (void)e;
     sidetone_set_freq((uint16_t)lv_slider_get_value(s_tone_slider));
     sidetone_set_volume((uint8_t)lv_slider_get_value(s_volume_slider));
+    sidetone_set_envelope_ms((uint16_t)lv_slider_get_value(s_envelope_slider));
     sidetone_key(true);
     lv_timer_create(test_tone_stop_cb, TEST_TONE_DURATION_MS, NULL);
 }
@@ -92,12 +110,14 @@ static void save_btn_cb(lv_event_t *e)
     bool swap = lv_obj_has_state(s_swap_switch, LV_STATE_CHECKED);
     uint16_t tone_hz = (uint16_t)lv_slider_get_value(s_tone_slider);
     uint8_t volume_pct = (uint8_t)lv_slider_get_value(s_volume_slider);
+    uint16_t envelope_ms = (uint16_t)lv_slider_get_value(s_envelope_slider);
 
     paddle_input_set_wpm(wpm);
     paddle_input_set_mode(mode);
     paddle_input_set_swap(swap);
     sidetone_set_freq(tone_hz);
     sidetone_set_volume(volume_pct);
+    sidetone_set_envelope_ms(envelope_ms);
 
     const morse_settings_t settings = {
         .wpm = wpm,
@@ -105,6 +125,7 @@ static void save_btn_cb(lv_event_t *e)
         .paddle_swap = swap,
         .tone_hz = tone_hz,
         .volume_pct = volume_pct,
+        .envelope_ms = envelope_ms,
     };
     settings_store_save(&settings);
 }
@@ -155,7 +176,7 @@ static void reset_btn_cb(lv_event_t *e)
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
-                              uint8_t initial_volume_pct)
+                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
     s_settings_screen = scr;
@@ -193,6 +214,14 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_slider_set_range(s_tone_slider, TONE_HZ_MIN, TONE_HZ_MAX);
     lv_slider_set_value(s_tone_slider, initial_tone_hz, LV_ANIM_OFF);
     lv_obj_add_event_cb(s_tone_slider, tone_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+    s_envelope_value_label = lv_label_create(scr);
+    update_envelope_label(initial_envelope_ms);
+
+    s_envelope_slider = lv_slider_create(scr);
+    lv_slider_set_range(s_envelope_slider, ENVELOPE_MS_MIN, ENVELOPE_MS_MAX);
+    lv_slider_set_value(s_envelope_slider, initial_envelope_ms, LV_ANIM_OFF);
+    lv_obj_add_event_cb(s_envelope_slider, envelope_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     s_volume_value_label = lv_label_create(scr);
     update_volume_label(initial_volume_pct);
