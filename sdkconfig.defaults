@@ -6,3 +6,9 @@ CONFIG_IDF_TARGET="esp32"
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# paddle_input's keyer-sampling task needs genuine 1ms granularity
+# (vTaskDelay(pdMS_TO_TICKS(1))); the default 100Hz tick makes pdMS_TO_TICKS(1)
+# round down to 0, turning the delay into a no-op that starves the idle task
+# and trips the watchdog.
+CONFIG_FREERTOS_HZ=1000
