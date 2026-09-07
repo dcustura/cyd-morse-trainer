@@ -152,3 +152,13 @@ void paddle_input_set_swap(bool swap)
 {
     s_paddle_swap = swap;
 }
+
+iambic_keyer_mode_t paddle_input_get_mode(void)
+{
+    return s_keyer.mode;
+}
+
+uint16_t paddle_input_get_wpm(void)
+{
+    return s_keyer.wpm;
+}

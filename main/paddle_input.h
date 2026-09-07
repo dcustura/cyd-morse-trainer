@@ -25,6 +25,11 @@ void paddle_input_set_mode(iambic_keyer_mode_t mode);
 void paddle_input_set_wpm(uint16_t wpm);
 void paddle_input_set_swap(bool swap);
 
+/* Current keyer settings, kept live-updated by the setters above (used by
+ * the Practice screen to refresh its status label after a Settings save). */
+iambic_keyer_mode_t paddle_input_get_mode(void);
+uint16_t paddle_input_get_wpm(void);
+
 /* Clears in-progress decode state (called from the Practice screen's Clear button). */
 void paddle_input_reset_decoder(void);
 

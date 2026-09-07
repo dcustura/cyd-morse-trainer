@@ -7,6 +7,7 @@
 
 #define QUEUE_DRAIN_PERIOD_MS 30
 
+static lv_obj_t *s_status_label;
 static lv_obj_t *s_text_label;
 static lv_obj_t *s_keying_dot;
 static QueueHandle_t s_decoded_char_queue;
@@ -23,6 +24,20 @@ static const char *mode_name(iambic_keyer_mode_t mode)
     default:
         return "?";
     }
+}
+
+static void update_status_label(void)
+{
+    char status_text[48];
+    snprintf(status_text, sizeof(status_text), "WPM: %u   Mode: %s",
+             (unsigned)paddle_input_get_wpm(), mode_name(paddle_input_get_mode()));
+    lv_label_set_text(s_status_label, status_text);
+}
+
+static void screen_loaded_cb(lv_event_t *e)
+{
+    (void)e;
+    update_status_label();
 }
 
 static void drain_queue_timer_cb(lv_timer_t *timer)
@@ -60,13 +75,14 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     s_decoded_char_queue = decoded_char_queue;
 
     lv_obj_t *scr = lv_obj_create(NULL);
+    lv_obj_add_event_cb(scr, screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
 
     char status_text[48];
     snprintf(status_text, sizeof(status_text), "WPM: %u   Mode: %s",
              (unsigned)initial_wpm, mode_name(initial_mode));
-    lv_obj_t *status_label = lv_label_create(scr);
-    lv_label_set_text(status_label, status_text);
+    s_status_label = lv_label_create(scr);
+    lv_label_set_text(s_status_label, status_text);
 
     s_text_label = lv_label_create(scr);
     lv_label_set_long_mode(s_text_label, LV_LABEL_LONG_WRAP);
