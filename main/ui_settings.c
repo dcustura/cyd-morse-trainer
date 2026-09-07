@@ -1,5 +1,6 @@
 #include "ui_settings.h"
 
+#include "display_init.h"
 #include "paddle_input.h"
 #include "settings_store.h"
 #include "sidetone.h"
@@ -263,21 +264,25 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_add_event_cb(s_volume_slider, volume_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     lv_obj_t *test_tone_btn = lv_button_create(scr);
+    display_style_button_teal(test_tone_btn);
     lv_obj_add_event_cb(test_tone_btn, test_tone_btn_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *test_tone_label = lv_label_create(test_tone_btn);
     lv_label_set_text(test_tone_label, "Test tone");
 
     lv_obj_t *calibrate_btn = lv_button_create(scr);
+    display_style_button_teal(calibrate_btn);
     lv_obj_add_event_cb(calibrate_btn, calibrate_btn_cb, LV_EVENT_CLICKED, calibration_screen);
     lv_obj_t *calibrate_label = lv_label_create(calibrate_btn);
     lv_label_set_text(calibrate_label, "Calibrate Touchscreen");
 
     lv_obj_t *verify_btn = lv_button_create(scr);
+    display_style_button_teal(verify_btn);
     lv_obj_add_event_cb(verify_btn, nav_btn_cb, LV_EVENT_CLICKED, touch_test_screen);
     lv_obj_t *verify_label = lv_label_create(verify_btn);
     lv_label_set_text(verify_label, "Verify Calibration");
 
     lv_obj_t *reset_btn = lv_button_create(scr);
+    display_style_button_teal(reset_btn);
     lv_obj_add_event_cb(reset_btn, reset_btn_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *reset_label = lv_label_create(reset_btn);
     lv_label_set_text(reset_label, "Reset to Factory Defaults");
@@ -287,11 +292,13 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *save_btn = lv_button_create(btn_row);
+    display_style_button_teal(save_btn);
     lv_obj_add_event_cb(save_btn, save_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *save_label = lv_label_create(save_btn);
     lv_label_set_text(save_label, "OK");
 
     lv_obj_t *back_btn = lv_button_create(btn_row);
+    display_style_button_teal(back_btn);
     lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Cancel");

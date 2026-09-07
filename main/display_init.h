@@ -60,6 +60,15 @@ void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16
  */
 lv_color_t display_compensate_color(lv_color_t c);
 
+/**
+ * Give a button a teal background instead of the default theme's stock
+ * blue. Deliberately a local per-object style rather than overriding the
+ * shared default theme at runtime - re-initializing that global singleton
+ * after screens/objects already exist is fragile (confirmed on hardware: it
+ * hung the main task inside LVGL's style-refresh walk).
+ */
+void display_style_button_teal(lv_obj_t *btn);
+
 #ifdef __cplusplus
 }
 #endif

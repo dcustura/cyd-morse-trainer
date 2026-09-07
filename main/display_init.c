@@ -273,3 +273,16 @@ lv_color_t display_compensate_color(lv_color_t c)
     /* Swap R/B and invert each channel; this transform is its own inverse. */
     return lv_color_make(255 - c.blue, 255 - c.green, 255 - c.red);
 }
+
+void display_style_button_teal(lv_obj_t *btn)
+{
+    static lv_style_t s_style;
+    static bool s_style_inited = false;
+
+    if (!s_style_inited) {
+        lv_style_init(&s_style);
+        lv_style_set_bg_color(&s_style, display_compensate_color(lv_palette_main(LV_PALETTE_TEAL)));
+        s_style_inited = true;
+    }
+    lv_obj_add_style(btn, &s_style, 0);
+}

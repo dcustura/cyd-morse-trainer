@@ -95,11 +95,13 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *clear_btn = lv_button_create(btn_row);
+    display_style_button_teal(clear_btn);
     lv_obj_add_event_cb(clear_btn, clear_btn_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *clear_label = lv_label_create(clear_btn);
     lv_label_set_text(clear_label, "Clear");
 
     lv_obj_t *back_btn = lv_button_create(btn_row);
+    display_style_button_teal(back_btn);
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Back");

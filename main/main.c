@@ -35,11 +35,6 @@ void app_main(void)
         display_touch_apply_calibration(&touch_cal);
     }
 
-    /* Buttons etc. default to LVGL's stock blue; swap the theme's primary
-     * color for teal, compensated for this panel's color transform. */
-    lv_theme_default_init(disp, display_compensate_color(lv_palette_main(LV_PALETTE_TEAL)),
-                           lv_palette_main(LV_PALETTE_RED), LV_THEME_DEFAULT_DARK, LV_FONT_DEFAULT);
-
     QueueHandle_t decoded_char_queue = xQueueCreate(DECODED_CHAR_QUEUE_DEPTH, sizeof(char));
 
     lvgl_port_lock(0);
