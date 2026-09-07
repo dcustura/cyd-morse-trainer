@@ -237,6 +237,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 
     s_mode_dropdown = lv_dropdown_create(scr);
     lv_dropdown_set_options(s_mode_dropdown, "Iambic Mode A\nIambic Mode B\nStraight Key");
+    lv_obj_set_width(s_mode_dropdown, 180);
 
     lv_obj_t *swap_row = lv_obj_create(scr);
     lv_obj_set_flex_flow(swap_row, LV_FLEX_FLOW_ROW);
