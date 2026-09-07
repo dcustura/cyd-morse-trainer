@@ -108,6 +108,47 @@ TEST(iambic_keyer, mode_a_drops_a_tap_that_was_released_before_gap_end)
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
 }
 
+TEST(iambic_keyer, tap_while_holding_primary_paddle_inserts_opposite_element)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_A, TEST_WPM);
+
+    /* Standard squeeze technique: hold dit throughout, briefly tap dah in
+     * passing. The tap must be honored even though dit is never released --
+     * this must not require full release like the mode-B memory test below,
+     * and must work in Mode A too, unlike the dropped-tap test above. */
+    bool out = iambic_keyer_service(&s_keyer, true, false, 0); /* start dit, element_end=60 */
+    TEST_ASSERT_TRUE(out);
+    for (uint32_t t = 1; t <= 29; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+    iambic_keyer_service(&s_keyer, true, true, 30); /* dah tapped mid-element -> latched */
+    for (uint32_t t = 31; t <= 119; ++t) {
+        out = iambic_keyer_service(&s_keyer, true, false, t); /* dah released, dit stays held */
+    }
+    TEST_ASSERT_FALSE(out); /* still in the gap just before it ends */
+
+    /* Gap ends at t=120 with dit still held and dah's tap latched: the dah
+     * must be inserted now rather than repeating dit. */
+    out = iambic_keyer_service(&s_keyer, true, false, 120);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DAH, s_keyer.state);
+    TEST_ASSERT_FALSE(s_keyer.sending_dit);
+
+    for (uint32_t t = 121; t <= 299; ++t) {
+        out = iambic_keyer_service(&s_keyer, false, false, t); /* dit released partway through */
+        TEST_ASSERT_TRUE_MESSAGE(out, "dah element (180ms) must finish on its own timer");
+    }
+
+    /* Both paddles released and nothing new latched: the trailing gap ends cleanly. */
+    for (uint32_t t = 300; t <= 359; ++t) {
+        out = iambic_keyer_service(&s_keyer, false, false, t);
+        TEST_ASSERT_FALSE(out);
+    }
+    out = iambic_keyer_service(&s_keyer, false, false, 360);
+    TEST_ASSERT_FALSE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
+}
+
 TEST(iambic_keyer, mode_b_sends_exactly_one_extra_element_for_a_released_tap)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
@@ -178,6 +219,7 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, pure_dah_hold_produces_continuous_dah_train);
     RUN_TEST_CASE(iambic_keyer, squeeze_both_paddles_alternates_dit_dah_continuously);
     RUN_TEST_CASE(iambic_keyer, mode_a_drops_a_tap_that_was_released_before_gap_end);
+    RUN_TEST_CASE(iambic_keyer, tap_while_holding_primary_paddle_inserts_opposite_element);
     RUN_TEST_CASE(iambic_keyer, mode_b_sends_exactly_one_extra_element_for_a_released_tap);
     RUN_TEST_CASE(iambic_keyer, straight_key_mode_ignores_dah_and_tracks_dit_directly);
     RUN_TEST_CASE(iambic_keyer, set_wpm_mid_sequence_changes_the_next_elements_duration);

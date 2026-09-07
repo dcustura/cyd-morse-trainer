@@ -36,8 +36,10 @@ typedef struct {
     iambic_keyer_state_t state;
     uint32_t element_end_ms;
     uint32_t gap_end_ms;
-    bool opposite_latched; /* mode-B memory: opposite paddle touched during the current element+gap */
-    bool forced_extra;     /* currently sending the one forced mode-B extra element */
+    bool opposite_latched; /* opposite paddle touched during the current element+gap: inserted
+                             * next if the held paddle is still down (both modes), or once more
+                             * after a full release (mode B only) */
+    bool forced_extra;     /* currently sending the one forced element from opposite_latched */
     bool sending_dit;      /* which element type the current SEND/GAP state represents */
 } iambic_keyer_t;
 

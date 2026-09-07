@@ -86,8 +86,16 @@ bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact,
                  * right now, so continue alternating regardless of mode. */
                 start_element(k, !k->sending_dit, now_ms);
                 k->forced_extra = false;
+            } else if (same_now && k->opposite_latched && !k->forced_extra) {
+                /* The held paddle is still down, but the opposite paddle was
+                 * tapped and released sometime during this element/gap:
+                 * insert it now instead of just repeating the held paddle.
+                 * This is plain squeeze keying and applies in both modes --
+                 * it is not the mode-B "full release" memory below. */
+                start_element(k, !k->sending_dit, now_ms);
+                k->forced_extra = true;
             } else if (same_now) {
-                /* Same paddle still held: repeat the same element. */
+                /* Same paddle still held, nothing to insert: repeat the same element. */
                 start_element(k, k->sending_dit, now_ms);
                 k->forced_extra = false;
             } else if (k->mode == IAMBIC_KEYER_MODE_B && k->opposite_latched && !k->forced_extra) {
