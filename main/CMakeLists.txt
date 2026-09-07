@@ -3,6 +3,8 @@ idf_component_register(SRCS "main.c"
                              "sidetone.c"
                              "paddle_input.c"
                              "settings_store.c"
+                             "touch_cal_store.c"
+                             "ui_calibration.c"
                              "ui_menu.c"
                              "ui_practice.c"
                              "ui_settings.c"
@@ -11,6 +13,7 @@ idf_component_register(SRCS "main.c"
                                 iambic_keyer
                                 morse_codec
                                 morse_settings
+                                touch_calibration
                                 driver
                                 esp_driver_ledc
                                 esp_lcd

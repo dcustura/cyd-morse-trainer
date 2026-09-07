@@ -82,14 +82,15 @@ static void save_btn_cb(lv_event_t *e)
     settings_store_save(&settings);
 }
 
-static void back_btn_cb(lv_event_t *e)
+static void nav_btn_cb(lv_event_t *e)
 {
-    lv_obj_t *menu_screen = (lv_obj_t *)lv_event_get_user_data(e);
-    lv_scr_load(menu_screen);
+    lv_obj_t *target_screen = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_scr_load(target_screen);
 }
 
-lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, iambic_keyer_mode_t initial_mode,
-                              uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz)
+lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
+                              iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
+                              bool initial_swap, uint16_t initial_tone_hz)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
@@ -132,6 +133,11 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, iambic_keyer_mode_t initial_
     lv_obj_t *test_tone_label = lv_label_create(test_tone_btn);
     lv_label_set_text(test_tone_label, "Test tone");
 
+    lv_obj_t *calibrate_btn = lv_button_create(scr);
+    lv_obj_add_event_cb(calibrate_btn, nav_btn_cb, LV_EVENT_CLICKED, calibration_screen);
+    lv_obj_t *calibrate_label = lv_label_create(calibrate_btn);
+    lv_label_set_text(calibrate_label, "Calibrate Touchscreen");
+
     lv_obj_t *btn_row = lv_obj_create(scr);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
@@ -142,7 +148,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, iambic_keyer_mode_t initial_
     lv_label_set_text(save_label, "Save");
 
     lv_obj_t *back_btn = lv_button_create(btn_row);
-    lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
+    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Back");
 

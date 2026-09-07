@@ -12,6 +12,7 @@
 #include "esp_lcd_touch.h"
 #include "esp_lcd_touch_xpt2046.h"
 #include "esp_lvgl_port.h"
+#include "touch_calibration.h"
 
 static const char *TAG = "display_init";
 
@@ -96,22 +97,19 @@ static void init_tft_panel(void)
 
 /* The atanisoft XPT2046 driver stores esp_lcd_touch_config_t.flags but never
  * reads swap_xy/mirror_x/mirror_y from it - those settings are silently
- * ignored. Empirically calibrated on real hardware instead (6-point sweep,
+ * ignored. Empirically confirmed on real hardware instead (6-point sweep,
  * touch_cfg.x_max=LCD_H_RES=320, y_max=LCD_V_RES=240 unchanged): the
  * driver's raw "x" output (from the X_POSITION register) actually tracks
- * the display's VERTICAL position (~31 at physical top, ~283 at physical
- * bottom, barely moving left-right); its raw "y" output (Y_POSITION)
- * tracks the display's HORIZONTAL position (~17 at physical left, ~217 at
- * physical right, barely moving top-bottom). The axes are swapped end to
- * end, and neither spans the full theoretical ADC range. Fix both via the
- * process_coordinates hook, which the esp_lcd_touch base layer *does*
- * invoke (see esp_lcd_touch_get_data in esp_lcd_touch.c). Verified against
- * all four corners plus top/bottom midpoints: exact (0,0)/(319,0)/(0,239)/
- * (319,239) at the corners, ~160 at the midpoints. */
-#define TOUCH_CAL_HORIZ_MIN 17
-#define TOUCH_CAL_HORIZ_MAX 217
-#define TOUCH_CAL_VERT_MIN 31
-#define TOUCH_CAL_VERT_MAX 283
+ * the display's VERTICAL position; its raw "y" output (Y_POSITION) tracks
+ * the display's HORIZONTAL position. This end-to-end axis swap is a fixed
+ * property of the driver/hardware combination, not something recalibration
+ * should touch - only the min/max raw range per axis (which can vary
+ * per-unit and drift) is user-calibrated, via touch_calibration_t below.
+ * Fix the swap via the process_coordinates hook, which the esp_lcd_touch
+ * base layer *does* invoke (see esp_lcd_touch_get_data in
+ * esp_lcd_touch.c). */
+static touch_calibration_t s_touch_cal;
+static bool s_touch_raw_mode = false;
 
 static void touch_process_coordinates(esp_lcd_touch_handle_t tp, uint16_t *x, uint16_t *y,
                                        uint16_t *strength, uint8_t *point_num, uint8_t max_point_num)
@@ -124,24 +122,18 @@ static void touch_process_coordinates(esp_lcd_touch_handle_t tp, uint16_t *x, ui
         int32_t raw_vertical = x[i];   /* driver's "x" actually tracks screen Y */
         int32_t raw_horizontal = y[i]; /* driver's "y" actually tracks screen X */
 
-        int32_t new_x = (raw_horizontal - TOUCH_CAL_HORIZ_MIN) * (LCD_H_RES - 1)
-                         / (TOUCH_CAL_HORIZ_MAX - TOUCH_CAL_HORIZ_MIN);
-        int32_t new_y = (raw_vertical - TOUCH_CAL_VERT_MIN) * (LCD_V_RES - 1)
-                         / (TOUCH_CAL_VERT_MAX - TOUCH_CAL_VERT_MIN);
-
-        if (new_x < 0) {
-            new_x = 0;
-        } else if (new_x > LCD_H_RES - 1) {
-            new_x = LCD_H_RES - 1;
-        }
-        if (new_y < 0) {
-            new_y = 0;
-        } else if (new_y > LCD_V_RES - 1) {
-            new_y = LCD_V_RES - 1;
+        if (s_touch_raw_mode) {
+            /* Calibration screen wants the true raw sample, axis-swap only. */
+            x[i] = (uint16_t)raw_horizontal;
+            y[i] = (uint16_t)raw_vertical;
+            continue;
         }
 
-        x[i] = (uint16_t)new_x;
-        y[i] = (uint16_t)new_y;
+        uint16_t mapped_x, mapped_y;
+        touch_calibration_apply(&s_touch_cal, raw_horizontal, raw_vertical, LCD_H_RES, LCD_V_RES,
+                                 &mapped_x, &mapped_y);
+        x[i] = mapped_x;
+        y[i] = mapped_y;
     }
 }
 
@@ -183,6 +175,8 @@ static void init_touch(void)
 
 lv_display_t *display_init(void)
 {
+    touch_calibration_set_defaults(&s_touch_cal);
+
     init_backlight();
     init_tft_panel();
     init_touch();
@@ -228,4 +222,30 @@ lv_display_t *display_init(void)
     ESP_LOGI(TAG, "LVGL display + touch ready");
 
     return disp;
+}
+
+void display_touch_apply_calibration(const touch_calibration_t *cal)
+{
+    s_touch_cal = *cal;
+}
+
+void display_touch_set_raw_mode(bool enable)
+{
+    s_touch_raw_mode = enable;
+}
+
+bool display_touch_read_point(uint16_t *x, uint16_t *y)
+{
+    (void)esp_lcd_touch_read_data(s_touch_handle);
+
+    esp_lcd_touch_point_data_t point;
+    uint8_t point_cnt = 0;
+    esp_err_t err = esp_lcd_touch_get_data(s_touch_handle, &point, &point_cnt, 1);
+    if (err != ESP_OK || point_cnt == 0) {
+        return false;
+    }
+
+    *x = point.x;
+    *y = point.y;
+    return true;
 }
