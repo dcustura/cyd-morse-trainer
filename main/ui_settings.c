@@ -22,6 +22,7 @@
 #define TEST_TONE_DURATION_MS 300
 
 static lv_obj_t *s_settings_screen;
+static morse_settings_t s_current_settings;
 static lv_obj_t *s_wpm_slider;
 static lv_obj_t *s_wpm_value_label;
 static lv_obj_t *s_mode_dropdown;
@@ -101,6 +102,35 @@ static void test_tone_btn_cb(lv_event_t *e)
     lv_timer_create(test_tone_stop_cb, TEST_TONE_DURATION_MS, NULL);
 }
 
+static void apply_settings_to_widgets(const morse_settings_t *settings)
+{
+    lv_slider_set_value(s_wpm_slider, settings->wpm, LV_ANIM_OFF);
+    update_wpm_label(settings->wpm);
+
+    lv_dropdown_set_selected(s_mode_dropdown, (uint32_t)settings->keymode);
+
+    if (settings->paddle_swap) {
+        lv_obj_add_state(s_swap_switch, LV_STATE_CHECKED);
+    } else {
+        lv_obj_remove_state(s_swap_switch, LV_STATE_CHECKED);
+    }
+
+    lv_slider_set_value(s_tone_slider, settings->tone_hz, LV_ANIM_OFF);
+    update_tone_label(settings->tone_hz);
+
+    lv_slider_set_value(s_envelope_slider, settings->envelope_ms, LV_ANIM_OFF);
+    update_envelope_label(settings->envelope_ms);
+
+    lv_slider_set_value(s_volume_slider, settings->volume_pct, LV_ANIM_OFF);
+    update_volume_label(settings->volume_pct);
+}
+
+static void settings_screen_loaded_cb(lv_event_t *e)
+{
+    (void)e;
+    apply_settings_to_widgets(&s_current_settings);
+}
+
 static void save_btn_cb(lv_event_t *e)
 {
     lv_obj_t *menu_screen = (lv_obj_t *)lv_event_get_user_data(e);
@@ -128,6 +158,7 @@ static void save_btn_cb(lv_event_t *e)
         .envelope_ms = envelope_ms,
     };
     settings_store_save(&settings);
+    s_current_settings = settings;
 
     lv_scr_load(menu_screen);
 }
@@ -180,24 +211,31 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
                               uint8_t initial_volume_pct, uint16_t initial_envelope_ms)
 {
+    s_current_settings = (morse_settings_t){
+        .wpm = initial_wpm,
+        .keymode = initial_mode,
+        .paddle_swap = initial_swap,
+        .tone_hz = initial_tone_hz,
+        .volume_pct = initial_volume_pct,
+        .envelope_ms = initial_envelope_ms,
+    };
+
     lv_obj_t *scr = lv_obj_create(NULL);
     s_settings_screen = scr;
+    lv_obj_add_event_cb(scr, settings_screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
 
     lv_obj_t *title = lv_label_create(scr);
     lv_label_set_text(title, "Settings");
 
     s_wpm_value_label = lv_label_create(scr);
-    update_wpm_label(initial_wpm);
 
     s_wpm_slider = lv_slider_create(scr);
     lv_slider_set_range(s_wpm_slider, WPM_MIN, WPM_MAX);
-    lv_slider_set_value(s_wpm_slider, initial_wpm, LV_ANIM_OFF);
     lv_obj_add_event_cb(s_wpm_slider, wpm_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     s_mode_dropdown = lv_dropdown_create(scr);
     lv_dropdown_set_options(s_mode_dropdown, "Iambic Mode A\nIambic Mode B\nStraight Key");
-    lv_dropdown_set_selected(s_mode_dropdown, (uint32_t)initial_mode);
 
     lv_obj_t *swap_row = lv_obj_create(scr);
     lv_obj_set_flex_flow(swap_row, LV_FLEX_FLOW_ROW);
@@ -205,32 +243,23 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_t *swap_label = lv_label_create(swap_row);
     lv_label_set_text(swap_label, "Swap dit/dah");
     s_swap_switch = lv_switch_create(swap_row);
-    if (initial_swap) {
-        lv_obj_add_state(s_swap_switch, LV_STATE_CHECKED);
-    }
 
     s_tone_value_label = lv_label_create(scr);
-    update_tone_label(initial_tone_hz);
 
     s_tone_slider = lv_slider_create(scr);
     lv_slider_set_range(s_tone_slider, TONE_HZ_MIN, TONE_HZ_MAX);
-    lv_slider_set_value(s_tone_slider, initial_tone_hz, LV_ANIM_OFF);
     lv_obj_add_event_cb(s_tone_slider, tone_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     s_envelope_value_label = lv_label_create(scr);
-    update_envelope_label(initial_envelope_ms);
 
     s_envelope_slider = lv_slider_create(scr);
     lv_slider_set_range(s_envelope_slider, ENVELOPE_MS_MIN, ENVELOPE_MS_MAX);
-    lv_slider_set_value(s_envelope_slider, initial_envelope_ms, LV_ANIM_OFF);
     lv_obj_add_event_cb(s_envelope_slider, envelope_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     s_volume_value_label = lv_label_create(scr);
-    update_volume_label(initial_volume_pct);
 
     s_volume_slider = lv_slider_create(scr);
     lv_slider_set_range(s_volume_slider, VOLUME_PCT_MIN, VOLUME_PCT_MAX);
-    lv_slider_set_value(s_volume_slider, initial_volume_pct, LV_ANIM_OFF);
     lv_obj_add_event_cb(s_volume_slider, volume_slider_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     lv_obj_t *test_tone_btn = lv_button_create(scr);
@@ -266,6 +295,8 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Cancel");
+
+    apply_settings_to_widgets(&s_current_settings);
 
     return scr;
 }
