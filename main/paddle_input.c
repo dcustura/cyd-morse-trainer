@@ -108,7 +108,7 @@ static void paddle_task(void *arg)
 }
 
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
-                         bool paddle_swap, uint16_t tone_hz)
+                         bool paddle_swap, uint16_t tone_hz, uint8_t volume_pct)
 {
     iambic_keyer_init(&s_keyer, mode, wpm);
     morse_codec_init(&s_codec, wpm);
@@ -117,6 +117,7 @@ void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mo
 
     sidetone_init();
     sidetone_set_freq(tone_hz);
+    sidetone_set_volume(volume_pct);
 
     xTaskCreate(paddle_task, "paddle_input", PADDLE_TASK_STACK, NULL, PADDLE_TASK_PRIO, NULL);
 }

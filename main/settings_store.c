@@ -10,6 +10,7 @@
 #define NVS_KEY_KEYMODE "keymode"
 #define NVS_KEY_SWAP "swap"
 #define NVS_KEY_TONE_HZ "tone_hz"
+#define NVS_KEY_VOLUME_PCT "volume_pct"
 
 static const char *TAG = "settings_store";
 
@@ -46,6 +47,11 @@ static esp_err_t load_from_nvs(morse_settings_t *out)
         out->tone_hz = morse_settings_clamp_tone_hz(raw_tone_hz);
     }
 
+    uint8_t raw_volume_pct;
+    if (nvs_get_u8(handle, NVS_KEY_VOLUME_PCT, &raw_volume_pct) == ESP_OK) {
+        out->volume_pct = morse_settings_clamp_volume_pct(raw_volume_pct);
+    }
+
     nvs_close(handle);
     return ESP_OK;
 }
@@ -76,6 +82,7 @@ esp_err_t settings_store_save(const morse_settings_t *in)
     nvs_set_u8(handle, NVS_KEY_KEYMODE, (uint8_t)in->keymode);
     nvs_set_u8(handle, NVS_KEY_SWAP, in->paddle_swap ? 1 : 0);
     nvs_set_u16(handle, NVS_KEY_TONE_HZ, in->tone_hz);
+    nvs_set_u8(handle, NVS_KEY_VOLUME_PCT, in->volume_pct);
 
     err = nvs_commit(handle);
     nvs_close(handle);

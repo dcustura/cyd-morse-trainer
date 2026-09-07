@@ -22,7 +22,7 @@
  * | TFT Backlight                      | 21   | GPIO (on/off)  |
  * | Touch MOSI / MISO / SCLK / CS      | 32 / 39 / 25 / 33     | SPI3 (VSPI) |
  * | Touch IRQ                          | -1 (polled; see above) |
- * | Speaker (onboard amp)              | 26   | GPIO / LEDC    |
+ * | Speaker (onboard amp)              | 26   | GPIO / DAC (DAC_CHAN_1) |
  * | Paddle DIT (also straight-key in)  | 22   | GPIO, input, pull-up |
  * | Paddle DAH                         | 27   | GPIO, input, pull-up |
  */

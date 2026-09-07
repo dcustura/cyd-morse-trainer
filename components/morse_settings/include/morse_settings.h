@@ -12,17 +12,21 @@ extern "C" {
 #define MORSE_SETTINGS_WPM_MAX 40
 #define MORSE_SETTINGS_TONE_HZ_MIN 300
 #define MORSE_SETTINGS_TONE_HZ_MAX 1200
+#define MORSE_SETTINGS_VOLUME_PCT_MIN 0
+#define MORSE_SETTINGS_VOLUME_PCT_MAX 100
 
 #define MORSE_SETTINGS_DEFAULT_WPM 15
 #define MORSE_SETTINGS_DEFAULT_KEYMODE IAMBIC_KEYER_MODE_B
 #define MORSE_SETTINGS_DEFAULT_PADDLE_SWAP false
 #define MORSE_SETTINGS_DEFAULT_TONE_HZ 600
+#define MORSE_SETTINGS_DEFAULT_VOLUME_PCT 50
 
 typedef struct {
     uint16_t wpm;
     iambic_keyer_mode_t keymode;
     bool paddle_swap;
     uint16_t tone_hz;
+    uint8_t volume_pct;
 } morse_settings_t;
 
 /** Clamp a WPM value to [MORSE_SETTINGS_WPM_MIN, MORSE_SETTINGS_WPM_MAX]. */
@@ -30,6 +34,9 @@ uint16_t morse_settings_clamp_wpm(uint16_t wpm);
 
 /** Clamp a sidetone frequency to [MORSE_SETTINGS_TONE_HZ_MIN, MORSE_SETTINGS_TONE_HZ_MAX]. */
 uint16_t morse_settings_clamp_tone_hz(uint16_t hz);
+
+/** Clamp a sidetone volume percentage to [MORSE_SETTINGS_VOLUME_PCT_MIN, MORSE_SETTINGS_VOLUME_PCT_MAX]. */
+uint8_t morse_settings_clamp_volume_pct(uint8_t pct);
 
 /** Validate a raw stored key-mode byte, falling back to the default key mode on an out-of-range value. */
 iambic_keyer_mode_t morse_settings_validate_keymode(uint8_t raw);

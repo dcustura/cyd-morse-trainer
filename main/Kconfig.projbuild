@@ -63,8 +63,13 @@ menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
             reliable.
 
     config MORSE_SPEAKER_GPIO
-        int "Speaker / sidetone LEDC GPIO"
+        int "Speaker / sidetone DAC GPIO"
         default 26
+        help
+            The sidetone is synthesized on the ESP32's built-in DAC, which
+            only exists on two fixed pins: GPIO25 (DAC channel 0) or GPIO26
+            (DAC channel 1). Changing this away from 26 also requires
+            updating SIDETONE_DAC_CHANNEL_MASK in main/sidetone.c to match.
 
     config MORSE_PADDLE_DIT_GPIO
         int "Paddle DIT GPIO (also the straight-key input)"
