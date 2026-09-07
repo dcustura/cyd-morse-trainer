@@ -15,7 +15,7 @@
 
 #define DECODED_CHAR_QUEUE_DEPTH 32
 
-static const char *TAG = "template_project";
+static const char *TAG = "morse_trainer";
 
 void app_main(void)
 {

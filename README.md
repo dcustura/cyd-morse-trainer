@@ -1,35 +1,52 @@
-# template-project
+# Morse Code Send Trainer
 
-A starting point for ESP-IDF (v6.1) projects, built with the official
-Espressif build system and testing conventions.
+A standalone Morse code **send trainer** for the ESP32-2432S028R ("Cheap
+Yellow Display"): the operator keys Morse on a physical iambic paddle or
+straight key wired to the board, and the device decodes the keying in real
+time into readable text on the touchscreen, with an audible sidetone while
+the key is down. See `docs/functional-spec.md` for the full behavior spec
+(screens, key modes, settings, persistence).
 
-- Default target chip: **ESP32** (set via `sdkconfig.defaults`, `CONFIG_IDF_TARGET`).
-  Change it at any time with `idf.py set-target <chip>`.
-- ESP-IDF is expected to be managed via the ESP-IDF Installation Manager
+- Target chip: **ESP32** (`sdkconfig.defaults`, `CONFIG_IDF_TARGET`).
+- Built with ESP-IDF **v6.1**, managed via the ESP-IDF Installation Manager
   (EIM). Commands below assume `idf.py` is available (either through the EIM
   shell activation, or via `eim run "idf.py <command>" <VERSION>`).
+
+## Hardware
+
+- Board: ESP32-2432S028R, 2.8" 320×240 TFT (ST7789-compatible) with
+  resistive XPT2046 touch, onboard speaker.
+- External input: a two-lever iambic paddle (or a straight key) wired to two
+  GPIOs on the board's header — dit and dah. A straight key is wired to the
+  same GPIO used for "dit" in paddle mode.
+- Pinout, and hardware quirks found during bring-up (touch axis swap/IRQ
+  unreliability, actual TFT controller ID), are documented in
+  `main/board_pins.h`. All pins are Kconfig-configurable
+  (`main/Kconfig.projbuild`, menu "Morse Trainer Hardware") in case your unit
+  differs — clone boards vary across production batches.
 
 ## Layout
 
 ```
 .
-├── CMakeLists.txt          # top-level project definition
-├── sdkconfig.defaults       # default target chip and app-wide config
-├── main/                    # application entry point (app_main)
+├── CMakeLists.txt           # top-level project definition
+├── sdkconfig.defaults       # target chip and app-wide config
+├── partitions.csv           # custom partition table (LVGL + drivers need more than the default factory app size)
+├── docs/
+│   └── functional-spec.md   # screens, settings, and behavior spec
+├── main/                    # app entry point, LVGL UI screens, display/touch/paddle glue
 └── components/
-    └── example_component/   # example hardware-independent component
-        ├── include/
-        ├── example_component.c
-        └── host_test/
-            └── example_component_test/   # native (Linux-target) Unity tests
+    ├── morse_codec/         # Morse element sequence -> character decoding
+    ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, straight key)
+    ├── morse_settings/      # persisted trainer settings (WPM, key mode, paddle swap, tone, ...)
+    ├── touch_calibration/   # touchscreen calibration math
+    └── example_component/   # hardware-independent example, kept as a reference for the host_test pattern below
 ```
 
-`example_component` is a small debounce filter with no ESP-IDF hardware
-dependencies, included purely to demonstrate the intended pattern: pure
-logic lives in a component, and that component ships its own native test
-project under `host_test/`.
+Each component under `components/` is hardware-independent logic with its
+own native (Linux-target) Unity test project under `host_test/`.
 
-## Building and flashing the application
+## Building and flashing
 
 ```bash
 idf.py build
@@ -38,7 +55,7 @@ idf.py -p <PORT> flash monitor
 
 ## Running unit tests natively (no device required)
 
-Every component that has testable logic gets a `host_test/<component>_test`
+Every component with testable logic has a `host_test/<component>_test`
 subdirectory: a self-contained ESP-IDF project that targets Linux
 (`CONFIG_IDF_TARGET_LINUX`) instead of a chip, links in only the component
 under test plus Unity, and runs as a native executable. This is the official
@@ -46,16 +63,17 @@ ESP-IDF pattern for host-based testing (see `idf.py --preview set-target
 linux` / `api-guides/host-apps` in the ESP-IDF docs), and it's how ESP-IDF
 tests its own components (e.g. `components/nvs_flash/host_test`).
 
-To build and run the tests for `example_component`:
+To build and run the tests for a component, e.g. `morse_codec`:
 
 ```bash
-cd components/example_component/host_test/example_component_test
+cd components/morse_codec/host_test/morse_codec_test
 idf.py build
-./build/example_component_test.elf
+./build/morse_codec_test.elf
 ```
 
-A passing run ends with a Unity summary line such as `5 Tests 0 Failures 0
-Ignored OK`.
+The same pattern applies to `iambic_keyer`, `morse_settings`,
+`touch_calibration`, and `example_component`. A passing run ends with a
+Unity summary line such as `5 Tests 0 Failures 0 Ignored OK`.
 
 ### Host build prerequisites
 
