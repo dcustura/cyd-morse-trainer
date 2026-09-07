@@ -258,12 +258,12 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_t *save_btn = lv_button_create(btn_row);
     lv_obj_add_event_cb(save_btn, save_btn_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *save_label = lv_label_create(save_btn);
-    lv_label_set_text(save_label, "Save");
+    lv_label_set_text(save_label, "OK");
 
     lv_obj_t *back_btn = lv_button_create(btn_row);
     lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "Back");
+    lv_label_set_text(back_label, "Cancel");
 
     return scr;
 }
