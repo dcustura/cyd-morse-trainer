@@ -1,22 +1,36 @@
 #include "ui_touch_test.h"
 
+#include <stdio.h>
+
 #define DOT_SIZE 6
 #define MIN_DOT_SPACING 4
 
 static lv_obj_t *s_draw_area;
+static lv_obj_t *s_coord_label;
 static lv_obj_t *s_back_screen;
 static lv_point_t s_last_dot;
 static bool s_has_last_dot;
 
-static void draw_dot(lv_coord_t x, lv_coord_t y)
+/*
+ * abs_x/abs_y are in the display's absolute coordinate system (what
+ * lv_indev_get_point() reports). lv_obj_set_pos() on a child positions it
+ * relative to its parent's content area, not in absolute coordinates - so
+ * without subtracting the draw area's own absolute offset first, every dot
+ * would land shifted by wherever the draw area sits within the screen (here,
+ * down by the title label's height), regardless of touch calibration.
+ */
+static void draw_dot(lv_coord_t abs_x, lv_coord_t abs_y)
 {
+    lv_area_t area;
+    lv_obj_get_coords(s_draw_area, &area);
+
     lv_obj_t *dot = lv_obj_create(s_draw_area);
     lv_obj_remove_style_all(dot);
     lv_obj_set_size(dot, DOT_SIZE, DOT_SIZE);
     lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(dot, lv_color_white(), 0);
     lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
-    lv_obj_set_pos(dot, x - DOT_SIZE / 2, y - DOT_SIZE / 2);
+    lv_obj_set_pos(dot, (abs_x - area.x1) - DOT_SIZE / 2, (abs_y - area.y1) - DOT_SIZE / 2);
 }
 
 static void on_touch_point(lv_event_t *e)
@@ -30,6 +44,10 @@ static void on_touch_point(lv_event_t *e)
 
     lv_point_t p;
     lv_indev_get_point(indev, &p);
+
+    char text[32];
+    snprintf(text, sizeof(text), "X: %d  Y: %d", (int)p.x, (int)p.y);
+    lv_label_set_text(s_coord_label, text);
 
     if (s_has_last_dot) {
         int32_t dx = p.x - s_last_dot.x;
@@ -79,6 +97,10 @@ lv_obj_t *ui_touch_test_create(void)
     lv_obj_t *title = lv_label_create(scr);
     lv_label_set_text(title, "Draw anywhere to check touch accuracy");
     lv_obj_set_style_text_color(title, lv_color_white(), 0);
+
+    s_coord_label = lv_label_create(scr);
+    lv_label_set_text(s_coord_label, "X: -  Y: -");
+    lv_obj_set_style_text_color(s_coord_label, lv_color_white(), 0);
 
     s_draw_area = lv_obj_create(scr);
     lv_obj_remove_style_all(s_draw_area);
