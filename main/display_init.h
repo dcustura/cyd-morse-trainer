@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 /**
- * Bring up the ILI9341 display and XPT2046 touch controller and initialize
+ * Bring up the ST7789 display and XPT2046 touch controller and initialize
  * LVGL on top of them (SPI buses, panel/touch drivers, backlight, LVGL port
  * display + touch input device).
  *

@@ -3,18 +3,25 @@
 /**
  * ESP32-2432S028R ("Cheap Yellow Display") pinout.
  *
- * Community-sourced (Random Nerd Tutorials / espboards.dev); clone boards
- * vary across production batches. Verify against your board's silkscreen
- * before wiring anything to it. All values below are Kconfig-configurable
- * (see main/Kconfig.projbuild) in case your unit differs.
+ * GPIO numbers confirmed by flashing real hardware. All values below are
+ * Kconfig-configurable (see main/Kconfig.projbuild) in case your unit
+ * differs - clone boards vary across production batches. Two things that
+ * did NOT match community-sourced expectations on this unit, found during
+ * hardware bring-up:
+ *   - The TFT controller identifies as ST7789, not ILI9341 (see
+ *     display_init.c) - this board ships with either interchangeably.
+ *   - The XPT2046 touch axes are swapped, partially inverted, and don't
+ *     span the full ADC range - see the calibration in display_init.c's
+ *     touch_process_coordinates(). Also, the touch IRQ line doesn't work
+ *     reliably on this unit; touch is polled instead (IRQ GPIO = -1).
  *
  * | Function                          | GPIO | Bus            |
  * |------------------------------------|------|----------------|
  * | TFT MOSI / MISO / SCLK / CS / DC   | 13 / 12 / 14 / 15 / 2 | SPI2 (HSPI) |
- * | TFT RST                            | not wired (-1); some revisions use GPIO4 |
+ * | TFT RST                            | 4    | GPIO, actively driven |
  * | TFT Backlight                      | 21   | GPIO (on/off)  |
  * | Touch MOSI / MISO / SCLK / CS      | 32 / 39 / 25 / 33     | SPI3 (VSPI) |
- * | Touch IRQ                          | 36   | GPIO, input-only, optional |
+ * | Touch IRQ                          | -1 (polled; see above) |
  * | Speaker (onboard amp)              | 26   | GPIO / LEDC    |
  * | Paddle DIT (also straight-key in)  | 22   | GPIO, input, pull-up |
  * | Paddle DAH                         | 27   | GPIO, input, pull-up |

@@ -1,6 +1,6 @@
 menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
 
-    comment "Community-sourced pinout - verify against your board's silkscreen before wiring."
+    comment "Pin numbers below confirmed on real ESP32-2432S028R hardware; touch IRQ and TFT reset defaults were corrected during hardware bring-up (see git history)."
 
     config MORSE_TFT_MOSI_GPIO
         int "TFT MOSI GPIO"
@@ -24,12 +24,12 @@ menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
 
     config MORSE_TFT_RST_GPIO
         int "TFT RST GPIO (-1 if not wired)"
-        default -1
+        default 4
         help
-            Most ESP32-2432S028R units do not wire a dedicated reset GPIO to
-            the ILI9341 (the panel driver falls back to a software reset).
-            Some board revisions wire RST to GPIO4 instead - if the display
-            fails to initialize, try that value.
+            Confirmed on real hardware: this board wires TFT reset to
+            GPIO4. Some other revisions may not wire a dedicated reset GPIO
+            at all (the panel driver falls back to a software reset) - if
+            the display fails to initialize on a different unit, try -1.
 
     config MORSE_TFT_BL_GPIO
         int "TFT backlight GPIO"
@@ -53,7 +53,14 @@ menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
 
     config MORSE_TOUCH_IRQ_GPIO
         int "Touch (XPT2046) IRQ GPIO (-1 to poll instead)"
-        default 36
+        default -1
+        help
+            Confirmed on real hardware: leave this at -1 (polling). Setting
+            a real GPIO here makes esp_lvgl_port switch to event-driven
+            touch reads that only happen when that interrupt fires: if the
+            IRQ line isn't behaving as expected, touch stops working
+            entirely with no error. Polling is slightly less efficient but
+            reliable.
 
     config MORSE_SPEAKER_GPIO
         int "Speaker / sidetone LEDC GPIO"
