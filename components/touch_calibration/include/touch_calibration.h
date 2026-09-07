@@ -57,16 +57,30 @@ void touch_calibration_set_defaults(touch_calibration_t *out);
  * Compute a calibration from 5 raw taps (indexed by touch_calibration_point_index_t):
  * the 4 screen corners plus a center tap used purely as a precision check.
  *
- * horiz_min/max and vert_min/max are each derived by averaging the matching
- * pair of corner samples. The result is rejected (returns false, *out left
- * unmodified) if either axis's corner samples are too close together
- * (TOUCH_CALIBRATION_MIN_RAW_SPAN) or if mapping the center tap through the
- * computed calibration lands more than TOUCH_CALIBRATION_MAX_CENTER_ERROR_PX
- * away from the true screen center - both signal an imprecise or mistaken
- * tap sequence that should be retried.
+ * The corner targets are assumed to sit target_margin screen pixels in from
+ * the true screen edges on each side (a UI showing crosshairs flush against
+ * the very edge would clip them and be unreliable to tap) - pass 0 if the
+ * corner samples were taken exactly at the true edges instead. horiz_min/max
+ * and vert_min/max are derived by averaging the matching pair of corner
+ * samples and then extrapolating outward by target_margin, so the stored
+ * calibration lines up with touch_calibration_apply()'s assumption that
+ * horiz_min/vert_min map to the true screen origin and horiz_max/vert_max
+ * map to the true far edge - not to the inset corner targets themselves.
+ * Skipping this extrapolation (i.e. always passing 0 regardless of the
+ * actual margin used) systematically overshoots away from screen center:
+ * every touch away from the middle would map further out than intended,
+ * roughly in proportion to its distance from center.
+ *
+ * The result is rejected (returns false, *out left unmodified) if either
+ * axis's corner samples are too close together (TOUCH_CALIBRATION_MIN_RAW_SPAN)
+ * or if mapping the center tap through the computed calibration lands more
+ * than TOUCH_CALIBRATION_MAX_CENTER_ERROR_PX away from the true screen
+ * center - both signal an imprecise or mistaken tap sequence that should be
+ * retried.
  */
 bool touch_calibration_compute(const touch_calibration_raw_point_t points[TOUCH_CAL_POINT_COUNT],
-                                uint16_t lcd_h_res, uint16_t lcd_v_res, touch_calibration_t *out);
+                                uint16_t lcd_h_res, uint16_t lcd_v_res, uint16_t target_margin,
+                                touch_calibration_t *out);
 
 /**
  * Map a raw touch sample to screen coordinates using *cal, clamped to

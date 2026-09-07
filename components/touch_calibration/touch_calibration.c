@@ -32,33 +32,53 @@ void touch_calibration_apply(const touch_calibration_t *cal, int32_t raw_horiz, 
 }
 
 bool touch_calibration_compute(const touch_calibration_raw_point_t points[TOUCH_CAL_POINT_COUNT],
-                                uint16_t lcd_h_res, uint16_t lcd_v_res, touch_calibration_t *out)
+                                uint16_t lcd_h_res, uint16_t lcd_v_res, uint16_t target_margin,
+                                touch_calibration_t *out)
 {
-    /* horiz_min/max and vert_min/max are each the average of the matching
-     * pair of corner taps; the center tap isn't used for the mapping
-     * itself, only as the precision check below. This assumes the same
-     * raw-value polarity (increasing raw = increasing screen position) that
-     * was empirically confirmed for this board's touch driver quirk - see
+    /* horiz_at_margin_min/max and vert_at_margin_min/max are each the
+     * average of the matching pair of corner taps - the raw values actually
+     * measured at the inset corner targets, target_margin pixels in from
+     * each true screen edge. This assumes the same raw-value polarity
+     * (increasing raw = increasing screen position) that was empirically
+     * confirmed for this board's touch driver quirk - see
      * main/display_init.c. */
-    int32_t horiz_min = (points[TOUCH_CAL_POINT_TOP_LEFT].raw_horiz
-                          + points[TOUCH_CAL_POINT_BOTTOM_LEFT].raw_horiz) / 2;
-    int32_t horiz_max = (points[TOUCH_CAL_POINT_TOP_RIGHT].raw_horiz
-                          + points[TOUCH_CAL_POINT_BOTTOM_RIGHT].raw_horiz) / 2;
-    int32_t vert_min = (points[TOUCH_CAL_POINT_TOP_LEFT].raw_vert
-                         + points[TOUCH_CAL_POINT_TOP_RIGHT].raw_vert) / 2;
-    int32_t vert_max = (points[TOUCH_CAL_POINT_BOTTOM_LEFT].raw_vert
-                         + points[TOUCH_CAL_POINT_BOTTOM_RIGHT].raw_vert) / 2;
+    int32_t horiz_at_margin_min = (points[TOUCH_CAL_POINT_TOP_LEFT].raw_horiz
+                                    + points[TOUCH_CAL_POINT_BOTTOM_LEFT].raw_horiz) / 2;
+    int32_t horiz_at_margin_max = (points[TOUCH_CAL_POINT_TOP_RIGHT].raw_horiz
+                                    + points[TOUCH_CAL_POINT_BOTTOM_RIGHT].raw_horiz) / 2;
+    int32_t vert_at_margin_min = (points[TOUCH_CAL_POINT_TOP_LEFT].raw_vert
+                                   + points[TOUCH_CAL_POINT_TOP_RIGHT].raw_vert) / 2;
+    int32_t vert_at_margin_max = (points[TOUCH_CAL_POINT_BOTTOM_LEFT].raw_vert
+                                   + points[TOUCH_CAL_POINT_BOTTOM_RIGHT].raw_vert) / 2;
 
-    if (horiz_max - horiz_min < TOUCH_CALIBRATION_MIN_RAW_SPAN
-        || vert_max - vert_min < TOUCH_CALIBRATION_MIN_RAW_SPAN) {
+    if (horiz_at_margin_max - horiz_at_margin_min < TOUCH_CALIBRATION_MIN_RAW_SPAN
+        || vert_at_margin_max - vert_at_margin_min < TOUCH_CALIBRATION_MIN_RAW_SPAN) {
         return false;
     }
 
+    /* The corner targets sit target_margin pixels in from the true edges,
+     * so extrapolate the raw-per-pixel rate seen between them outward to
+     * find the raw value that would occur at the true edges (screen 0 and
+     * lcd_*_res-1) - the values touch_calibration_apply() actually expects
+     * in horiz_min/max and vert_min/max. */
+    int32_t usable_w = (int32_t)lcd_h_res - 1 - 2 * (int32_t)target_margin;
+    int32_t usable_h = (int32_t)lcd_v_res - 1 - 2 * (int32_t)target_margin;
+    if (usable_w <= 0 || usable_h <= 0) {
+        return false;
+    }
+
+    int32_t horiz_span = horiz_at_margin_max - horiz_at_margin_min;
+    int32_t vert_span = vert_at_margin_max - vert_at_margin_min;
+    int32_t horiz_min = horiz_at_margin_min - horiz_span * (int32_t)target_margin / usable_w;
+    int32_t horiz_max = horiz_at_margin_max + horiz_span * (int32_t)target_margin / usable_w;
+    int32_t vert_min = vert_at_margin_min - vert_span * (int32_t)target_margin / usable_h;
+    int32_t vert_max = vert_at_margin_max + vert_span * (int32_t)target_margin / usable_h;
+
     touch_calibration_t candidate = {
-        .horiz_min = (uint16_t)horiz_min,
-        .horiz_max = (uint16_t)horiz_max,
-        .vert_min = (uint16_t)vert_min,
-        .vert_max = (uint16_t)vert_max,
+        .horiz_min = (uint16_t)clamp_i32(horiz_min, 0, UINT16_MAX),
+        .horiz_max = (uint16_t)clamp_i32(horiz_max, 0, UINT16_MAX),
+        .vert_min = (uint16_t)clamp_i32(vert_min, 0, UINT16_MAX),
+        .vert_max = (uint16_t)clamp_i32(vert_max, 0, UINT16_MAX),
     };
 
     uint16_t center_x, center_y;

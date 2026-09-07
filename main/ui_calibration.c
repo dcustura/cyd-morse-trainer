@@ -125,7 +125,7 @@ static void poll_timer_cb(lv_timer_t *timer)
             show_target(s_current_index + 1, NULL);
         } else {
             touch_calibration_t cal;
-            if (touch_calibration_compute(s_samples, s_disp_w, s_disp_h, &cal)) {
+            if (touch_calibration_compute(s_samples, s_disp_w, s_disp_h, TARGET_MARGIN, &cal)) {
                 touch_cal_store_save(&cal);
                 display_touch_apply_calibration(&cal);
                 lv_scr_load(s_next_screen);
