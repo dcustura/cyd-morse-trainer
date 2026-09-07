@@ -41,6 +41,17 @@ void display_touch_set_raw_mode(bool enable);
  */
 bool display_touch_read_point(uint16_t *x, uint16_t *y);
 
+/**
+ * Map a raw sample (as returned by display_touch_read_point() while raw
+ * mode is enabled) to an approximate screen coordinate, using whatever
+ * calibration is currently applied - regardless of raw mode. Intended for
+ * hit-testing fixed UI controls (e.g. a Back button) from within the
+ * calibration screen's own raw-sample polling loop, since raw mode also
+ * defeats LVGL's normal click detection for every on-screen control while
+ * it's enabled.
+ */
+void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16_t *x, uint16_t *y);
+
 #ifdef __cplusplus
 }
 #endif

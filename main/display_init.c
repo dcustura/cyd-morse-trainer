@@ -249,3 +249,8 @@ bool display_touch_read_point(uint16_t *x, uint16_t *y)
     *y = point.y;
     return true;
 }
+
+void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16_t *x, uint16_t *y)
+{
+    touch_calibration_apply(&s_touch_cal, raw_horiz, raw_vert, LCD_H_RES, LCD_V_RES, x, y);
+}

@@ -9,6 +9,7 @@
 #include "ui_menu.h"
 #include "ui_practice.h"
 #include "ui_settings.h"
+#include "ui_touch_test.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
@@ -40,10 +41,13 @@ void app_main(void)
 
     lv_obj_t *menu_screen = lv_obj_create(NULL);
     lv_obj_t *calibration_screen = ui_calibration_create(menu_screen);
+    lv_obj_t *touch_test_screen = ui_touch_test_create();
     lv_obj_t *practice_screen = ui_practice_create(decoded_char_queue, menu_screen,
                                                     settings.keymode, settings.wpm);
-    lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, settings.keymode,
-                                                    settings.wpm, settings.paddle_swap, settings.tone_hz);
+    lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
+                                                    settings.keymode, settings.wpm, settings.paddle_swap,
+                                                    settings.tone_hz);
+    ui_touch_test_set_back_target(settings_screen);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 

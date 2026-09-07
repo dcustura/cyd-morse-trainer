@@ -8,6 +8,7 @@ idf_component_register(SRCS "main.c"
                              "ui_menu.c"
                              "ui_practice.c"
                              "ui_settings.c"
+                             "ui_touch_test.c"
                        INCLUDE_DIRS "."
                        REQUIRES example_component
                                 iambic_keyer

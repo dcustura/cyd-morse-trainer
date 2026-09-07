@@ -4,6 +4,7 @@
 #include "settings_store.h"
 #include "sidetone.h"
 #include "touch_cal_store.h"
+#include "ui_calibration.h"
 
 #include "esp_system.h"
 
@@ -16,6 +17,7 @@
 #define TONE_HZ_MAX MORSE_SETTINGS_TONE_HZ_MAX
 #define TEST_TONE_DURATION_MS 300
 
+static lv_obj_t *s_settings_screen;
 static lv_obj_t *s_wpm_slider;
 static lv_obj_t *s_wpm_value_label;
 static lv_obj_t *s_mode_dropdown;
@@ -92,6 +94,13 @@ static void nav_btn_cb(lv_event_t *e)
     lv_scr_load(target_screen);
 }
 
+static void calibrate_btn_cb(lv_event_t *e)
+{
+    lv_obj_t *calibration_screen = (lv_obj_t *)lv_event_get_user_data(e);
+    ui_calibration_set_cancel_target(s_settings_screen);
+    lv_scr_load(calibration_screen);
+}
+
 static void reset_confirm_btn_cb(lv_event_t *e)
 {
     lv_obj_t *btn = lv_event_get_target_obj(e);
@@ -123,10 +132,11 @@ static void reset_btn_cb(lv_event_t *e)
 }
 
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
-                              iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
-                              bool initial_swap, uint16_t initial_tone_hz)
+                              lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
+                              uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
+    s_settings_screen = scr;
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
 
     lv_obj_t *title = lv_label_create(scr);
@@ -168,9 +178,14 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_label_set_text(test_tone_label, "Test tone");
 
     lv_obj_t *calibrate_btn = lv_button_create(scr);
-    lv_obj_add_event_cb(calibrate_btn, nav_btn_cb, LV_EVENT_CLICKED, calibration_screen);
+    lv_obj_add_event_cb(calibrate_btn, calibrate_btn_cb, LV_EVENT_CLICKED, calibration_screen);
     lv_obj_t *calibrate_label = lv_label_create(calibrate_btn);
     lv_label_set_text(calibrate_label, "Calibrate Touchscreen");
+
+    lv_obj_t *verify_btn = lv_button_create(scr);
+    lv_obj_add_event_cb(verify_btn, nav_btn_cb, LV_EVENT_CLICKED, touch_test_screen);
+    lv_obj_t *verify_label = lv_label_create(verify_btn);
+    lv_label_set_text(verify_label, "Verify Calibration");
 
     lv_obj_t *reset_btn = lv_button_create(scr);
     lv_obj_add_event_cb(reset_btn, reset_btn_cb, LV_EVENT_CLICKED, NULL);
