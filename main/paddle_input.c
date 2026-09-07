@@ -12,6 +12,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include <stdatomic.h>
+
 static const char *TAG = "paddle_input";
 
 #define PADDLE_TASK_STACK 4096
@@ -24,6 +26,7 @@ static iambic_keyer_t s_keyer;
 static morse_codec_t s_codec;
 static volatile bool s_paddle_swap;
 static QueueHandle_t s_decoded_char_queue;
+static _Atomic bool s_key_down_state;
 
 static void configure_input_gpio(int gpio)
 {
@@ -90,6 +93,7 @@ static void paddle_task(void *arg)
 
         if (key_down != prev_key_down) {
             sidetone_key(key_down);
+            atomic_store_explicit(&s_key_down_state, key_down, memory_order_relaxed);
             char out_char = 0;
             morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now_ms, &out_char);
             handle_decode_event(event, out_char);
@@ -126,6 +130,11 @@ void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mo
 void paddle_input_reset_decoder(void)
 {
     morse_codec_reset(&s_codec);
+}
+
+bool paddle_input_is_keying(void)
+{
+    return atomic_load_explicit(&s_key_down_state, memory_order_relaxed);
 }
 
 void paddle_input_set_mode(iambic_keyer_mode_t mode)

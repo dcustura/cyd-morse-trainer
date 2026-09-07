@@ -38,6 +38,19 @@ static const char *TAG = "display_init";
 #define LCD_RGB_ORDER LCD_RGB_ELEMENT_ORDER_BGR
 #define LCD_INVERT_COLOR true
 
+/*
+ * LCD_RGB_ORDER=BGR + LCD_INVERT_COLOR=true combine, for this panel, into an
+ * end-to-end R/B swap plus per-channel invert on anything drawn through
+ * LVGL. Confirmed on hardware: a pure-red lv_obj background rendered as
+ * pure yellow. Black/white/grey content (the only colors used before the
+ * keying dot in ui_practice.c) is a fixed point of that transform, so it
+ * went unnoticed until the first saturated color was added. To get a color
+ * C on screen, feed LVGL invert_channels(swap_rb(C)) instead of C - e.g.
+ * screen-red is software-yellow (255,255,0). Don't "fix" this by flipping
+ * these two defines without re-testing swap_xy/mirror/touch calibration,
+ * which were tuned against the current values.
+ */
+
 static esp_lcd_panel_io_handle_t s_tft_io_handle;
 static esp_lcd_panel_handle_t s_tft_panel_handle;
 static esp_lcd_panel_io_handle_t s_touch_io_handle;

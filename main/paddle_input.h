@@ -28,6 +28,13 @@ void paddle_input_set_swap(bool swap);
 /* Clears in-progress decode state (called from the Practice screen's Clear button). */
 void paddle_input_reset_decoder(void);
 
+/**
+ * True while the key (straight key or either paddle, per the iambic keyer)
+ * is down and the sidetone is sounding. Safe to poll from the UI task to
+ * drive a visual keying indicator.
+ */
+bool paddle_input_is_keying(void);
+
 #ifdef __cplusplus
 }
 #endif

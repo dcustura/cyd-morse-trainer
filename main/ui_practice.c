@@ -7,6 +7,7 @@
 #define QUEUE_DRAIN_PERIOD_MS 30
 
 static lv_obj_t *s_text_label;
+static lv_obj_t *s_keying_dot;
 static QueueHandle_t s_decoded_char_queue;
 
 static const char *mode_name(iambic_keyer_mode_t mode)
@@ -30,6 +31,12 @@ static void drain_queue_timer_cb(lv_timer_t *timer)
     while (xQueueReceive(s_decoded_char_queue, &ch, 0) == pdTRUE) {
         char text[2] = { ch, '\0' };
         lv_label_ins_text(s_text_label, LV_LABEL_POS_LAST, text);
+    }
+
+    if (paddle_input_is_keying()) {
+        lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_add_flag(s_keying_dot, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -79,6 +86,27 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Back");
+
+    /* Layout must run once so clear_btn's height reflects its label/padding. */
+    lv_obj_update_layout(btn_row);
+    int32_t dot_diameter = lv_obj_get_height(clear_btn) / 2;
+
+    s_keying_dot = lv_obj_create(btn_row);
+    lv_obj_remove_style_all(s_keying_dot);
+    lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_flag(s_keying_dot, LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_HIDDEN);
+    lv_obj_set_size(s_keying_dot, dot_diameter, dot_diameter);
+    lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
+    /*
+     * This panel's rgb_ele_order(BGR) + invert_color config (display_init.c)
+     * combine to swap R/B and complement every channel for anything but
+     * pure black/white/grey (which that transform leaves unchanged - why no
+     * earlier UI color exposed this). Compensate by feeding the transform's
+     * inverse: pure yellow in software renders as pure red on screen.
+     */
+    lv_obj_set_style_bg_color(s_keying_dot, lv_color_make(255, 255, 0), 0);
+    lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_COVER, 0);
+    lv_obj_align(s_keying_dot, LV_ALIGN_RIGHT_MID, 0, 0);
 
     lv_timer_create(drain_queue_timer_cb, QUEUE_DRAIN_PERIOD_MS, NULL);
 
