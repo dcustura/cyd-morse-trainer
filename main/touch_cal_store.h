@@ -20,6 +20,9 @@ esp_err_t touch_cal_store_load(touch_calibration_t *out, bool *found);
 /** Persist a calibration to NVS so it survives a power cycle. */
 esp_err_t touch_cal_store_save(const touch_calibration_t *in);
 
+/** Erase any stored calibration so the next load falls back to factory defaults. */
+esp_err_t touch_cal_store_reset(void);
+
 #ifdef __cplusplus
 }
 #endif

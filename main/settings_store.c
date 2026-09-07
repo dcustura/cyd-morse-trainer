@@ -81,3 +81,18 @@ esp_err_t settings_store_save(const morse_settings_t *in)
     nvs_close(handle);
     return err;
 }
+
+esp_err_t settings_store_reset(void)
+{
+    nvs_handle_t handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "nvs_open failed: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    nvs_erase_all(handle);
+    err = nvs_commit(handle);
+    nvs_close(handle);
+    return err;
+}

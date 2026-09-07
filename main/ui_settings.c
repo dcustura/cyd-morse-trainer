@@ -3,8 +3,12 @@
 #include "paddle_input.h"
 #include "settings_store.h"
 #include "sidetone.h"
+#include "touch_cal_store.h"
+
+#include "esp_system.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define WPM_MIN MORSE_SETTINGS_WPM_MIN
 #define WPM_MAX MORSE_SETTINGS_WPM_MAX
@@ -88,6 +92,36 @@ static void nav_btn_cb(lv_event_t *e)
     lv_scr_load(target_screen);
 }
 
+static void reset_confirm_btn_cb(lv_event_t *e)
+{
+    lv_obj_t *btn = lv_event_get_target_obj(e);
+    lv_obj_t *btn_label = lv_obj_get_child(btn, 0);
+    lv_obj_t *mbox = (lv_obj_t *)lv_event_get_user_data(e);
+
+    if (strcmp(lv_label_get_text(btn_label), "Reset") == 0) {
+        settings_store_reset();
+        touch_cal_store_reset();
+        esp_restart();
+    }
+
+    lv_msgbox_close(mbox);
+}
+
+static void reset_btn_cb(lv_event_t *e)
+{
+    (void)e;
+
+    lv_obj_t *mbox = lv_msgbox_create(NULL);
+    lv_msgbox_add_title(mbox, "Reset to Factory Defaults?");
+    lv_msgbox_add_text(mbox, "This clears all keyer settings and the touch calibration, then restarts the device.");
+
+    lv_obj_t *reset_confirm_btn = lv_msgbox_add_footer_button(mbox, "Reset");
+    lv_obj_add_event_cb(reset_confirm_btn, reset_confirm_btn_cb, LV_EVENT_CLICKED, mbox);
+
+    lv_obj_t *cancel_btn = lv_msgbox_add_footer_button(mbox, "Cancel");
+    lv_obj_add_event_cb(cancel_btn, reset_confirm_btn_cb, LV_EVENT_CLICKED, mbox);
+}
+
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
                               bool initial_swap, uint16_t initial_tone_hz)
@@ -137,6 +171,11 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_add_event_cb(calibrate_btn, nav_btn_cb, LV_EVENT_CLICKED, calibration_screen);
     lv_obj_t *calibrate_label = lv_label_create(calibrate_btn);
     lv_label_set_text(calibrate_label, "Calibrate Touchscreen");
+
+    lv_obj_t *reset_btn = lv_button_create(scr);
+    lv_obj_add_event_cb(reset_btn, reset_btn_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *reset_label = lv_label_create(reset_btn);
+    lv_label_set_text(reset_label, "Reset to Factory Defaults");
 
     lv_obj_t *btn_row = lv_obj_create(scr);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);

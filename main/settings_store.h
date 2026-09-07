@@ -19,6 +19,9 @@ esp_err_t settings_store_init_and_load(morse_settings_t *out);
 /** Persist settings to NVS so they survive a power cycle. */
 esp_err_t settings_store_save(const morse_settings_t *in);
 
+/** Erase any stored settings so the next load falls back to compiled-in defaults. */
+esp_err_t settings_store_reset(void);
+
 #ifdef __cplusplus
 }
 #endif
