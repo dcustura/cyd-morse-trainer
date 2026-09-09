@@ -9,7 +9,8 @@
 
 #define QUEUE_DRAIN_PERIOD_MS 30
 
-static lv_obj_t *s_status_label;
+static lv_obj_t *s_wpm_label;
+static lv_obj_t *s_mode_label;
 static lv_obj_t *s_text_spans;
 static lv_obj_t *s_keying_dot;
 static QueueHandle_t s_decoded_char_queue;
@@ -103,10 +104,8 @@ static const char *mode_name(iambic_keyer_mode_t mode)
 
 static void update_status_label(void)
 {
-    char status_text[48];
-    snprintf(status_text, sizeof(status_text), "WPM: %u   Mode: %s",
-             (unsigned)paddle_input_get_wpm(), mode_name(paddle_input_get_mode()));
-    lv_label_set_text(s_status_label, status_text);
+    lv_label_set_text_fmt(s_wpm_label, "WPM: %u", (unsigned)paddle_input_get_wpm());
+    lv_label_set_text_fmt(s_mode_label, "Mode: %s", mode_name(paddle_input_get_mode()));
 }
 
 static void screen_loaded_cb(lv_event_t *e)
@@ -155,12 +154,6 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_add_event_cb(scr, screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
 
-    char status_text[48];
-    snprintf(status_text, sizeof(status_text), "WPM: %u   Mode: %s",
-             (unsigned)initial_wpm, mode_name(initial_mode));
-    s_status_label = lv_label_create(scr);
-    lv_label_set_text(s_status_label, status_text);
-
     s_text_spans = lv_spangroup_create(scr);
     lv_spangroup_set_mode(s_text_spans, LV_SPAN_MODE_BREAK);
     lv_spangroup_set_overflow(s_text_spans, LV_SPAN_OVERFLOW_CLIP);
@@ -183,6 +176,17 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Back");
+
+    lv_obj_t *status_col = lv_obj_create(btn_row);
+    lv_obj_remove_style_all(status_col);
+    lv_obj_set_flex_flow(status_col, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(status_col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+
+    s_wpm_label = lv_label_create(status_col);
+    lv_label_set_text_fmt(s_wpm_label, "WPM: %u", (unsigned)initial_wpm);
+
+    s_mode_label = lv_label_create(status_col);
+    lv_label_set_text_fmt(s_mode_label, "Mode: %s", mode_name(initial_mode));
 
     /* Layout must run once so clear_btn's height reflects its label/padding. */
     lv_obj_update_layout(btn_row);
