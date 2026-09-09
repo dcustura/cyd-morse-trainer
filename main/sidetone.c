@@ -171,16 +171,15 @@ static void audio_task(void *arg)
     while (1) {
         if (s_env_state == ENV_IDLE && !atomic_load_explicit(&s_key_down, memory_order_relaxed)) {
             /*
-             * Fully silent: power the DAC channel down instead of leaving it
-             * actively driving a static voltage. Even a constant DAC output
-             * picks up audible noise from the chip's own digital activity
-             * (SPI to the display, CPU switching, etc.) via poor analog
-             * isolation; disabling it between tones avoids that.
-             * sidetone_key(true) re-enables it and wakes this back up.
+             * Idle: the DAC channel stays enabled and keeps outputting the
+             * last written sample (the mid-scale "silence" level, 128) with
+             * no further writes needed. Powering the channel down between
+             * tones was tried to cut noise pickup during silence, but the
+             * power-up/down transition itself is an audible click, worse
+             * than the noise it avoided, so just block until
+             * sidetone_key(true) wakes this back up.
              */
-            dac_continuous_disable(s_dac_handle);
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-            dac_continuous_enable(s_dac_handle);
             continue;
         }
 
