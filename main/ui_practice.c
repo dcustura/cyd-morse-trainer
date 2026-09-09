@@ -11,6 +11,7 @@
 
 static lv_obj_t *s_wpm_label;
 static lv_obj_t *s_mode_label;
+static lv_obj_t *s_text_container;
 static lv_obj_t *s_text_spans;
 static lv_obj_t *s_keying_dot;
 static QueueHandle_t s_decoded_char_queue;
@@ -114,12 +115,28 @@ static void screen_loaded_cb(lv_event_t *e)
     update_status_label();
 }
 
+/* The spangroup's own height tracks its text content (LV_SPAN_MODE_BREAK),
+ * while s_text_container has a fixed, flex-allocated height and scrolls.
+ * Scrolling to the bottom after new text is appended keeps the most
+ * recently decoded characters in view once the content overflows. */
+static void scroll_text_to_bottom(void)
+{
+    lv_obj_update_layout(s_text_container);
+    lv_obj_scroll_to_y(s_text_container, LV_COORD_MAX, LV_ANIM_OFF);
+}
+
 static void drain_queue_timer_cb(lv_timer_t *timer)
 {
     (void)timer;
     char ch;
+    bool appended = false;
     while (xQueueReceive(s_decoded_char_queue, &ch, 0) == pdTRUE) {
         append_decoded_char(ch);
+        appended = true;
+    }
+
+    if (appended) {
+        scroll_text_to_bottom();
     }
 
     if (paddle_input_is_keying()) {
@@ -137,6 +154,7 @@ static void clear_btn_cb(lv_event_t *e)
     }
     reset_plain_run();
     paddle_input_reset_decoder();
+    lv_obj_scroll_to_y(s_text_container, 0, LV_ANIM_OFF);
 }
 
 static void back_btn_cb(lv_event_t *e)
@@ -154,11 +172,19 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_add_event_cb(scr, screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
 
-    s_text_spans = lv_spangroup_create(scr);
+    /* s_text_container has a fixed, flex-allocated height and scrolls;
+     * the spangroup inside it is left to size itself to its text content
+     * (LV_SPAN_MODE_BREAK) so growth beyond the container's height can be
+     * scrolled into view instead of being clipped and lost. */
+    s_text_container = lv_obj_create(scr);
+    lv_obj_set_width(s_text_container, LV_PCT(100));
+    lv_obj_set_flex_grow(s_text_container, 1);
+    lv_obj_set_scroll_dir(s_text_container, LV_DIR_VER);
+
+    s_text_spans = lv_spangroup_create(s_text_container);
     lv_spangroup_set_mode(s_text_spans, LV_SPAN_MODE_BREAK);
     lv_spangroup_set_overflow(s_text_spans, LV_SPAN_OVERFLOW_CLIP);
     lv_obj_set_width(s_text_spans, LV_PCT(100));
-    lv_obj_set_flex_grow(s_text_spans, 1);
     reset_plain_run();
 
     lv_obj_t *btn_row = lv_obj_create(scr);
