@@ -18,7 +18,44 @@ static const morse_table_entry_t MORSE_TABLE[] = {
     { "-----", '0' }, { ".----", '1' }, { "..---", '2' }, { "...--", '3' },
     { "....-", '4' }, { ".....", '5' }, { "-....", '6' }, { "--...", '7' },
     { "---..", '8' }, { "----.", '9' },
+
+    /* Punctuation. Four of these sequences are also the standard timing for
+     * a prosign sent as one unbroken sequence (BT = -...-, AR = .-.-.,
+     * KN = -.--., AS = .-...); by convention those decode to the
+     * punctuation glyph rather than a separate prosign symbol. */
+    { ".-.-.-", '.' },  { "--..--", ',' }, { "..--..", '?' }, { ".----.", '\'' },
+    { "-.-.--", '!' },  { "-..-.", '/' },  { "-.--.", '(' },  { "-.--.-", ')' },
+    { ".-...", '&' },   { "---...", ':' }, { "-.-.-.", ';' }, { "-...-", '=' },
+    { ".-.-.", '+' },   { "-....-", '-' }, { "..--.-", '_' }, { ".-..-.", '"' },
+    { "...-..-", '$' }, { ".--.-.", '@' },
+
+    /* Prosigns with no punctuation equivalent; decode to a sentinel value
+     * (see morse_codec.h) rather than a printable glyph. */
+    { "...-.-", MORSE_CODEC_PROSIGN_SK }, { "........", MORSE_CODEC_PROSIGN_HH },
+    { "...-.", MORSE_CODEC_PROSIGN_VE },  { "-.-.-", MORSE_CODEC_PROSIGN_CT },
 };
+
+typedef struct {
+    char ch;
+    const char *name;
+} prosign_name_entry_t;
+
+static const prosign_name_entry_t PROSIGN_NAMES[] = {
+    { MORSE_CODEC_PROSIGN_SK, "SK" },
+    { MORSE_CODEC_PROSIGN_HH, "HH" },
+    { MORSE_CODEC_PROSIGN_VE, "VE" },
+    { MORSE_CODEC_PROSIGN_CT, "CT" },
+};
+
+const char *morse_codec_prosign_name(char ch)
+{
+    for (size_t i = 0; i < sizeof(PROSIGN_NAMES) / sizeof(PROSIGN_NAMES[0]); ++i) {
+        if (PROSIGN_NAMES[i].ch == ch) {
+            return PROSIGN_NAMES[i].name;
+        }
+    }
+    return NULL;
+}
 
 static void reset_decode_state(morse_codec_t *codec)
 {
@@ -77,7 +114,7 @@ static morse_codec_event_t flush_char(morse_codec_t *codec, char *out_char)
     }
 
     if (out_char) {
-        *out_char = '?';
+        *out_char = MORSE_CODEC_UNKNOWN_CHAR;
     }
     return MORSE_CODEC_EVENT_UNKNOWN;
 }

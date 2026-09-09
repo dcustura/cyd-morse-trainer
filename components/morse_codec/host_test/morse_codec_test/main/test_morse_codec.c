@@ -147,7 +147,82 @@ TEST(morse_codec, unknown_sequence_returns_unknown)
 
     t += 2 * TEST_UNIT_MS;
     TEST_ASSERT_EQUAL(MORSE_CODEC_EVENT_UNKNOWN, morse_codec_tick(&s_codec, t, &out));
-    TEST_ASSERT_EQUAL('?', out);
+    TEST_ASSERT_EQUAL(MORSE_CODEC_UNKNOWN_CHAR, out);
+}
+
+/* Feeds one already-classified dot/dash sequence (e.g. "-.-.--") through the
+ * codec as key events with 1-unit intra-character gaps, then flushes via the
+ * trailing character-gap silence. Mirrors decodes_sos_over_a_full_paris_timed_sequence
+ * but generalized to any sequence, for exercising punctuation/prosign entries
+ * without repeating the full timed dance per character. */
+static char decode_sequence(const char *seq)
+{
+    char out = 0;
+    uint32_t t = 1000;
+
+    for (const char *p = seq; *p != '\0'; ++p) {
+        TEST_ASSERT_EQUAL(MORSE_CODEC_EVENT_NONE, morse_codec_key_event(&s_codec, true, t, &out));
+        t += (*p == '.') ? TEST_UNIT_MS : 3 * TEST_UNIT_MS;
+        TEST_ASSERT_EQUAL(MORSE_CODEC_EVENT_NONE, morse_codec_key_event(&s_codec, false, t, &out));
+        t += TEST_UNIT_MS; /* 1-unit intra-character gap */
+    }
+
+    t += 2 * TEST_UNIT_MS; /* extend the trailing gap to character-gap length */
+    morse_codec_event_t event = morse_codec_tick(&s_codec, t, &out);
+    TEST_ASSERT_TRUE(event == MORSE_CODEC_EVENT_CHAR || event == MORSE_CODEC_EVENT_UNKNOWN);
+    return out;
+}
+
+TEST(morse_codec, decodes_punctuation)
+{
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('.', decode_sequence(".-.-.-"));
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL(',', decode_sequence("--..--"));
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('?', decode_sequence("..--.."));
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('/', decode_sequence("-..-."));
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('@', decode_sequence(".--.-."));
+}
+
+TEST(morse_codec, prosigns_sharing_a_punctuation_sequence_decode_to_that_punctuation)
+{
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('=', decode_sequence("-...-"));   /* BT */
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('+', decode_sequence(".-.-."));   /* AR */
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('(', decode_sequence("-.--."));   /* KN */
+    morse_codec_reset(&s_codec);
+    TEST_ASSERT_EQUAL('&', decode_sequence(".-..."));   /* AS */
+}
+
+TEST(morse_codec, unique_prosigns_decode_to_a_named_sentinel)
+{
+    morse_codec_reset(&s_codec);
+    char sk = decode_sequence("...-.-");
+    TEST_ASSERT_EQUAL(MORSE_CODEC_PROSIGN_SK, sk);
+    TEST_ASSERT_EQUAL_STRING("SK", morse_codec_prosign_name(sk));
+
+    morse_codec_reset(&s_codec);
+    char hh = decode_sequence("........");
+    TEST_ASSERT_EQUAL(MORSE_CODEC_PROSIGN_HH, hh);
+    TEST_ASSERT_EQUAL_STRING("HH", morse_codec_prosign_name(hh));
+
+    morse_codec_reset(&s_codec);
+    char ve = decode_sequence("...-.");
+    TEST_ASSERT_EQUAL(MORSE_CODEC_PROSIGN_VE, ve);
+    TEST_ASSERT_EQUAL_STRING("VE", morse_codec_prosign_name(ve));
+
+    morse_codec_reset(&s_codec);
+    char ct = decode_sequence("-.-.-");
+    TEST_ASSERT_EQUAL(MORSE_CODEC_PROSIGN_CT, ct);
+    TEST_ASSERT_EQUAL_STRING("CT", morse_codec_prosign_name(ct));
+
+    TEST_ASSERT_NULL(morse_codec_prosign_name('A'));
+    TEST_ASSERT_NULL(morse_codec_prosign_name(MORSE_CODEC_UNKNOWN_CHAR));
 }
 
 TEST(morse_codec, set_wpm_mid_stream_changes_subsequent_classification)
@@ -185,4 +260,7 @@ TEST_GROUP_RUNNER(morse_codec)
     RUN_TEST_CASE(morse_codec, decodes_sos_over_a_full_paris_timed_sequence);
     RUN_TEST_CASE(morse_codec, unknown_sequence_returns_unknown);
     RUN_TEST_CASE(morse_codec, set_wpm_mid_stream_changes_subsequent_classification);
+    RUN_TEST_CASE(morse_codec, decodes_punctuation);
+    RUN_TEST_CASE(morse_codec, prosigns_sharing_a_punctuation_sequence_decode_to_that_punctuation);
+    RUN_TEST_CASE(morse_codec, unique_prosigns_decode_to_a_named_sentinel);
 }

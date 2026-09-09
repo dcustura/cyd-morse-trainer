@@ -41,10 +41,19 @@ It does not teach receiving/copying code — it is a tool for practicing
      state.
    - "Back" button returns to the Main Menu.
    - Behavior: every completed character is appended to the text area;
-     word gaps insert a space; a sequence that doesn't match any known
-     Morse character is shown as a distinguishable placeholder (rather than
-     silently dropped) so the operator can see a mis-keyed character
-     happened.
+     word gaps insert a space.
+   - Decodable characters: the 26 letters, 10 digits, and standard Morse
+     punctuation (`. , ? ' ! / ( ) & : ; = + - _ " $ @`).
+   - Prosigns (procedural signals, sent as one unbroken sequence with no
+     gap between "letters") are recognized too. Ones whose timing matches
+     an existing punctuation mark decode to that punctuation glyph, by
+     convention: BT → `=`, AR → `+`, KN → `(`, AS → `&`. The remaining
+     prosigns with no punctuation equivalent — SK, HH, VE, CT — are shown
+     as their two-letter abbreviation with an underline, so they read as a
+     single procedural unit rather than two ordinary letters.
+   - A sequence that doesn't match any known character or prosign is shown
+     as a distinguishable placeholder (`*`, in red) rather than silently
+     dropped, so the operator can see a mis-keyed character happened.
 3. **Settings screen** — reachable from the Main Menu.
    - **WPM** (words per minute, 5–40): controls dit/dah/gap timing.
    - **Key mode**: Iambic Mode A, Iambic Mode B, or Straight Key.

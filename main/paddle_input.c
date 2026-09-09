@@ -48,8 +48,8 @@ static void handle_decode_event(morse_codec_event_t event, char out_char)
         queued_char = out_char;
         break;
     case MORSE_CODEC_EVENT_UNKNOWN:
-        ESP_LOGI(TAG, "decoded: ? (unknown sequence)");
-        queued_char = '?';
+        ESP_LOGI(TAG, "decoded: %c (unknown sequence)", MORSE_CODEC_UNKNOWN_CHAR);
+        queued_char = MORSE_CODEC_UNKNOWN_CHAR;
         break;
     case MORSE_CODEC_EVENT_SPACE:
         ESP_LOGI(TAG, "decoded: <space>");
