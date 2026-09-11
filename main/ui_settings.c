@@ -471,13 +471,15 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
     lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *back_btn = lv_button_create(top_bar);
-    display_style_button_teal(back_btn);
+    display_style_tile(back_btn);
     lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "< Back");
+    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
 
     lv_obj_t *title = lv_label_create(top_bar);
     lv_label_set_text(title, "Touchscreen");
+    lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
 
     lv_obj_t *row = lv_obj_create(scr);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
