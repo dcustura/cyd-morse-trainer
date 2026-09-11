@@ -16,3 +16,12 @@ CONFIG_FREERTOS_HZ=1000
 # Fixed-width font used for the Settings screen's numeric popup value
 # labels, so digits don't shift width as the value is stepped with -/+.
 CONFIG_LV_FONT_UNSCII_8=y
+
+# The Practice screen's decoded-text area accumulates a long, spaceless run
+# of characters between word gaps; LVGL's default (0 = disabled) never
+# force-breaks a "word" regardless of length, so that whole run refuses to
+# wrap until the next space. Break within any run longer than 1 character
+# instead, so lines fill the display width like a plain character grid.
+CONFIG_LV_TXT_LINE_BREAK_LONG_LEN=1
+CONFIG_LV_TXT_LINE_BREAK_LONG_PRE_MIN_LEN=1
+CONFIG_LV_TXT_LINE_BREAK_LONG_POST_MIN_LEN=1

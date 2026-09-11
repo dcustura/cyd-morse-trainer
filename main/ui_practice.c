@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #define QUEUE_DRAIN_PERIOD_MS 30
+#define TEXT_SPANS_HEIGHT_SLACK_PX 6
 
 static lv_obj_t *s_wpm_label;
 static lv_obj_t *s_mode_label;
@@ -115,12 +116,26 @@ static void screen_loaded_cb(lv_event_t *e)
     update_status_label();
 }
 
-/* The spangroup's own height tracks its text content (LV_SPAN_MODE_BREAK),
- * while s_text_container has a fixed, flex-allocated height and scrolls.
- * Scrolling to the bottom after new text is appended keeps the most
- * recently decoded characters in view once the content overflows. */
+/* s_text_container has a fixed, flex-allocated height and scrolls;
+ * s_text_spans is sized to its text content. Scrolling to the bottom after
+ * new text is appended keeps the most recently decoded characters in view
+ * once the content overflows.
+ *
+ * s_text_spans' height is set explicitly here (LV_SPAN_MODE_BREAK's own
+ * automatic sizing gives its *last* line zero margin below the glyphs -
+ * see lv_spangroup_get_expand_height() summing each line's
+ * font-height-plus-line-space, then subtracting one line-space to avoid a
+ * trailing gap - so a decoration like the underline on a prosign span,
+ * which renders a couple of pixels below that, is clipped for as long as
+ * its line is the last one). Padding the height by a few pixels beyond
+ * what lv_spangroup_get_expand_height() reports gives every line, including
+ * whichever one is currently last, room for that overhang. */
 static void scroll_text_to_bottom(void)
 {
+    lv_obj_update_layout(s_text_container);
+    int32_t width = lv_obj_get_content_width(s_text_spans);
+    int32_t natural_height = lv_spangroup_get_expand_height(s_text_spans, width);
+    lv_obj_set_height(s_text_spans, natural_height + TEXT_SPANS_HEIGHT_SLACK_PX);
     lv_obj_update_layout(s_text_container);
     lv_obj_scroll_to_y(s_text_container, LV_COORD_MAX, LV_ANIM_OFF);
 }
@@ -174,6 +189,8 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
      * (LV_SPAN_MODE_BREAK) so growth beyond the container's height can be
      * scrolled into view instead of being clipped and lost. */
     s_text_container = lv_obj_create(scr);
+    lv_obj_set_style_border_width(s_text_container, 0, 0);
+    lv_obj_set_style_pad_all(s_text_container, 4, 0);
     lv_obj_set_width(s_text_container, LV_PCT(100));
     lv_obj_set_flex_grow(s_text_container, 1);
     lv_obj_set_scroll_dir(s_text_container, LV_DIR_VER);
@@ -182,9 +199,22 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_spangroup_set_mode(s_text_spans, LV_SPAN_MODE_BREAK);
     lv_spangroup_set_overflow(s_text_spans, LV_SPAN_OVERFLOW_CLIP);
     lv_obj_set_width(s_text_spans, LV_PCT(100));
+    lv_obj_set_style_text_font(s_text_spans, &lv_font_unscii_8, 0);
+    lv_obj_set_style_text_line_space(s_text_spans, 8, 0);
     reset_plain_run();
 
+    /* A plain divider line instead of a bordered pane around the button
+     * row, so the text area above keeps as much screen height as possible. */
+    lv_obj_t *separator = lv_obj_create(scr);
+    lv_obj_remove_style_all(separator);
+    lv_obj_clear_flag(separator, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(separator, LV_PCT(100), 1);
+    lv_obj_set_style_bg_color(separator, display_compensate_color(lv_palette_main(LV_PALETTE_GREY)), 0);
+    lv_obj_set_style_bg_opa(separator, LV_OPA_COVER, 0);
+
     lv_obj_t *btn_row = lv_obj_create(scr);
+    lv_obj_set_style_border_width(btn_row, 0, 0);
+    lv_obj_set_style_pad_all(btn_row, 4, 0);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(btn_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
