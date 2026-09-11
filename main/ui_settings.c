@@ -55,6 +55,8 @@ static const numeric_field_info_t s_field_info[FIELD_COUNT] = {
 
 static lv_obj_t *s_settings_screen;
 static lv_obj_t *s_touch_submenu_screen;
+static lv_obj_t *s_keyer_submenu_screen;
+static lv_obj_t *s_sidetone_submenu_screen;
 static morse_settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
@@ -410,6 +412,18 @@ static void touch_tile_cb(lv_event_t *e)
     lv_scr_load(s_touch_submenu_screen);
 }
 
+static void keyer_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_keyer_submenu_screen);
+}
+
+static void sidetone_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_sidetone_submenu_screen);
+}
+
 static void reset_confirm_btn_cb(lv_event_t *e)
 {
     lv_obj_t *btn = lv_event_get_target_obj(e);
@@ -510,6 +524,98 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
     return scr;
 }
 
+static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
+{
+    lv_obj_t *scr = lv_obj_create(NULL);
+    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(scr, 4, 0);
+
+    lv_obj_t *top_bar = lv_obj_create(scr);
+    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
+
+    lv_obj_t *back_btn = lv_button_create(top_bar);
+    display_style_button_dismiss(back_btn);
+    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
+    lv_obj_t *back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, "< Back");
+    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
+
+    lv_obj_t *title = lv_label_create(top_bar);
+    lv_label_set_text(title, "Keyer");
+    lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
+
+    lv_obj_t *row = lv_obj_create(scr);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_all(row, 2, 0);
+    lv_obj_set_style_pad_column(row, 4, 0);
+    lv_obj_set_width(row, LV_PCT(100));
+    lv_obj_set_flex_grow(row, 1);
+
+    lv_obj_t *wpm_tile = create_tile(row, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM,
+                                      &s_wpm_tile_value);
+    lv_obj_set_flex_grow(wpm_tile, 1);
+    lv_obj_set_height(wpm_tile, LV_PCT(100));
+
+    lv_obj_t *keymode_tile = create_tile(row, "Key Mode", 0, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
+    lv_obj_set_flex_grow(keymode_tile, 1);
+    lv_obj_set_height(keymode_tile, LV_PCT(100));
+
+    lv_obj_t *swap_tile = create_tile(row, "Paddle Swap", 0, 0, swap_tile_cb, NULL, &s_swap_tile_value);
+    lv_obj_set_flex_grow(swap_tile, 1);
+    lv_obj_set_height(swap_tile, LV_PCT(100));
+
+    return scr;
+}
+
+static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
+{
+    lv_obj_t *scr = lv_obj_create(NULL);
+    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(scr, 4, 0);
+
+    lv_obj_t *top_bar = lv_obj_create(scr);
+    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
+
+    lv_obj_t *back_btn = lv_button_create(top_bar);
+    display_style_button_dismiss(back_btn);
+    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
+    lv_obj_t *back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, "< Back");
+    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
+
+    lv_obj_t *title = lv_label_create(top_bar);
+    lv_label_set_text(title, "Sidetone");
+    lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
+
+    lv_obj_t *row = lv_obj_create(scr);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_all(row, 2, 0);
+    lv_obj_set_style_pad_column(row, 4, 0);
+    lv_obj_set_width(row, LV_PCT(100));
+    lv_obj_set_flex_grow(row, 1);
+
+    lv_obj_t *tone_tile = create_tile(row, "Pitch", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ,
+                                       &s_tone_tile_value);
+    lv_obj_set_flex_grow(tone_tile, 1);
+    lv_obj_set_height(tone_tile, LV_PCT(100));
+
+    lv_obj_t *volume_tile = create_tile(row, "Volume", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME,
+                                         &s_volume_tile_value);
+    lv_obj_set_flex_grow(volume_tile, 1);
+    lv_obj_set_height(volume_tile, LV_PCT(100));
+
+    lv_obj_t *envelope_tile = create_tile(row, "Smoothing", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE,
+                                           &s_envelope_tile_value);
+    lv_obj_set_flex_grow(envelope_tile, 1);
+    lv_obj_set_height(envelope_tile, LV_PCT(100));
+
+    return scr;
+}
+
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
@@ -531,25 +637,22 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 
     lv_obj_t *grid = scr;
     static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
 
-    create_tile(grid, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
-    create_tile(grid, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
-    create_tile(grid, "Paddle Swap", 2, 0, swap_tile_cb, NULL, &s_swap_tile_value);
+    create_tile(grid, "Keyer", 0, 0, keyer_tile_cb, NULL, NULL);
+    create_tile(grid, "Sidetone", 1, 0, sidetone_tile_cb, NULL, NULL);
+    create_tile(grid, "Touchscreen", 2, 0, touch_tile_cb, NULL, NULL);
 
-    create_tile(grid, "Touchscreen", 0, 1, touch_tile_cb, NULL, NULL);
-    create_tile(grid, "Pitch", 1, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ, &s_tone_tile_value);
-    create_tile(grid, "Volume", 2, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME, &s_volume_tile_value);
+    create_tile(grid, "Reset to\nDefaults", 0, 1, reset_btn_cb, NULL, NULL);
 
-    create_tile(grid, "Smoothing", 0, 2, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE,
-                &s_envelope_tile_value);
-    create_tile(grid, "Reset to\nDefaults", 1, 2, reset_btn_cb, NULL, NULL);
-    lv_obj_t *back_tile = create_tile(grid, "< Back", 2, 2, nav_btn_cb, menu_screen, NULL);
+    lv_obj_t *back_tile = create_tile(grid, "< Back", 2, 1, nav_btn_cb, menu_screen, NULL);
     display_style_button_dismiss(back_tile);
 
     s_touch_submenu_screen = create_touch_submenu(scr, calibration_screen, touch_test_screen);
     ui_touch_test_set_back_target(s_touch_submenu_screen);
+    s_keyer_submenu_screen = create_keyer_submenu(scr);
+    s_sidetone_submenu_screen = create_sidetone_submenu(scr);
 
     refresh_tile_labels();
 
