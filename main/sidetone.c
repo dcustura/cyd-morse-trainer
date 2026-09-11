@@ -180,6 +180,7 @@ static void audio_task(void *arg)
              * sidetone_key(true) wakes this back up.
              */
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+            phase = 0;
             continue;
         }
 
@@ -187,10 +188,10 @@ static void audio_task(void *arg)
         uint32_t vol_q16 = atomic_load_explicit(&s_volume_q16, memory_order_relaxed);
         for (uint32_t i = 0; i < SIDETONE_CHUNK_SAMPLES; i++) {
             float env = next_envelope_value();
-            phase += incr;
             int8_t sample = s_sine_table[phase >> (32 - SIDETONE_SINE_TABLE_BITS)];
             float scaled = (float)sample * env * ((float)vol_q16 / 65536.0f);
             chunk[i] = (uint8_t)(128 + (int)lrintf(scaled));
+            phase += incr;
         }
         dac_continuous_write(s_dac_handle, chunk, sizeof(chunk), NULL, portMAX_DELAY);
     }
