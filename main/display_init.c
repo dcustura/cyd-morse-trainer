@@ -19,8 +19,10 @@ static const char *TAG = "display_init";
 #define LCD_H_RES 320
 #define LCD_V_RES 240
 
-/* Partial draw buffer sized to fit internal SRAM (no PSRAM assumed). */
-#define LVGL_DRAW_BUFF_LINES (LCD_V_RES / 10)
+/* Partial draw buffer sized to fit internal SRAM (no PSRAM assumed). Bumped
+ * from /10 to /3 lines to cut the number of flush passes per full-screen
+ * redraw; re-check free heap on hardware if this ever needs to grow further. */
+#define LVGL_DRAW_BUFF_LINES (LCD_V_RES / 3)
 
 /* Confirmed on real hardware: despite this board being universally marketed
  * as shipping an ILI9341, this specific unit's TFT controller identifies

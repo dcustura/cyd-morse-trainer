@@ -25,3 +25,8 @@ CONFIG_LV_FONT_UNSCII_8=y
 CONFIG_LV_TXT_LINE_BREAK_LONG_LEN=1
 CONFIG_LV_TXT_LINE_BREAK_LONG_PRE_MIN_LEN=1
 CONFIG_LV_TXT_LINE_BREAK_LONG_POST_MIN_LEN=1
+
+# Redraw at ~60fps instead of LVGL's default ~30fps (33ms). The SPI clock
+# (see display_init.c) and draw buffer size are the other limits on actual
+# paint throughput; this just lets LVGL invalidate/flush more often.
+CONFIG_LV_DEF_REFR_PERIOD=16
