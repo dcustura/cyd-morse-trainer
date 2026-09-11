@@ -16,7 +16,9 @@ extern "C" {
  * press-and-hold repeat) and, for the sidetone fields (Pitch/Volume/
  * Smoothing), a "Test" button that plays the sidetone at its current
  * settings. Tapping Key Mode or Paddle Swap opens a popup listing its
- * options as buttons. Every change is applied to the running trainer and
+ * options as a row of equal-width, finger-sized buttons (Key Mode:
+ * "Mode A"/"Mode B"/"Straight"; Paddle Swap: "Normal"/"Swapped"). Every
+ * change is applied to the running trainer and
  * persisted to NVS immediately when made; there is no OK/Cancel or
  * discard-on-cancel step. "Touchscreen" navigates to a submenu screen
  * (created internally) with two tiles: "Calibrate" (navigates to

@@ -12,3 +12,7 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 # round down to 0, turning the delay into a no-op that starves the idle task
 # and trips the watchdog.
 CONFIG_FREERTOS_HZ=1000
+
+# Fixed-width font used for the Settings screen's numeric popup value
+# labels, so digits don't shift width as the value is stepped with -/+.
+CONFIG_LV_FONT_UNSCII_8=y

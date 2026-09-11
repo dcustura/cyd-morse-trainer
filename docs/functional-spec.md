@@ -66,7 +66,8 @@ It does not teach receiving/copying code — it is a tool for practicing
    - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
      popup has `-`/`+` buttons (press-and-hold to repeat).
    - **Key mode**: Iambic Mode A, Iambic Mode B, or Straight Key. Its popup
-     lists all three as buttons; tapping one selects it immediately.
+     lists all three as a row of equal-width, finger-sized buttons ("Mode
+     A"/"Mode B"/"Straight"); tapping one selects it immediately.
      - Iambic modes use both paddle GPIOs, alternating dit/dah while both
        are held ("squeezing"). Briefly tapping the opposite paddle while
        the primary paddle is still held (e.g. dit-dah-dit) latches that

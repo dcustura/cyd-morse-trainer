@@ -24,6 +24,7 @@
 #define ENVELOPE_MS_MAX MORSE_SETTINGS_ENVELOPE_MS_MAX
 #define TEST_TONE_DURATION_MS 300
 #define STEP_BTN_SIZE 60
+#define OPTION_BTN_HEIGHT 70
 #define FOOTER_BTN_HEIGHT 50
 #define FOOTER_BTN_MIN_WIDTH 90
 
@@ -221,6 +222,7 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_center(minus_label);
 
     s_popup_value_label = lv_label_create(row);
+    lv_obj_set_style_text_font(s_popup_value_label, &lv_font_unscii_8, 0);
     update_popup_value_label();
 
     lv_obj_t *plus_btn = lv_button_create(row);
@@ -265,21 +267,22 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_obj_t *mbox = lv_msgbox_create(NULL);
     lv_msgbox_add_title(mbox, "Key Mode");
     lv_obj_t *content = lv_msgbox_get_content(mbox);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_ROW);
 
     static const struct {
         const char *label;
         iambic_keyer_mode_t mode;
     } options[] = {
-        {"Iambic Mode A", IAMBIC_KEYER_MODE_A},
-        {"Iambic Mode B", IAMBIC_KEYER_MODE_B},
-        {"Straight Key", IAMBIC_KEYER_MODE_STRAIGHT},
+        {"Mode A", IAMBIC_KEYER_MODE_A},
+        {"Mode B", IAMBIC_KEYER_MODE_B},
+        {"Straight", IAMBIC_KEYER_MODE_STRAIGHT},
     };
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
         lv_obj_t *btn = lv_button_create(content);
         display_style_button_teal(btn);
-        lv_obj_set_width(btn, LV_PCT(100));
+        lv_obj_set_flex_grow(btn, 1);
+        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
         lv_obj_add_event_cb(btn, keymode_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].mode);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
         lv_obj_t *label = lv_label_create(btn);
@@ -322,7 +325,7 @@ static void swap_tile_cb(lv_event_t *e)
         lv_obj_t *btn = lv_button_create(content);
         display_style_button_teal(btn);
         lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, 70);
+        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
         lv_obj_add_event_cb(btn, swap_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].swap);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
         lv_obj_t *label = lv_label_create(btn);
