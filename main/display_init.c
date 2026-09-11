@@ -85,8 +85,10 @@ static void init_tft_panel(void)
         .dc_gpio_num = BOARD_TFT_DC_GPIO,
         .spi_mode = 0,
         /* 40MHz (this panel's nominal max) produced garbled/noisy output on
-         * this unit; 20MHz is a confirmed-working fallback. */
-        .pclk_hz = 20 * 1000 * 1000,
+         * this unit. Confirmed clean on hardware at 26.67MHz (80MHz APB / 3),
+         * one SPI clock step down from 40MHz - re-check visually before
+         * raising this further, and fall back to 20MHz if it ever garbles. */
+        .pclk_hz = 26 * 1000 * 1000 + 666667,
         .trans_queue_depth = 10,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
