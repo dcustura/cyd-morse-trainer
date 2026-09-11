@@ -41,6 +41,17 @@ uint16_t morse_settings_clamp_envelope_ms(uint16_t ms)
     return ms;
 }
 
+uint8_t morse_settings_clamp_brightness_pct(uint8_t pct)
+{
+    if (pct < MORSE_SETTINGS_BRIGHTNESS_PCT_MIN) {
+        return MORSE_SETTINGS_BRIGHTNESS_PCT_MIN;
+    }
+    if (pct > MORSE_SETTINGS_BRIGHTNESS_PCT_MAX) {
+        return MORSE_SETTINGS_BRIGHTNESS_PCT_MAX;
+    }
+    return pct;
+}
+
 iambic_keyer_mode_t morse_settings_validate_keymode(uint8_t raw)
 {
     switch (raw) {
@@ -61,4 +72,5 @@ void morse_settings_set_defaults(morse_settings_t *out)
     out->tone_hz = MORSE_SETTINGS_DEFAULT_TONE_HZ;
     out->volume_pct = MORSE_SETTINGS_DEFAULT_VOLUME_PCT;
     out->envelope_ms = MORSE_SETTINGS_DEFAULT_ENVELOPE_MS;
+    out->brightness_pct = MORSE_SETTINGS_DEFAULT_BRIGHTNESS_PCT;
 }

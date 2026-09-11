@@ -1,10 +1,12 @@
 #include "display_init.h"
 
 #include "board_pins.h"
+#include "morse_settings.h"
 
 #include "esp_log.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_vendor.h"
@@ -18,6 +20,13 @@ static const char *TAG = "display_init";
 
 #define LCD_H_RES 320
 #define LCD_V_RES 240
+
+#define BACKLIGHT_LEDC_MODE LEDC_LOW_SPEED_MODE
+#define BACKLIGHT_LEDC_TIMER LEDC_TIMER_0
+#define BACKLIGHT_LEDC_CHANNEL LEDC_CHANNEL_0
+#define BACKLIGHT_LEDC_DUTY_RES LEDC_TIMER_10_BIT
+#define BACKLIGHT_LEDC_DUTY_MAX ((1u << BACKLIGHT_LEDC_DUTY_RES) - 1)
+#define BACKLIGHT_LEDC_FREQ_HZ 5000
 
 /* Partial draw buffer sized to fit internal SRAM (no PSRAM assumed). Bumped
  * from /10 to /3 lines to cut the number of flush passes per full-screen
@@ -58,14 +67,32 @@ static esp_lcd_panel_handle_t s_tft_panel_handle;
 static esp_lcd_panel_io_handle_t s_touch_io_handle;
 static esp_lcd_touch_handle_t s_touch_handle;
 
-static void init_backlight(void)
+static uint32_t backlight_pct_to_duty(uint8_t pct)
 {
-    gpio_config_t bl_cfg = {
-        .pin_bit_mask = 1ULL << BOARD_TFT_BL_GPIO,
-        .mode = GPIO_MODE_OUTPUT,
+    pct = morse_settings_clamp_brightness_pct(pct);
+    return (uint32_t)pct * BACKLIGHT_LEDC_DUTY_MAX / 100;
+}
+
+static void init_backlight(uint8_t initial_pct)
+{
+    const ledc_timer_config_t timer_cfg = {
+        .speed_mode = BACKLIGHT_LEDC_MODE,
+        .timer_num = BACKLIGHT_LEDC_TIMER,
+        .duty_resolution = BACKLIGHT_LEDC_DUTY_RES,
+        .freq_hz = BACKLIGHT_LEDC_FREQ_HZ,
+        .clk_cfg = LEDC_AUTO_CLK,
     };
-    ESP_ERROR_CHECK(gpio_config(&bl_cfg));
-    gpio_set_level(BOARD_TFT_BL_GPIO, 1);
+    ESP_ERROR_CHECK(ledc_timer_config(&timer_cfg));
+
+    const ledc_channel_config_t channel_cfg = {
+        .gpio_num = BOARD_TFT_BL_GPIO,
+        .speed_mode = BACKLIGHT_LEDC_MODE,
+        .channel = BACKLIGHT_LEDC_CHANNEL,
+        .timer_sel = BACKLIGHT_LEDC_TIMER,
+        .duty = backlight_pct_to_duty(initial_pct),
+        .hpoint = 0,
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&channel_cfg));
 }
 
 static void init_tft_panel(void)
@@ -191,11 +218,11 @@ static void init_touch(void)
     ESP_LOGI(TAG, "Touch controller initialized");
 }
 
-lv_display_t *display_init(void)
+lv_display_t *display_init(uint8_t initial_brightness_pct)
 {
     touch_calibration_set_defaults(&s_touch_cal);
 
-    init_backlight();
+    init_backlight(initial_brightness_pct);
     init_tft_panel();
     init_touch();
 
@@ -271,6 +298,12 @@ bool display_touch_read_point(uint16_t *x, uint16_t *y)
 void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16_t *x, uint16_t *y)
 {
     touch_calibration_apply(&s_touch_cal, raw_horiz, raw_vert, LCD_H_RES, LCD_V_RES, x, y);
+}
+
+void display_set_brightness(uint8_t pct)
+{
+    ESP_ERROR_CHECK(ledc_set_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL, backlight_pct_to_duty(pct)));
+    ESP_ERROR_CHECK(ledc_update_duty(BACKLIGHT_LEDC_MODE, BACKLIGHT_LEDC_CHANNEL));
 }
 
 lv_color_t display_compensate_color(lv_color_t c)

@@ -22,6 +22,8 @@
 #define VOLUME_PCT_MAX MORSE_SETTINGS_VOLUME_PCT_MAX
 #define ENVELOPE_MS_MIN MORSE_SETTINGS_ENVELOPE_MS_MIN
 #define ENVELOPE_MS_MAX MORSE_SETTINGS_ENVELOPE_MS_MAX
+#define BRIGHTNESS_PCT_MIN MORSE_SETTINGS_BRIGHTNESS_PCT_MIN
+#define BRIGHTNESS_PCT_MAX MORSE_SETTINGS_BRIGHTNESS_PCT_MAX
 #define TEST_TONE_DURATION_MS 300
 #define STEP_BTN_SIZE 60
 #define VALUE_LABEL_WIDTH 70
@@ -34,6 +36,7 @@ typedef enum {
     FIELD_TONE_HZ,
     FIELD_VOLUME,
     FIELD_ENVELOPE,
+    FIELD_BRIGHTNESS,
     FIELD_COUNT,
 } numeric_field_t;
 
@@ -51,6 +54,7 @@ static const numeric_field_info_t s_field_info[FIELD_COUNT] = {
     [FIELD_TONE_HZ] = {"Pitch", TONE_HZ_MIN, TONE_HZ_MAX, 10, "%d Hz", true},
     [FIELD_VOLUME] = {"Volume", VOLUME_PCT_MIN, VOLUME_PCT_MAX, 5, "%d%%", true},
     [FIELD_ENVELOPE] = {"Smoothing", ENVELOPE_MS_MIN, ENVELOPE_MS_MAX, 2, "%d ms", true},
+    [FIELD_BRIGHTNESS] = {"Brightness", BRIGHTNESS_PCT_MIN, BRIGHTNESS_PCT_MAX, 10, "%d%%", false},
 };
 
 static lv_obj_t *s_settings_screen;
@@ -65,6 +69,7 @@ static lv_obj_t *s_swap_tile_value;
 static lv_obj_t *s_tone_tile_value;
 static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
+static lv_obj_t *s_brightness_tile_value;
 
 /* Only one popup can be open at a time; these track the one currently shown. */
 static numeric_field_t s_popup_field;
@@ -102,6 +107,9 @@ static void refresh_tile_labels(void)
 
     snprintf(text, sizeof(text), s_field_info[FIELD_ENVELOPE].unit_fmt, (int)s_current_settings.envelope_ms);
     lv_label_set_text(s_envelope_tile_value, text);
+
+    snprintf(text, sizeof(text), s_field_info[FIELD_BRIGHTNESS].unit_fmt, (int)s_current_settings.brightness_pct);
+    lv_label_set_text(s_brightness_tile_value, text);
 }
 
 static int32_t field_get_value(numeric_field_t field)
@@ -115,6 +123,8 @@ static int32_t field_get_value(numeric_field_t field)
         return s_current_settings.volume_pct;
     case FIELD_ENVELOPE:
         return s_current_settings.envelope_ms;
+    case FIELD_BRIGHTNESS:
+        return s_current_settings.brightness_pct;
     default:
         return 0;
     }
@@ -138,6 +148,10 @@ static void field_set_value(numeric_field_t field, int32_t value)
     case FIELD_ENVELOPE:
         s_current_settings.envelope_ms = (uint16_t)value;
         sidetone_set_envelope_ms(s_current_settings.envelope_ms);
+        break;
+    case FIELD_BRIGHTNESS:
+        s_current_settings.brightness_pct = (uint8_t)value;
+        display_set_brightness(s_current_settings.brightness_pct);
         break;
     default:
         return;
@@ -619,7 +633,8 @@ static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
-                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms)
+                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
+                              uint8_t initial_brightness_pct)
 {
     s_current_settings = (morse_settings_t){
         .wpm = initial_wpm,
@@ -628,6 +643,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
         .tone_hz = initial_tone_hz,
         .volume_pct = initial_volume_pct,
         .envelope_ms = initial_envelope_ms,
+        .brightness_pct = initial_brightness_pct,
     };
 
     lv_obj_t *scr = lv_obj_create(NULL);
@@ -642,9 +658,11 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 
     create_tile(grid, "Keyer", 0, 0, keyer_tile_cb, NULL, NULL);
     create_tile(grid, "Sidetone", 1, 0, sidetone_tile_cb, NULL, NULL);
-    create_tile(grid, "Touchscreen", 2, 0, touch_tile_cb, NULL, NULL);
+    create_tile(grid, "Brightness", 2, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_BRIGHTNESS,
+                &s_brightness_tile_value);
 
-    create_tile(grid, "Reset to\nDefaults", 0, 1, reset_btn_cb, NULL, NULL);
+    create_tile(grid, "Touchscreen", 0, 1, touch_tile_cb, NULL, NULL);
+    create_tile(grid, "Reset to\nDefaults", 1, 1, reset_btn_cb, NULL, NULL);
 
     lv_obj_t *back_tile = create_tile(grid, "< Back", 2, 1, nav_btn_cb, menu_screen, NULL);
     display_style_button_dismiss(back_tile);

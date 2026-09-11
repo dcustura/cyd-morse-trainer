@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "esp_err.h"
 #include "lvgl.h"
 #include "touch_calibration.h"
@@ -12,13 +13,16 @@ extern "C" {
 /**
  * Bring up the ST7789 display and XPT2046 touch controller and initialize
  * LVGL on top of them (SPI buses, panel/touch drivers, backlight, LVGL port
- * display + touch input device). Touch reports are mapped to screen
- * coordinates using the factory-default calibration until
- * display_touch_apply_calibration() is called with a stored one.
+ * display + touch input device). The backlight starts directly at
+ * initial_brightness_pct (0-100, clamped) rather than full brightness, so
+ * there's no bright flash before the caller's first display_set_brightness()
+ * call. Touch reports are mapped to screen coordinates using the
+ * factory-default calibration until display_touch_apply_calibration() is
+ * called with a stored one.
  *
  * @return the LVGL display handle on success, NULL on failure (see logs).
  */
-lv_display_t *display_init(void);
+lv_display_t *display_init(uint8_t initial_brightness_pct);
 
 /** Replace the calibration used to map touch reports to screen coordinates. */
 void display_touch_apply_calibration(const touch_calibration_t *cal);
@@ -51,6 +55,9 @@ bool display_touch_read_point(uint16_t *x, uint16_t *y);
  * it's enabled.
  */
 void display_touch_map_raw_to_screen(int32_t raw_horiz, int32_t raw_vert, uint16_t *x, uint16_t *y);
+
+/** Set the TFT backlight brightness via PWM, as a percentage (0-100; values above 100 are clamped). */
+void display_set_brightness(uint8_t pct);
 
 /**
  * Map a logical LVGL color to the raw color that must be fed to LVGL for it

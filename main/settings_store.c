@@ -12,6 +12,7 @@
 #define NVS_KEY_TONE_HZ "tone_hz"
 #define NVS_KEY_VOLUME_PCT "volume_pct"
 #define NVS_KEY_ENVELOPE_MS "envelope_ms"
+#define NVS_KEY_BRIGHTNESS_PCT "brightness_pct"
 
 static const char *TAG = "settings_store";
 
@@ -58,6 +59,11 @@ static esp_err_t load_from_nvs(morse_settings_t *out)
         out->envelope_ms = morse_settings_clamp_envelope_ms(raw_envelope_ms);
     }
 
+    uint8_t raw_brightness_pct;
+    if (nvs_get_u8(handle, NVS_KEY_BRIGHTNESS_PCT, &raw_brightness_pct) == ESP_OK) {
+        out->brightness_pct = morse_settings_clamp_brightness_pct(raw_brightness_pct);
+    }
+
     nvs_close(handle);
     return ESP_OK;
 }
@@ -90,6 +96,7 @@ esp_err_t settings_store_save(const morse_settings_t *in)
     nvs_set_u16(handle, NVS_KEY_TONE_HZ, in->tone_hz);
     nvs_set_u8(handle, NVS_KEY_VOLUME_PCT, in->volume_pct);
     nvs_set_u16(handle, NVS_KEY_ENVELOPE_MS, in->envelope_ms);
+    nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_PCT, in->brightness_pct);
 
     err = nvs_commit(handle);
     nvs_close(handle);

@@ -26,7 +26,7 @@ void app_main(void)
     bool touch_cal_found = false;
     ESP_ERROR_CHECK(touch_cal_store_load(&touch_cal, &touch_cal_found));
 
-    lv_display_t *disp = display_init();
+    lv_display_t *disp = display_init(settings.brightness_pct);
     if (disp == NULL) {
         ESP_LOGE(TAG, "display_init failed, halting");
         return;
@@ -46,7 +46,8 @@ void app_main(void)
                                                     settings.keymode, settings.wpm);
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
-                                                    settings.tone_hz, settings.volume_pct, settings.envelope_ms);
+                                                    settings.tone_hz, settings.volume_pct, settings.envelope_ms,
+                                                    settings.brightness_pct);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 

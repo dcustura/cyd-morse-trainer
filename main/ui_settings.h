@@ -8,11 +8,13 @@ extern "C" {
 #endif
 
 /**
- * Create the Settings screen: a 3x3 grid of tappable tiles (WPM, Key Mode,
- * Paddle Swap, Touchscreen, Pitch, Volume, Smoothing, Reset to Factory
- * Defaults, and a final "< Back" tile), filling the whole display with no
- * scrolling and no separate title bar. Tapping a numeric tile (WPM,
- * Pitch/Volume/Smoothing) opens a popup with -/+ buttons (supporting
+ * Create the Settings screen: a 3x2 grid of tappable tiles (Keyer, Sidetone,
+ * Brightness, Touchscreen, Reset to Factory Defaults, and a final "< Back"
+ * tile), filling the whole display with no scrolling and no separate title
+ * bar. "Keyer" navigates to a submenu (created internally) with WPM, Key
+ * Mode, and Paddle Swap tiles; "Sidetone" navigates to a submenu with Pitch,
+ * Volume, and Smoothing tiles. Tapping a numeric tile (WPM, Pitch/Volume/
+ * Smoothing, Brightness) opens a popup with -/+ buttons (supporting
  * press-and-hold repeat) and, for the sidetone fields (Pitch/Volume/
  * Smoothing), a "Test" button that plays the sidetone at its current
  * settings. Tapping Key Mode or Paddle Swap opens a popup listing its
@@ -32,7 +34,8 @@ extern "C" {
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
-                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms);
+                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
+                              uint8_t initial_brightness_pct);
 
 #ifdef __cplusplus
 }

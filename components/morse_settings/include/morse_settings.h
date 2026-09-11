@@ -16,6 +16,8 @@ extern "C" {
 #define MORSE_SETTINGS_VOLUME_PCT_MAX 100
 #define MORSE_SETTINGS_ENVELOPE_MS_MIN 2
 #define MORSE_SETTINGS_ENVELOPE_MS_MAX 100
+#define MORSE_SETTINGS_BRIGHTNESS_PCT_MIN 10
+#define MORSE_SETTINGS_BRIGHTNESS_PCT_MAX 100
 
 #define MORSE_SETTINGS_DEFAULT_WPM 15
 #define MORSE_SETTINGS_DEFAULT_KEYMODE IAMBIC_KEYER_MODE_B
@@ -23,6 +25,7 @@ extern "C" {
 #define MORSE_SETTINGS_DEFAULT_TONE_HZ 600
 #define MORSE_SETTINGS_DEFAULT_VOLUME_PCT 50
 #define MORSE_SETTINGS_DEFAULT_ENVELOPE_MS 10
+#define MORSE_SETTINGS_DEFAULT_BRIGHTNESS_PCT 100
 
 typedef struct {
     uint16_t wpm;
@@ -31,6 +34,7 @@ typedef struct {
     uint16_t tone_hz;
     uint8_t volume_pct;
     uint16_t envelope_ms;
+    uint8_t brightness_pct;
 } morse_settings_t;
 
 /** Clamp a WPM value to [MORSE_SETTINGS_WPM_MIN, MORSE_SETTINGS_WPM_MAX]. */
@@ -44,6 +48,9 @@ uint8_t morse_settings_clamp_volume_pct(uint8_t pct);
 
 /** Clamp a keying envelope (attack/decay) duration to [MORSE_SETTINGS_ENVELOPE_MS_MIN, MORSE_SETTINGS_ENVELOPE_MS_MAX]. */
 uint16_t morse_settings_clamp_envelope_ms(uint16_t ms);
+
+/** Clamp a screen brightness percentage to [MORSE_SETTINGS_BRIGHTNESS_PCT_MIN, MORSE_SETTINGS_BRIGHTNESS_PCT_MAX]. */
+uint8_t morse_settings_clamp_brightness_pct(uint8_t pct);
 
 /** Validate a raw stored key-mode byte, falling back to the default key mode on an out-of-range value. */
 iambic_keyer_mode_t morse_settings_validate_keymode(uint8_t raw);
