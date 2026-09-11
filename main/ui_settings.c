@@ -163,8 +163,25 @@ static void strip_pane_style(lv_obj_t *obj)
 
 static void style_footer_button(lv_obj_t *btn)
 {
+    display_style_button_teal(btn);
     lv_obj_set_height(btn, FOOTER_BTN_HEIGHT);
     lv_obj_set_style_min_width(btn, FOOTER_BTN_MIN_WIDTH, 0);
+}
+
+/*
+ * A real lv_button (unlike lv_msgbox_add_footer_button(), which creates a
+ * plain lv_obj) so it visually matches every other button in the app -
+ * the active theme only rounds/styles objects it recognizes as buttons.
+ */
+static lv_obj_t *create_action_button(lv_obj_t *parent, const char *text, lv_event_cb_t cb, void *user_data)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    style_footer_button(btn);
+    lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, user_data);
+    lv_obj_t *label = lv_label_create(btn);
+    lv_label_set_text(label, text);
+    lv_obj_center(label);
+    return btn;
 }
 
 static void test_tone_stop_cb(lv_timer_t *timer)
@@ -215,6 +232,8 @@ static void open_numeric_popup(numeric_field_t field)
 
     lv_obj_t *content = lv_msgbox_get_content(mbox);
     strip_pane_style(content);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_t *row = lv_obj_create(content);
     strip_pane_style(row);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
@@ -245,15 +264,17 @@ static void open_numeric_popup(numeric_field_t field)
     lv_label_set_text(plus_label, "+");
     lv_obj_center(plus_label);
 
-    if (info->has_test) {
-        lv_obj_t *test_btn = lv_msgbox_add_footer_button(mbox, "Test");
-        style_footer_button(test_btn);
-        lv_obj_add_event_cb(test_btn, test_field_btn_cb, LV_EVENT_CLICKED, NULL);
-    }
+    lv_obj_t *actions_row = lv_obj_create(content);
+    strip_pane_style(actions_row);
+    lv_obj_set_flex_flow(actions_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(actions_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(actions_row, 8, 0);
+    lv_obj_set_size(actions_row, LV_PCT(100), LV_SIZE_CONTENT);
 
-    lv_obj_t *close_btn = lv_msgbox_add_footer_button(mbox, "Close");
-    style_footer_button(close_btn);
-    lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
+    if (info->has_test) {
+        create_action_button(actions_row, "Test", test_field_btn_cb, NULL);
+    }
+    create_action_button(actions_row, "Close", msgbox_close_cb, mbox);
 }
 
 static void numeric_tile_cb(lv_event_t *e)
@@ -279,7 +300,13 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_msgbox_add_title(mbox, "Key Mode");
     lv_obj_t *content = lv_msgbox_get_content(mbox);
     strip_pane_style(content);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t *options_row = lv_obj_create(content);
+    strip_pane_style(options_row);
+    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     static const struct {
         const char *label;
@@ -291,7 +318,7 @@ static void keymode_tile_cb(lv_event_t *e)
     };
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
-        lv_obj_t *btn = lv_button_create(content);
+        lv_obj_t *btn = lv_button_create(options_row);
         display_style_button_teal(btn);
         lv_obj_set_flex_grow(btn, 1);
         lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
@@ -302,9 +329,7 @@ static void keymode_tile_cb(lv_event_t *e)
         lv_obj_center(label);
     }
 
-    lv_obj_t *close_btn = lv_msgbox_add_footer_button(mbox, "Close");
-    style_footer_button(close_btn);
-    lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
+    create_action_button(content, "Close", msgbox_close_cb, mbox);
 }
 
 static void swap_select_cb(lv_event_t *e)
@@ -324,7 +349,13 @@ static void swap_tile_cb(lv_event_t *e)
     lv_msgbox_add_title(mbox, "Paddle Swap");
     lv_obj_t *content = lv_msgbox_get_content(mbox);
     strip_pane_style(content);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t *options_row = lv_obj_create(content);
+    strip_pane_style(options_row);
+    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     static const struct {
         const char *label;
@@ -335,7 +366,7 @@ static void swap_tile_cb(lv_event_t *e)
     };
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
-        lv_obj_t *btn = lv_button_create(content);
+        lv_obj_t *btn = lv_button_create(options_row);
         display_style_button_teal(btn);
         lv_obj_set_flex_grow(btn, 1);
         lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
@@ -346,9 +377,7 @@ static void swap_tile_cb(lv_event_t *e)
         lv_obj_center(label);
     }
 
-    lv_obj_t *close_btn = lv_msgbox_add_footer_button(mbox, "Close");
-    style_footer_button(close_btn);
-    lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
+    create_action_button(content, "Close", msgbox_close_cb, mbox);
 }
 
 static void nav_btn_cb(lv_event_t *e)
