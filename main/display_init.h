@@ -76,6 +76,13 @@ void display_style_button_teal(lv_obj_t *btn);
  */
 void display_style_tile(lv_obj_t *tile);
 
+/**
+ * Style a Back/Close/dismiss button: a dark neutral gray background with
+ * white text, visually distinct from the dark teal used for value/action
+ * buttons so an exit action always stands out from a setting-changing one.
+ */
+void display_style_button_dismiss(lv_obj_t *btn);
+
 #ifdef __cplusplus
 }
 #endif

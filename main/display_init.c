@@ -300,3 +300,17 @@ void display_style_tile(lv_obj_t *tile)
     }
     lv_obj_add_style(tile, &s_style, 0);
 }
+
+void display_style_button_dismiss(lv_obj_t *btn)
+{
+    static lv_style_t s_style;
+    static bool s_style_inited = false;
+
+    if (!s_style_inited) {
+        lv_style_init(&s_style);
+        lv_style_set_bg_color(&s_style, display_compensate_color(lv_palette_darken(LV_PALETTE_GREY, 3)));
+        lv_style_set_text_color(&s_style, display_compensate_color(lv_color_white()));
+        s_style_inited = true;
+    }
+    lv_obj_add_style(btn, &s_style, 0);
+}

@@ -161,9 +161,13 @@ static void strip_pane_style(lv_obj_t *obj)
     lv_obj_set_style_pad_all(obj, 4, 0);
 }
 
-static void style_footer_button(lv_obj_t *btn)
+static void style_footer_button(lv_obj_t *btn, bool dismiss)
 {
-    display_style_tile(btn);
+    if (dismiss) {
+        display_style_button_dismiss(btn);
+    } else {
+        display_style_tile(btn);
+    }
     lv_obj_set_height(btn, FOOTER_BTN_HEIGHT);
     lv_obj_set_style_min_width(btn, FOOTER_BTN_MIN_WIDTH, 0);
 }
@@ -172,11 +176,13 @@ static void style_footer_button(lv_obj_t *btn)
  * A real lv_button (unlike lv_msgbox_add_footer_button(), which creates a
  * plain lv_obj) so it visually matches every other button in the app -
  * the active theme only rounds/styles objects it recognizes as buttons.
+ * `dismiss` picks the neutral gray Close/Back style over the usual teal.
  */
-static lv_obj_t *create_action_button(lv_obj_t *parent, const char *text, lv_event_cb_t cb, void *user_data)
+static lv_obj_t *create_action_button(lv_obj_t *parent, const char *text, lv_event_cb_t cb, void *user_data,
+                                       bool dismiss)
 {
     lv_obj_t *btn = lv_button_create(parent);
-    style_footer_button(btn);
+    style_footer_button(btn, dismiss);
     lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, user_data);
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, text);
@@ -275,9 +281,9 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_set_size(actions_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     if (info->has_test) {
-        create_action_button(actions_row, "Test", test_field_btn_cb, NULL);
+        create_action_button(actions_row, "Test", test_field_btn_cb, NULL, false);
     }
-    create_action_button(actions_row, "Close", msgbox_close_cb, mbox);
+    create_action_button(actions_row, "Close", msgbox_close_cb, mbox, true);
 }
 
 static void numeric_tile_cb(lv_event_t *e)
@@ -333,7 +339,7 @@ static void keymode_tile_cb(lv_event_t *e)
         lv_obj_center(label);
     }
 
-    create_action_button(content, "Close", msgbox_close_cb, mbox);
+    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
 }
 
 static void swap_select_cb(lv_event_t *e)
@@ -382,7 +388,7 @@ static void swap_tile_cb(lv_event_t *e)
         lv_obj_center(label);
     }
 
-    create_action_button(content, "Close", msgbox_close_cb, mbox);
+    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
 }
 
 static void nav_btn_cb(lv_event_t *e)
@@ -471,7 +477,7 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
     lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *back_btn = lv_button_create(top_bar);
-    display_style_tile(back_btn);
+    display_style_button_dismiss(back_btn);
     lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "< Back");
@@ -534,7 +540,8 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     create_tile(grid, "Smoothing", 0, 2, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE,
                 &s_envelope_tile_value);
     create_tile(grid, "Reset to\nDefaults", 1, 2, reset_btn_cb, NULL, NULL);
-    create_tile(grid, "< Back", 2, 2, nav_btn_cb, menu_screen, NULL);
+    lv_obj_t *back_tile = create_tile(grid, "< Back", 2, 2, nav_btn_cb, menu_screen, NULL);
+    display_style_button_dismiss(back_tile);
 
     s_touch_submenu_screen = create_touch_submenu(scr, calibration_screen, touch_test_screen);
     ui_touch_test_set_back_target(s_touch_submenu_screen);

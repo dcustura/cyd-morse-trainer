@@ -207,7 +207,7 @@ lv_obj_t *ui_calibration_create(lv_obj_t *next_screen)
      * normal click detection while this screen is active, so Back taps are
      * hit-tested manually in poll_timer_cb() instead (see back_btn_area()). */
     s_back_btn = lv_button_create(scr);
-    display_style_tile(s_back_btn);
+    display_style_button_dismiss(s_back_btn);
     lv_obj_remove_flag(s_back_btn, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_size(s_back_btn, BACK_BTN_W, BACK_BTN_H);
     lv_obj_set_pos(s_back_btn, (s_disp_w - BACK_BTN_W) / 2, s_disp_h - BACK_BTN_H - BACK_BTN_MARGIN_BOTTOM);

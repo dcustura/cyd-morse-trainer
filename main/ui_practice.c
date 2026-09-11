@@ -267,7 +267,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_TRANSP, 0);
 
     lv_obj_t *back_btn = lv_button_create(right_group);
-    display_style_tile(back_btn);
+    display_style_button_dismiss(back_btn);
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, "Back");
