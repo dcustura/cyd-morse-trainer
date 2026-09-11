@@ -55,8 +55,18 @@ It does not teach receiving/copying code — it is a tool for practicing
      as a distinguishable placeholder (`*`, in red) rather than silently
      dropped, so the operator can see a mis-keyed character happened.
 3. **Settings screen** — reachable from the Main Menu.
-   - **WPM** (words per minute, 5–40): controls dit/dah/gap timing.
-   - **Key mode**: Iambic Mode A, Iambic Mode B, or Straight Key.
+   - A grid of nine large, tappable tiles (three rows of three) filling the
+     whole display with no scrolling and no separate title bar. Each tile
+     shows its setting's name and current value; tapping one opens a popup
+     to change just that value, or (for Touchscreen) a submenu screen.
+     There is no slider or dropdown anywhere on this screen, and no
+     OK/Cancel step — every change is applied to the running trainer and
+     persisted to NVS the moment it's made. The last tile, "< Back",
+     returns to the Main Menu.
+   - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
+     popup has `-`/`+` buttons (press-and-hold to repeat).
+   - **Key mode**: Iambic Mode A, Iambic Mode B, or Straight Key. Its popup
+     lists all three as buttons; tapping one selects it immediately.
      - Iambic modes use both paddle GPIOs, alternating dit/dah while both
        are held ("squeezing"). Briefly tapping the opposite paddle while
        the primary paddle is still held (e.g. dit-dah-dit) latches that
@@ -72,35 +82,29 @@ It does not teach receiving/copying code — it is a tool for practicing
        directly as raw key-down/key-up with no automatic element timing —
        the operator controls dit/dah length by hand.
    - **Paddle swap**: swaps which physical paddle lever is treated as dit
-     vs dah, for operators who prefer the opposite orientation.
-   - **Sidetone frequency** (300–1200 Hz): pitch of the audible tone played
-     while the key is down.
-   - **Sidetone volume** (0–100%): loudness of the sidetone as a percentage
-     of full amplitude.
-   - **Sidetone envelope** (2–100 ms): duration of the attack/decay ramp
-     shaping each key-down/key-up transition, to avoid audible keying
-     clicks.
-   - A "Test tone" button plays the currently selected (not-yet-saved)
-     frequency, volume, and envelope briefly so the operator can audition
-     them together.
-   - "Calibrate Touchscreen" button opens the Touch Calibration screen to
-     redo calibration.
-   - "Verify Calibration" button opens the Verify Calibration screen to
-     check the current calibration visually.
-   - "Reset to Factory Defaults" button, after a Yes/No confirmation,
-     erases both the keyer settings and the touch calibration and restarts
-     the device, which then comes up as if never configured (lands on the
+     vs dah, for operators who prefer the opposite orientation. Its popup
+     offers "Normal"/"Swapped" buttons; tapping one selects it immediately.
+   - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while
+     the key is down. Its popup has `-`/`+` buttons and a "Test" button
+     that briefly plays the sidetone at its current settings.
+   - **Volume** (0–100%): loudness of the sidetone as a percentage of full
+     amplitude. Its popup has `-`/`+` buttons and the same "Test" button.
+   - **Smoothing** (2–100 ms): duration of the attack/decay ramp shaping
+     each key-down/key-up transition, to avoid audible keying clicks. Its
+     popup has `-`/`+` buttons and the same "Test" button.
+   - **Touchscreen** tile opens a submenu screen (its own "< Back" returns
+     to Settings) with two tiles:
+     - "Calibrate" opens the Touch Calibration screen to redo calibration
+       (its Back button returns to this submenu).
+     - "Verify Calibration" opens the Verify Calibration screen to check
+       the current calibration visually (its swipe-Back also returns to
+       this submenu).
+   - "Reset to Factory Defaults" tile, after a Yes/No confirmation, erases
+     both the keyer settings and the touch calibration and restarts the
+     device, which then comes up as if never configured (lands on the
      Touch Calibration screen with compiled-in defaults).
-   - "OK" button persists all keyer/sidetone settings, applies them
-     immediately to the running trainer (no reboot required), and returns
-     to the Main Menu.
-   - "Cancel" button discards any unsaved edits and returns to the Main
-     Menu without applying them.
-   - Whenever the Settings screen is (re-)shown, all controls are reset to
-     the last-saved values, discarding any edits left over from a prior
-     visit that weren't saved with OK.
-4. **Touch Calibration screen** — reachable from Settings ("Calibrate
-   Touchscreen"), and shown automatically at first boot before any
+4. **Touch Calibration screen** — reachable from Settings' Touchscreen
+   submenu ("Calibrate"), and shown automatically at first boot before any
    calibration exists.
    - A 5-point calibration: the operator taps 4 corner crosshair targets
      (inset from the true screen edges so they can't be clipped) plus a
@@ -108,18 +112,19 @@ It does not teach receiving/copying code — it is a tool for practicing
    - The computed calibration (extrapolated out to the true screen edges)
      is stored in NVS and applied immediately.
    - A "Back"/"Cancel" button is shown only when the screen was entered
-     from Settings for re-calibration; the mandatory first-run flow has no
-     way out, since there is no prior calibration to fall back to.
-5. **Verify Calibration screen** — reachable from Settings ("Verify
-   Calibration").
+     from the Touchscreen submenu for re-calibration (returning there); the
+     mandatory first-run flow has no way out, since there is no prior
+     calibration to fall back to.
+5. **Verify Calibration screen** — reachable from Settings' Touchscreen
+   submenu ("Verify Calibration").
    - A full-screen canvas: every touch draws a dot at the exact calibrated
      coordinate (with a live X/Y label), so miscalibration is visible
      directly rather than inferred from misses on real widgets.
    - Navigation is by swipe rather than fixed buttons, since a small
      button is hard to hit precisely under exactly the miscalibration this
      screen exists to diagnose: swipe down from near the top edge to go
-     Back (to Settings), swipe up from near the bottom edge to Clear the
-     drawn dots.
+     Back (to the Touchscreen submenu), swipe up from near the bottom edge
+     to Clear the drawn dots.
 
 ## Behavior details
 

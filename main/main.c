@@ -47,7 +47,6 @@ void app_main(void)
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
                                                     settings.tone_hz, settings.volume_pct, settings.envelope_ms);
-    ui_touch_test_set_back_target(settings_screen);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 

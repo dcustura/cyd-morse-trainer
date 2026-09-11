@@ -8,18 +8,24 @@ extern "C" {
 #endif
 
 /**
- * Create the Settings screen: WPM slider, key-mode dropdown, paddle-swap
- * switch, sidetone-frequency slider, keying-envelope (attack/decay)
- * duration slider, sidetone-volume slider, a "Test tone" button (plays at
- * the currently-selected frequency, envelope, and volume), a "Calibrate
- * Touchscreen" button that navigates to calibration_screen (with its Back
- * button enabled, returning here), a "Verify Calibration" button that
- * navigates to touch_test_screen, a "Reset to Factory Defaults" button with
- * a confirmation popup, and OK/Cancel. Widget changes only take effect when
- * OK is pressed; leaving via Cancel (or any other navigation away from the
- * screen) discards edits, and widgets are reset to the last-saved values
- * the next time the screen is shown. Must be called while holding the LVGL
- * lock (lvgl_port_lock).
+ * Create the Settings screen: a 3x3 grid of tappable tiles (WPM, Key Mode,
+ * Paddle Swap, Touchscreen, Pitch, Volume, Smoothing, Reset to Factory
+ * Defaults, and a final "< Back" tile), filling the whole display with no
+ * scrolling and no separate title bar. Tapping a numeric tile (WPM,
+ * Pitch/Volume/Smoothing) opens a popup with -/+ buttons (supporting
+ * press-and-hold repeat) and, for the sidetone fields (Pitch/Volume/
+ * Smoothing), a "Test" button that plays the sidetone at its current
+ * settings. Tapping Key Mode or Paddle Swap opens a popup listing its
+ * options as buttons. Every change is applied to the running trainer and
+ * persisted to NVS immediately when made; there is no OK/Cancel or
+ * discard-on-cancel step. "Touchscreen" navigates to a submenu screen
+ * (created internally) with two tiles: "Calibrate" (navigates to
+ * calibration_screen, with its Back button enabled, returning to the
+ * submenu) and "Verify Calibration" (navigates to touch_test_screen, whose
+ * swipe-Back also returns to the submenu). "Reset to Factory Defaults"
+ * shows a confirmation popup before erasing settings and calibration and
+ * restarting. The last tile, "< Back", returns to menu_screen. Must be
+ * called while holding the LVGL lock (lvgl_port_lock).
  */
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
