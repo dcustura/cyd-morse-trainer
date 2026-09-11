@@ -17,14 +17,16 @@ void ui_menu_populate(lv_obj_t *menu_screen, lv_obj_t *practice_screen, lv_obj_t
     lv_label_set_text(title, "Morse Trainer");
 
     lv_obj_t *practice_btn = lv_button_create(menu_screen);
-    display_style_button_teal(practice_btn);
+    display_style_tile(practice_btn);
     lv_obj_add_event_cb(practice_btn, nav_btn_cb, LV_EVENT_CLICKED, practice_screen);
     lv_obj_t *practice_label = lv_label_create(practice_btn);
     lv_label_set_text(practice_label, "Practice");
+    lv_obj_set_style_text_color(practice_label, display_compensate_color(lv_color_white()), 0);
 
     lv_obj_t *settings_btn = lv_button_create(menu_screen);
-    display_style_button_teal(settings_btn);
+    display_style_tile(settings_btn);
     lv_obj_add_event_cb(settings_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
     lv_obj_t *settings_label = lv_label_create(settings_btn);
     lv_label_set_text(settings_label, "Settings");
+    lv_obj_set_style_text_color(settings_label, display_compensate_color(lv_color_white()), 0);
 }

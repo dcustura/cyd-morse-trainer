@@ -433,7 +433,7 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
                               void *user_data, lv_obj_t **value_label_out)
 {
     lv_obj_t *tile = lv_button_create(grid);
-    display_style_button_teal(tile);
+    display_style_tile(tile);
     lv_obj_set_grid_cell(tile, LV_GRID_ALIGN_STRETCH, col, 1, LV_GRID_ALIGN_STRETCH, row, 1);
     lv_obj_set_flex_flow(tile, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(tile, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -441,9 +441,13 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
 
     lv_obj_t *name_label = lv_label_create(tile);
     lv_label_set_text(name_label, name);
+    lv_obj_set_style_text_color(name_label, display_compensate_color(lv_color_white()), 0);
 
     if (value_label_out != NULL) {
-        *value_label_out = lv_label_create(tile);
+        lv_obj_t *value_label = lv_label_create(tile);
+        lv_obj_set_style_text_font(value_label, &lv_font_unscii_8, 0);
+        lv_obj_set_style_text_color(value_label, display_compensate_color(lv_color_white()), 0);
+        *value_label_out = value_label;
     }
 
     return tile;

@@ -69,6 +69,13 @@ lv_color_t display_compensate_color(lv_color_t c);
  */
 void display_style_button_teal(lv_obj_t *btn);
 
+/**
+ * Style a Settings-screen tile button: a dark teal background (clearly
+ * visible against the app's black screen background) with white text,
+ * distinct from the brighter teal used for ordinary buttons.
+ */
+void display_style_tile(lv_obj_t *tile);
+
 #ifdef __cplusplus
 }
 #endif
