@@ -24,6 +24,7 @@
 #define ENVELOPE_MS_MAX MORSE_SETTINGS_ENVELOPE_MS_MAX
 #define TEST_TONE_DURATION_MS 300
 #define STEP_BTN_SIZE 60
+#define VALUE_LABEL_WIDTH 70
 #define OPTION_BTN_HEIGHT 70
 #define FOOTER_BTN_HEIGHT 50
 #define FOOTER_BTN_MIN_WIDTH 90
@@ -154,6 +155,12 @@ static void msgbox_close_cb(lv_event_t *e)
     lv_msgbox_close(mbox);
 }
 
+static void strip_pane_style(lv_obj_t *obj)
+{
+    lv_obj_set_style_border_width(obj, 0, 0);
+    lv_obj_set_style_pad_all(obj, 4, 0);
+}
+
 static void style_footer_button(lv_obj_t *btn)
 {
     lv_obj_set_height(btn, FOOTER_BTN_HEIGHT);
@@ -207,7 +214,9 @@ static void open_numeric_popup(numeric_field_t field)
     lv_msgbox_add_title(mbox, info->popup_title);
 
     lv_obj_t *content = lv_msgbox_get_content(mbox);
+    strip_pane_style(content);
     lv_obj_t *row = lv_obj_create(content);
+    strip_pane_style(row);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
@@ -223,6 +232,8 @@ static void open_numeric_popup(numeric_field_t field)
 
     s_popup_value_label = lv_label_create(row);
     lv_obj_set_style_text_font(s_popup_value_label, &lv_font_unscii_8, 0);
+    lv_obj_set_width(s_popup_value_label, VALUE_LABEL_WIDTH);
+    lv_obj_set_style_text_align(s_popup_value_label, LV_TEXT_ALIGN_CENTER, 0);
     update_popup_value_label();
 
     lv_obj_t *plus_btn = lv_button_create(row);
@@ -267,6 +278,7 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_obj_t *mbox = lv_msgbox_create(NULL);
     lv_msgbox_add_title(mbox, "Key Mode");
     lv_obj_t *content = lv_msgbox_get_content(mbox);
+    strip_pane_style(content);
     lv_obj_set_flex_flow(content, LV_FLEX_FLOW_ROW);
 
     static const struct {
@@ -311,6 +323,7 @@ static void swap_tile_cb(lv_event_t *e)
     lv_obj_t *mbox = lv_msgbox_create(NULL);
     lv_msgbox_add_title(mbox, "Paddle Swap");
     lv_obj_t *content = lv_msgbox_get_content(mbox);
+    strip_pane_style(content);
     lv_obj_set_flex_flow(content, LV_FLEX_FLOW_ROW);
 
     static const struct {
