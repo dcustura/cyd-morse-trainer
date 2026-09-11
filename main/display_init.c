@@ -84,11 +84,12 @@ static void init_tft_panel(void)
         .cs_gpio_num = BOARD_TFT_CS_GPIO,
         .dc_gpio_num = BOARD_TFT_DC_GPIO,
         .spi_mode = 0,
-        /* 40MHz (this panel's nominal max) produced garbled/noisy output on
-         * this unit. Confirmed clean on hardware at 26.67MHz (80MHz APB / 3),
-         * one SPI clock step down from 40MHz - re-check visually before
-         * raising this further, and fall back to 20MHz if it ever garbles. */
-        .pclk_hz = 26 * 1000 * 1000 + 666667,
+        /* 40MHz (this panel's nominal max). Originally blamed for garbled
+         * output, but that was actually the wrong panel driver (ILI9341 vs
+         * this unit's real ST7789 - see the comment above LCD_SWAP_XY);
+         * confirmed clean on hardware at 40MHz once the correct driver is
+         * in use. */
+        .pclk_hz = 40 * 1000 * 1000,
         .trans_queue_depth = 10,
         .lcd_cmd_bits = 8,
         .lcd_param_bits = 8,
