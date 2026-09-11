@@ -139,11 +139,8 @@ static void drain_queue_timer_cb(lv_timer_t *timer)
         scroll_text_to_bottom();
     }
 
-    if (paddle_input_is_keying()) {
-        lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(s_keying_dot, LV_OBJ_FLAG_HIDDEN);
-    }
+    lv_opa_t dot_opa = paddle_input_is_keying() ? LV_OPA_COVER : LV_OPA_TRANSP;
+    lv_obj_set_style_bg_opa(s_keying_dot, dot_opa, 0);
 }
 
 static void clear_btn_cb(lv_event_t *e)
@@ -189,6 +186,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
 
     lv_obj_t *btn_row = lv_obj_create(scr);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *clear_btn = lv_button_create(btn_row);
@@ -198,17 +196,15 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_label_set_text(clear_label, "Clear");
     lv_obj_set_style_text_color(clear_label, display_compensate_color(lv_color_white()), 0);
 
-    lv_obj_t *back_btn = lv_button_create(btn_row);
-    display_style_tile(back_btn);
-    lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
-
+    /* status_col (WPM/Mode) is centered in btn_row independent of Clear's
+     * and right_group's widths, so it stays visually centered regardless of
+     * label length. */
     lv_obj_t *status_col = lv_obj_create(btn_row);
     lv_obj_remove_style_all(status_col);
     lv_obj_set_flex_flow(status_col, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_size(status_col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_add_flag(status_col, LV_OBJ_FLAG_IGNORE_LAYOUT);
+    lv_obj_align(status_col, LV_ALIGN_CENTER, 0, 0);
 
     s_wpm_label = lv_label_create(status_col);
     lv_label_set_text_fmt(s_wpm_label, "WPM: %u", (unsigned)initial_wpm);
@@ -216,19 +212,36 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     s_mode_label = lv_label_create(status_col);
     lv_label_set_text_fmt(s_mode_label, "Mode: %s", mode_name(initial_mode));
 
+    /* right_group (the keying dot, then Back) is right-anchored in btn_row
+     * as a unit, with Back as its last child so Back itself stays flush
+     * against the row's right edge - the dot sits just to Back's left. */
+    lv_obj_t *right_group = lv_obj_create(btn_row);
+    lv_obj_remove_style_all(right_group);
+    lv_obj_set_flex_flow(right_group, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(right_group, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(right_group, 8, 0);
+    lv_obj_set_size(right_group, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_add_flag(right_group, LV_OBJ_FLAG_IGNORE_LAYOUT);
+    lv_obj_align(right_group, LV_ALIGN_RIGHT_MID, 0, 0);
+
     /* Layout must run once so clear_btn's height reflects its label/padding. */
     lv_obj_update_layout(btn_row);
     int32_t dot_diameter = lv_obj_get_height(clear_btn) / 2;
 
-    s_keying_dot = lv_obj_create(btn_row);
+    s_keying_dot = lv_obj_create(right_group);
     lv_obj_remove_style_all(s_keying_dot);
     lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_add_flag(s_keying_dot, LV_OBJ_FLAG_IGNORE_LAYOUT | LV_OBJ_FLAG_HIDDEN);
     lv_obj_set_size(s_keying_dot, dot_diameter, dot_diameter);
     lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(s_keying_dot, display_compensate_color(lv_palette_main(LV_PALETTE_RED)), 0);
-    lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_COVER, 0);
-    lv_obj_align(s_keying_dot, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_TRANSP, 0);
+
+    lv_obj_t *back_btn = lv_button_create(right_group);
+    display_style_tile(back_btn);
+    lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
+    lv_obj_t *back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, "Back");
+    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
 
     lv_timer_create(drain_queue_timer_cb, QUEUE_DRAIN_PERIOD_MS, NULL);
 
