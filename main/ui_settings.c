@@ -163,7 +163,7 @@ static void strip_pane_style(lv_obj_t *obj)
 
 static void style_footer_button(lv_obj_t *btn)
 {
-    display_style_button_teal(btn);
+    display_style_tile(btn);
     lv_obj_set_height(btn, FOOTER_BTN_HEIGHT);
     lv_obj_set_style_min_width(btn, FOOTER_BTN_MIN_WIDTH, 0);
 }
@@ -180,6 +180,7 @@ static lv_obj_t *create_action_button(lv_obj_t *parent, const char *text, lv_eve
     lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, user_data);
     lv_obj_t *label = lv_label_create(btn);
     lv_label_set_text(label, text);
+    lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
     lv_obj_center(label);
     return btn;
 }
@@ -241,12 +242,13 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *minus_btn = lv_button_create(row);
-    display_style_button_teal(minus_btn);
+    display_style_tile(minus_btn);
     lv_obj_set_size(minus_btn, STEP_BTN_SIZE, STEP_BTN_SIZE);
     lv_obj_add_event_cb(minus_btn, numeric_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)(-info->step));
     lv_obj_add_event_cb(minus_btn, numeric_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)(-info->step));
     lv_obj_t *minus_label = lv_label_create(minus_btn);
     lv_label_set_text(minus_label, "-");
+    lv_obj_set_style_text_color(minus_label, display_compensate_color(lv_color_white()), 0);
     lv_obj_center(minus_label);
 
     s_popup_value_label = lv_label_create(row);
@@ -256,12 +258,13 @@ static void open_numeric_popup(numeric_field_t field)
     update_popup_value_label();
 
     lv_obj_t *plus_btn = lv_button_create(row);
-    display_style_button_teal(plus_btn);
+    display_style_tile(plus_btn);
     lv_obj_set_size(plus_btn, STEP_BTN_SIZE, STEP_BTN_SIZE);
     lv_obj_add_event_cb(plus_btn, numeric_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)(info->step));
     lv_obj_add_event_cb(plus_btn, numeric_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)(info->step));
     lv_obj_t *plus_label = lv_label_create(plus_btn);
     lv_label_set_text(plus_label, "+");
+    lv_obj_set_style_text_color(plus_label, display_compensate_color(lv_color_white()), 0);
     lv_obj_center(plus_label);
 
     lv_obj_t *actions_row = lv_obj_create(content);
@@ -319,13 +322,14 @@ static void keymode_tile_cb(lv_event_t *e)
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
         lv_obj_t *btn = lv_button_create(options_row);
-        display_style_button_teal(btn);
+        display_style_tile(btn);
         lv_obj_set_flex_grow(btn, 1);
         lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
         lv_obj_add_event_cb(btn, keymode_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].mode);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
         lv_obj_t *label = lv_label_create(btn);
         lv_label_set_text(label, options[i].label);
+        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
         lv_obj_center(label);
     }
 
@@ -367,13 +371,14 @@ static void swap_tile_cb(lv_event_t *e)
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
         lv_obj_t *btn = lv_button_create(options_row);
-        display_style_button_teal(btn);
+        display_style_tile(btn);
         lv_obj_set_flex_grow(btn, 1);
         lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
         lv_obj_add_event_cb(btn, swap_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].swap);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
         lv_obj_t *label = lv_label_create(btn);
         lv_label_set_text(label, options[i].label);
+        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
         lv_obj_center(label);
     }
 
