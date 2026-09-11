@@ -13,7 +13,7 @@ idf_component_register(SRCS "main.c"
                        REQUIRES example_component
                                 iambic_keyer
                                 morse_codec
-                                morse_settings
+                                settings
                                 touch_calibration
                                 driver
                                 esp_driver_dac

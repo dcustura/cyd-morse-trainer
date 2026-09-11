@@ -16,7 +16,7 @@
 
 static const char *TAG = "settings_store";
 
-static esp_err_t load_from_nvs(morse_settings_t *out)
+static esp_err_t load_from_nvs(settings_t *out)
 {
     nvs_handle_t handle;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READONLY, &handle);
@@ -31,12 +31,12 @@ static esp_err_t load_from_nvs(morse_settings_t *out)
 
     uint16_t raw_wpm;
     if (nvs_get_u16(handle, NVS_KEY_WPM, &raw_wpm) == ESP_OK) {
-        out->wpm = morse_settings_clamp_wpm(raw_wpm);
+        out->wpm = settings_clamp_wpm(raw_wpm);
     }
 
     uint8_t raw_keymode;
     if (nvs_get_u8(handle, NVS_KEY_KEYMODE, &raw_keymode) == ESP_OK) {
-        out->keymode = morse_settings_validate_keymode(raw_keymode);
+        out->keymode = settings_validate_keymode(raw_keymode);
     }
 
     uint8_t raw_swap;
@@ -46,29 +46,29 @@ static esp_err_t load_from_nvs(morse_settings_t *out)
 
     uint16_t raw_tone_hz;
     if (nvs_get_u16(handle, NVS_KEY_TONE_HZ, &raw_tone_hz) == ESP_OK) {
-        out->tone_hz = morse_settings_clamp_tone_hz(raw_tone_hz);
+        out->tone_hz = settings_clamp_tone_hz(raw_tone_hz);
     }
 
     uint8_t raw_volume_pct;
     if (nvs_get_u8(handle, NVS_KEY_VOLUME_PCT, &raw_volume_pct) == ESP_OK) {
-        out->volume_pct = morse_settings_clamp_volume_pct(raw_volume_pct);
+        out->volume_pct = settings_clamp_volume_pct(raw_volume_pct);
     }
 
     uint16_t raw_envelope_ms;
     if (nvs_get_u16(handle, NVS_KEY_ENVELOPE_MS, &raw_envelope_ms) == ESP_OK) {
-        out->envelope_ms = morse_settings_clamp_envelope_ms(raw_envelope_ms);
+        out->envelope_ms = settings_clamp_envelope_ms(raw_envelope_ms);
     }
 
     uint8_t raw_brightness_pct;
     if (nvs_get_u8(handle, NVS_KEY_BRIGHTNESS_PCT, &raw_brightness_pct) == ESP_OK) {
-        out->brightness_pct = morse_settings_clamp_brightness_pct(raw_brightness_pct);
+        out->brightness_pct = settings_clamp_brightness_pct(raw_brightness_pct);
     }
 
     nvs_close(handle);
     return ESP_OK;
 }
 
-esp_err_t settings_store_init_and_load(morse_settings_t *out)
+esp_err_t settings_store_init_and_load(settings_t *out)
 {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -77,11 +77,11 @@ esp_err_t settings_store_init_and_load(morse_settings_t *out)
     }
     ESP_ERROR_CHECK(err);
 
-    morse_settings_set_defaults(out);
+    settings_set_defaults(out);
     return load_from_nvs(out);
 }
 
-esp_err_t settings_store_save(const morse_settings_t *in)
+esp_err_t settings_store_save(const settings_t *in)
 {
     nvs_handle_t handle;
     esp_err_t err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &handle);

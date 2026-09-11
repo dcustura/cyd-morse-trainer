@@ -14,16 +14,16 @@
 #include <stdio.h>
 #include <string.h>
 
-#define WPM_MIN MORSE_SETTINGS_WPM_MIN
-#define WPM_MAX MORSE_SETTINGS_WPM_MAX
-#define TONE_HZ_MIN MORSE_SETTINGS_TONE_HZ_MIN
-#define TONE_HZ_MAX MORSE_SETTINGS_TONE_HZ_MAX
-#define VOLUME_PCT_MIN MORSE_SETTINGS_VOLUME_PCT_MIN
-#define VOLUME_PCT_MAX MORSE_SETTINGS_VOLUME_PCT_MAX
-#define ENVELOPE_MS_MIN MORSE_SETTINGS_ENVELOPE_MS_MIN
-#define ENVELOPE_MS_MAX MORSE_SETTINGS_ENVELOPE_MS_MAX
-#define BRIGHTNESS_PCT_MIN MORSE_SETTINGS_BRIGHTNESS_PCT_MIN
-#define BRIGHTNESS_PCT_MAX MORSE_SETTINGS_BRIGHTNESS_PCT_MAX
+#define WPM_MIN SETTINGS_WPM_MIN
+#define WPM_MAX SETTINGS_WPM_MAX
+#define TONE_HZ_MIN SETTINGS_TONE_HZ_MIN
+#define TONE_HZ_MAX SETTINGS_TONE_HZ_MAX
+#define VOLUME_PCT_MIN SETTINGS_VOLUME_PCT_MIN
+#define VOLUME_PCT_MAX SETTINGS_VOLUME_PCT_MAX
+#define ENVELOPE_MS_MIN SETTINGS_ENVELOPE_MS_MIN
+#define ENVELOPE_MS_MAX SETTINGS_ENVELOPE_MS_MAX
+#define BRIGHTNESS_PCT_MIN SETTINGS_BRIGHTNESS_PCT_MIN
+#define BRIGHTNESS_PCT_MAX SETTINGS_BRIGHTNESS_PCT_MAX
 #define TEST_TONE_DURATION_MS 300
 #define STEP_BTN_SIZE 60
 #define VALUE_LABEL_WIDTH 70
@@ -61,7 +61,7 @@ static lv_obj_t *s_settings_screen;
 static lv_obj_t *s_touch_submenu_screen;
 static lv_obj_t *s_keyer_submenu_screen;
 static lv_obj_t *s_sidetone_submenu_screen;
-static morse_settings_t s_current_settings;
+static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
 static lv_obj_t *s_keymode_tile_value;
@@ -636,7 +636,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
                               uint8_t initial_brightness_pct)
 {
-    s_current_settings = (morse_settings_t){
+    s_current_settings = (settings_t){
         .wpm = initial_wpm,
         .keymode = initial_mode,
         .paddle_swap = initial_swap,

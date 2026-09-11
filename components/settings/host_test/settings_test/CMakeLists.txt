@@ -8,4 +8,4 @@ set(COMPONENTS main)
 set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../..")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(morse_settings_test)
+project(settings_test)

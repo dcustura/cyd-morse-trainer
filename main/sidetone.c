@@ -34,7 +34,7 @@ _Static_assert(BOARD_SPEAKER_GPIO == 26,
  * Raised-cosine keying envelope (avoids the key clicks a hard on/off would
  * produce). Runtime-adjustable via sidetone_set_envelope_ms(); MS_MIN/MAX
  * here just bound the fixed-size table below and should stay in sync with
- * MORSE_SETTINGS_ENVELOPE_MS_MIN/MAX in morse_settings.h, which own the
+ * SETTINGS_ENVELOPE_MS_MIN/MAX in settings.h, which own the
  * user-facing range.
  */
 #define SIDETONE_ENVELOPE_MS_MIN    2u

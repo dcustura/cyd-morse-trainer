@@ -3,7 +3,7 @@
 
 static void run_all_tests(void)
 {
-    RUN_TEST_GROUP(morse_settings);
+    RUN_TEST_GROUP(settings);
 }
 
 void app_main(void)

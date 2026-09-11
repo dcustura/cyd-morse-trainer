@@ -1,7 +1,7 @@
 #include "display_init.h"
 
 #include "board_pins.h"
-#include "morse_settings.h"
+#include "settings.h"
 
 #include "esp_log.h"
 #include "driver/spi_master.h"
@@ -69,7 +69,7 @@ static esp_lcd_touch_handle_t s_touch_handle;
 
 static uint32_t backlight_pct_to_duty(uint8_t pct)
 {
-    pct = morse_settings_clamp_brightness_pct(pct);
+    pct = settings_clamp_brightness_pct(pct);
     return (uint32_t)pct * BACKLIGHT_LEDC_DUTY_MAX / 100;
 }
 

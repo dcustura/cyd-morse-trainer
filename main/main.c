@@ -19,7 +19,7 @@ static const char *TAG = "morse_trainer";
 
 void app_main(void)
 {
-    morse_settings_t settings;
+    settings_t settings;
     ESP_ERROR_CHECK(settings_store_init_and_load(&settings));
 
     touch_calibration_t touch_cal;
