@@ -1,5 +1,6 @@
 #include "ui_settings.h"
 
+#include "auto_brightness.h"
 #include "display_init.h"
 #include "paddle_input.h"
 #include "settings_store.h"
@@ -71,9 +72,12 @@ static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
 static lv_obj_t *s_brightness_tile_value;
 
-/* Only one popup can be open at a time; these track the one currently shown. */
+/* Only one popup can be open at a time; these track the one currently shown.
+ * s_popup_brightness_auto_btn is only set (non-NULL) while the Brightness
+ * popup specifically is open. */
 static numeric_field_t s_popup_field;
 static lv_obj_t *s_popup_value_label;
+static lv_obj_t *s_popup_brightness_auto_btn;
 
 static const char *keymode_text(iambic_keyer_mode_t mode)
 {
@@ -108,8 +112,12 @@ static void refresh_tile_labels(void)
     snprintf(text, sizeof(text), s_field_info[FIELD_ENVELOPE].unit_fmt, (int)s_current_settings.envelope_ms);
     lv_label_set_text(s_envelope_tile_value, text);
 
-    snprintf(text, sizeof(text), s_field_info[FIELD_BRIGHTNESS].unit_fmt, (int)s_current_settings.brightness_pct);
-    lv_label_set_text(s_brightness_tile_value, text);
+    if (s_current_settings.brightness_auto) {
+        lv_label_set_text(s_brightness_tile_value, "Auto");
+    } else {
+        snprintf(text, sizeof(text), s_field_info[FIELD_BRIGHTNESS].unit_fmt, (int)s_current_settings.brightness_pct);
+        lv_label_set_text(s_brightness_tile_value, text);
+    }
 }
 
 static int32_t field_get_value(numeric_field_t field)
@@ -151,6 +159,14 @@ static void field_set_value(numeric_field_t field, int32_t value)
         break;
     case FIELD_BRIGHTNESS:
         s_current_settings.brightness_pct = (uint8_t)value;
+        if (s_current_settings.brightness_auto) {
+            /* Stepping always overrides Auto, matching the toggle button. */
+            s_current_settings.brightness_auto = false;
+            auto_brightness_set_enabled(false);
+            if (s_popup_brightness_auto_btn != NULL) {
+                lv_label_set_text(lv_obj_get_child(s_popup_brightness_auto_btn, 0), "Auto");
+            }
+        }
         display_set_brightness(s_current_settings.brightness_pct);
         break;
     default:
@@ -222,9 +238,29 @@ static void test_field_btn_cb(lv_event_t *e)
 
 static void update_popup_value_label(void)
 {
+    if (s_popup_field == FIELD_BRIGHTNESS && s_current_settings.brightness_auto) {
+        lv_label_set_text(s_popup_value_label, "Auto");
+        return;
+    }
     char text[24];
     snprintf(text, sizeof(text), s_field_info[s_popup_field].unit_fmt, (int)field_get_value(s_popup_field));
     lv_label_set_text(s_popup_value_label, text);
+}
+
+static void brightness_auto_toggle_cb(lv_event_t *e)
+{
+    (void)e;
+    s_current_settings.brightness_auto = !s_current_settings.brightness_auto;
+    auto_brightness_set_enabled(s_current_settings.brightness_auto);
+    if (!s_current_settings.brightness_auto) {
+        display_set_brightness(s_current_settings.brightness_pct);
+    }
+    settings_store_save(&s_current_settings);
+
+    lv_label_set_text(lv_obj_get_child(s_popup_brightness_auto_btn, 0),
+                       s_current_settings.brightness_auto ? "Manual" : "Auto");
+    update_popup_value_label();
+    refresh_tile_labels();
 }
 
 static void numeric_step_cb(lv_event_t *e)
@@ -248,6 +284,7 @@ static void numeric_step_cb(lv_event_t *e)
 static void open_numeric_popup(numeric_field_t field)
 {
     s_popup_field = field;
+    s_popup_brightness_auto_btn = NULL;
     const numeric_field_info_t *info = &s_field_info[field];
 
     lv_obj_t *mbox = lv_msgbox_create(NULL);
@@ -298,6 +335,11 @@ static void open_numeric_popup(numeric_field_t field)
 
     if (info->has_test) {
         create_action_button(actions_row, "Test", test_field_btn_cb, NULL, false);
+    }
+    if (field == FIELD_BRIGHTNESS) {
+        s_popup_brightness_auto_btn = create_action_button(
+            actions_row, s_current_settings.brightness_auto ? "Manual" : "Auto", brightness_auto_toggle_cb, NULL,
+            false);
     }
     create_action_button(actions_row, "Close", msgbox_close_cb, mbox, true);
 }
@@ -634,7 +676,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
                               uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
-                              uint8_t initial_brightness_pct)
+                              uint8_t initial_brightness_pct, bool initial_brightness_auto)
 {
     s_current_settings = (settings_t){
         .wpm = initial_wpm,
@@ -644,6 +686,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
         .volume_pct = initial_volume_pct,
         .envelope_ms = initial_envelope_ms,
         .brightness_pct = initial_brightness_pct,
+        .brightness_auto = initial_brightness_auto,
     };
 
     lv_obj_t *scr = lv_obj_create(NULL);

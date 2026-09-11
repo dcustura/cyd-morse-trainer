@@ -1,4 +1,5 @@
 #include "esp_log.h"
+#include "auto_brightness.h"
 #include "display_init.h"
 #include "esp_lvgl_port.h"
 #include "paddle_input.h"
@@ -35,6 +36,11 @@ void app_main(void)
         display_touch_apply_calibration(&touch_cal);
     }
 
+    auto_brightness_init();
+    if (settings.brightness_auto) {
+        auto_brightness_set_enabled(true);
+    }
+
     QueueHandle_t decoded_char_queue = xQueueCreate(DECODED_CHAR_QUEUE_DEPTH, sizeof(char));
 
     lvgl_port_lock(0);
@@ -47,7 +53,7 @@ void app_main(void)
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
                                                     settings.tone_hz, settings.volume_pct, settings.envelope_ms,
-                                                    settings.brightness_pct);
+                                                    settings.brightness_pct, settings.brightness_auto);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 

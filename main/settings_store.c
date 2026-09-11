@@ -13,6 +13,7 @@
 #define NVS_KEY_VOLUME_PCT "volume_pct"
 #define NVS_KEY_ENVELOPE_MS "envelope_ms"
 #define NVS_KEY_BRIGHTNESS_PCT "brightness_pct"
+#define NVS_KEY_BRIGHTNESS_AUTO "brightness_auto"
 
 static const char *TAG = "settings_store";
 
@@ -64,6 +65,11 @@ static esp_err_t load_from_nvs(settings_t *out)
         out->brightness_pct = settings_clamp_brightness_pct(raw_brightness_pct);
     }
 
+    uint8_t raw_brightness_auto;
+    if (nvs_get_u8(handle, NVS_KEY_BRIGHTNESS_AUTO, &raw_brightness_auto) == ESP_OK) {
+        out->brightness_auto = (raw_brightness_auto != 0);
+    }
+
     nvs_close(handle);
     return ESP_OK;
 }
@@ -97,6 +103,7 @@ esp_err_t settings_store_save(const settings_t *in)
     nvs_set_u8(handle, NVS_KEY_VOLUME_PCT, in->volume_pct);
     nvs_set_u16(handle, NVS_KEY_ENVELOPE_MS, in->envelope_ms);
     nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_PCT, in->brightness_pct);
+    nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_AUTO, in->brightness_auto ? 1 : 0);
 
     err = nvs_commit(handle);
     nvs_close(handle);

@@ -79,4 +79,13 @@ menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
         int "Paddle DAH GPIO"
         default 27
 
+    config MORSE_LDR_GPIO
+        int "Onboard LDR (ambient light sensor) ADC GPIO"
+        default 34
+        help
+            This board's onboard light-dependent resistor is wired to
+            GPIO34 (ADC1 channel 6). Changing this away from 34 also
+            requires updating the hardcoded ADC1_CHANNEL_6 in
+            main/auto_brightness.c to match the new pin's ADC channel.
+
 endmenu

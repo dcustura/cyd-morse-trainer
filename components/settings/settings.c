@@ -73,4 +73,5 @@ void settings_set_defaults(settings_t *out)
     out->volume_pct = SETTINGS_DEFAULT_VOLUME_PCT;
     out->envelope_ms = SETTINGS_DEFAULT_ENVELOPE_MS;
     out->brightness_pct = SETTINGS_DEFAULT_BRIGHTNESS_PCT;
+    out->brightness_auto = SETTINGS_DEFAULT_BRIGHTNESS_AUTO;
 }

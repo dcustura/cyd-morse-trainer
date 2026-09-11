@@ -17,7 +17,11 @@ extern "C" {
  * Smoothing, Brightness) opens a popup with -/+ buttons (supporting
  * press-and-hold repeat) and, for the sidetone fields (Pitch/Volume/
  * Smoothing), a "Test" button that plays the sidetone at its current
- * settings. Tapping Key Mode or Paddle Swap opens a popup listing its
+ * settings. The Brightness popup additionally has an "Auto"/"Manual"
+ * toggle button: in Auto mode the backlight is driven by the onboard
+ * ambient-light sensor and the tile shows "Auto" instead of a percentage;
+ * pressing +/- always switches back to Manual immediately. Tapping Key Mode
+ * or Paddle Swap opens a popup listing its
  * options as a row of equal-width, finger-sized buttons (Key Mode:
  * "Mode A"/"Mode B"/"Straight"; Paddle Swap: "Normal"/"Swapped"). Every
  * change is applied to the running trainer and
@@ -35,7 +39,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
                               uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
-                              uint8_t initial_brightness_pct);
+                              uint8_t initial_brightness_pct, bool initial_brightness_auto);
 
 #ifdef __cplusplus
 }

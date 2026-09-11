@@ -1,4 +1,5 @@
 idf_component_register(SRCS "main.c"
+                             "auto_brightness.c"
                              "display_init.c"
                              "sidetone.c"
                              "paddle_input.c"
@@ -16,6 +17,7 @@ idf_component_register(SRCS "main.c"
                                 settings
                                 touch_calibration
                                 driver
+                                esp_adc
                                 esp_driver_dac
                                 esp_driver_ledc
                                 esp_lcd
