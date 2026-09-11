@@ -59,16 +59,11 @@ static void append_plain_char(char ch)
 /* Adds a standalone styled span (a prosign abbreviation or the
  * unknown-sequence placeholder) and ends the current plain run so the next
  * plain character starts a fresh span rather than continuing this one. */
-static void append_special_span(const char *text, bool underline, bool recolor, lv_color_t color)
+static void append_special_span(const char *text, lv_color_t color)
 {
     lv_span_t *span = lv_spangroup_add_span(s_text_spans);
     lv_style_t *style = lv_span_get_style(span);
-    if (underline) {
-        lv_style_set_text_decor(style, LV_TEXT_DECOR_UNDERLINE);
-    }
-    if (recolor) {
-        lv_style_set_text_color(style, color);
-    }
+    lv_style_set_text_color(style, color);
     lv_spangroup_set_span_text(s_text_spans, span, text);
     reset_plain_run();
 }
@@ -77,13 +72,15 @@ static void append_decoded_char(char ch)
 {
     if (ch == MORSE_CODEC_UNKNOWN_CHAR) {
         char text[2] = { ch, '\0' };
-        append_special_span(text, false, true, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
+        append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
         return;
     }
 
     const char *prosign_name = morse_codec_prosign_name(ch);
     if (prosign_name != NULL) {
-        append_special_span(prosign_name, true, false, lv_color_black());
+        char text[8];
+        snprintf(text, sizeof(text), "/%s", prosign_name);
+        append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_GREEN)));
         return;
     }
 
@@ -125,8 +122,8 @@ static void screen_loaded_cb(lv_event_t *e)
  * automatic sizing gives its *last* line zero margin below the glyphs -
  * see lv_spangroup_get_expand_height() summing each line's
  * font-height-plus-line-space, then subtracting one line-space to avoid a
- * trailing gap - so a decoration like the underline on a prosign span,
- * which renders a couple of pixels below that, is clipped for as long as
+ * trailing gap - so glyph ink that extends a couple of pixels below the
+ * font's reported line box (e.g. descenders) is clipped for as long as
  * its line is the last one). Padding the height by a few pixels beyond
  * what lv_spangroup_get_expand_height() reports gives every line, including
  * whichever one is currently last, room for that overhang. */
