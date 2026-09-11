@@ -433,11 +433,16 @@ static void reset_btn_cb(lv_event_t *e)
     lv_msgbox_add_title(mbox, "Reset to Factory Defaults?");
     lv_msgbox_add_text(mbox, "This clears all keyer settings and the touch calibration, then restarts the device.");
 
-    lv_obj_t *reset_confirm_btn = lv_msgbox_add_footer_button(mbox, "Reset");
-    lv_obj_add_event_cb(reset_confirm_btn, reset_confirm_btn_cb, LV_EVENT_CLICKED, mbox);
+    lv_obj_t *content = lv_msgbox_get_content(mbox);
+    lv_obj_t *actions_row = lv_obj_create(content);
+    strip_pane_style(actions_row);
+    lv_obj_set_flex_flow(actions_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(actions_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(actions_row, 8, 0);
+    lv_obj_set_size(actions_row, LV_PCT(100), LV_SIZE_CONTENT);
 
-    lv_obj_t *cancel_btn = lv_msgbox_add_footer_button(mbox, "Cancel");
-    lv_obj_add_event_cb(cancel_btn, reset_confirm_btn_cb, LV_EVENT_CLICKED, mbox);
+    create_action_button(actions_row, "Reset", reset_confirm_btn_cb, mbox, false);
+    create_action_button(actions_row, "Cancel", reset_confirm_btn_cb, mbox, true);
 }
 
 static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
