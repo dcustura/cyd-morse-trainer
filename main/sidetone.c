@@ -29,6 +29,8 @@ _Static_assert(BOARD_SPEAKER_GPIO == 26,
 
 #define SIDETONE_SINE_TABLE_BITS   8u
 #define SIDETONE_SINE_TABLE_LEN    (1u << SIDETONE_SINE_TABLE_BITS)
+/* Width of the fractional phase used to interpolate between table entries. */
+#define SIDETONE_SINE_FRAC_BITS    8u
 
 /*
  * Raised-cosine keying envelope (avoids the key clicks a hard on/off would
@@ -74,6 +76,21 @@ static void generate_sine_table(void)
         float rad = 2.0f * (float)M_PI * (float)i / (float)SIDETONE_SINE_TABLE_LEN;
         s_sine_table[i] = (int8_t)lrintf(127.0f * sinf(rad));
     }
+}
+
+/*
+ * Linearly interpolates between adjacent table entries using the phase bits
+ * below the table index, instead of a bare nearest-neighbor lookup, to cut
+ * the phase-truncation spurs a 256-entry table would otherwise introduce.
+ */
+static float sine_lookup(uint32_t phase)
+{
+    uint32_t idx = phase >> (32 - SIDETONE_SINE_TABLE_BITS);
+    uint32_t frac = (phase >> (32 - SIDETONE_SINE_TABLE_BITS - SIDETONE_SINE_FRAC_BITS)) &
+                    ((1u << SIDETONE_SINE_FRAC_BITS) - 1u);
+    int8_t s0 = s_sine_table[idx];
+    int8_t s1 = s_sine_table[(idx + 1) & (SIDETONE_SINE_TABLE_LEN - 1)];
+    return (float)s0 + ((float)(s1 - s0) * (float)frac) / (float)(1u << SIDETONE_SINE_FRAC_BITS);
 }
 
 /* Regenerates s_envelope_ramp for a new duration and atomically publishes its length last. */
@@ -186,10 +203,10 @@ static void audio_task(void *arg)
 
         uint32_t incr = atomic_load_explicit(&s_phase_incr, memory_order_relaxed);
         uint32_t vol_q16 = atomic_load_explicit(&s_volume_q16, memory_order_relaxed);
+        float vol_scale = (float)vol_q16 / 65536.0f;
         for (uint32_t i = 0; i < SIDETONE_CHUNK_SAMPLES; i++) {
             float env = next_envelope_value();
-            int8_t sample = s_sine_table[phase >> (32 - SIDETONE_SINE_TABLE_BITS)];
-            float scaled = (float)sample * env * ((float)vol_q16 / 65536.0f);
+            float scaled = sine_lookup(phase) * env * vol_scale;
             chunk[i] = (uint8_t)(128 + (int)lrintf(scaled));
             phase += incr;
         }
