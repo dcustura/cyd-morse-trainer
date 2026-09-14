@@ -59,20 +59,84 @@ static void append_plain_char(char ch)
 /* Adds a standalone styled span (a prosign abbreviation or the
  * unknown-sequence placeholder) and ends the current plain run so the next
  * plain character starts a fresh span rather than continuing this one. */
-static void append_special_span(const char *text, lv_color_t color)
+static lv_span_t *append_special_span(const char *text, lv_color_t color)
 {
     lv_span_t *span = lv_spangroup_add_span(s_text_spans);
     lv_style_t *style = lv_span_get_style(span);
     lv_style_set_text_color(style, color);
     lv_spangroup_set_span_text(s_text_spans, span, text);
     reset_plain_run();
+    return span;
+}
+
+/* Whether the very next decoded event, if it's a word-gap SPACE, should be
+ * dropped instead of rendered. Set after force_line_break(): lv_spangroup
+ * only eats leading spaces that follow an *automatic* wrap, not an explicit
+ * '\n', so a word gap the operator happens to key right after BT/AR/SK would
+ * otherwise show up as a stray leading blank on the new line. */
+static bool s_suppress_leading_space;
+
+/* Embeds a literal newline in the growing plain run; lv_spangroup forces a
+ * line break there. '\n' isn't in lv_font_unscii_8's glyph range (32-127),
+ * so it draws with zero width - no stray glyph, unlike padding with spaces
+ * would produce (and spaces run the risk of being silently eaten by
+ * lv_spangroup's leading-space-collapsing on the next auto-wrapped line, so
+ * padding can't reliably produce a guaranteed blank line either). */
+static void force_line_break(void)
+{
+    append_plain_char('\n');
+    s_suppress_leading_space = true;
+}
+
+/* Tracks the most recently appended unknown-sequence marker span, valid only
+ * as long as nothing else has been appended after it - see erase_last_word(). */
+static lv_span_t *s_trailing_unknown_span;
+
+/* HH ("error, back up") erases the word currently being typed, matching its
+ * traditional meaning as a correction signal. It reaches back into the
+ * current plain run (the text since the last badge/newline) and, if that
+ * run is empty because the very last thing shown was a garbled/unknown
+ * sequence, removes that marker too - typing HH right after a real prosign
+ * badge or a forced line break is still a no-op. */
+static void erase_last_word(void)
+{
+    if (s_plain_span != NULL && s_plain_len > 0) {
+        size_t new_len = s_plain_len;
+        if (new_len > 0 && s_plain_buf[new_len - 1] == ' ') {
+            new_len--;
+        }
+        while (new_len > 0 && s_plain_buf[new_len - 1] != ' ') {
+            new_len--;
+        }
+
+        s_plain_len = new_len;
+        s_plain_buf[s_plain_len] = '\0';
+        lv_spangroup_set_span_text(s_text_spans, s_plain_span, s_plain_buf);
+        return;
+    }
+
+    if (s_trailing_unknown_span != NULL) {
+        lv_spangroup_delete_span(s_text_spans, s_trailing_unknown_span);
+        s_trailing_unknown_span = NULL;
+    }
 }
 
 static void append_decoded_char(char ch)
 {
+    bool suppress_space = s_suppress_leading_space;
+    s_suppress_leading_space = false;
+    if (suppress_space && ch == ' ') {
+        return;
+    }
+
+    if (ch == MORSE_CODEC_PROSIGN_HH) {
+        erase_last_word();
+        return;
+    }
+
     if (ch == MORSE_CODEC_UNKNOWN_CHAR) {
         char text[2] = { ch, '\0' };
-        append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
+        s_trailing_unknown_span = append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
         return;
     }
 
@@ -81,10 +145,26 @@ static void append_decoded_char(char ch)
         char text[8];
         snprintf(text, sizeof(text), "/%s", prosign_name);
         append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_GREEN)));
+        s_trailing_unknown_span = NULL;
+
+        if (ch == MORSE_CODEC_PROSIGN_SK) {
+            /* End of contact: leave a blank line before whatever follows. */
+            force_line_break();
+            force_line_break();
+        }
         return;
     }
 
     append_plain_char(ch);
+    s_trailing_unknown_span = NULL;
+
+    /* BT and AR are sent as one unbroken sequence that also happens to be
+     * the standard timing for '=' and '+' (see morse_codec.h); by the same
+     * convention used there, treat either glyph as the prosign and break
+     * the line after it. */
+    if (ch == '=' || ch == '+') {
+        force_line_break();
+    }
 }
 
 static const char *mode_name(iambic_keyer_mode_t mode)
@@ -162,6 +242,8 @@ static void clear_btn_cb(lv_event_t *e)
         lv_spangroup_delete_span(s_text_spans, lv_spangroup_get_child(s_text_spans, 0));
     }
     reset_plain_run();
+    s_suppress_leading_space = false;
+    s_trailing_unknown_span = NULL;
     paddle_input_reset_decoder();
     lv_obj_scroll_to_y(s_text_container, 0, LV_ANIM_OFF);
 }
