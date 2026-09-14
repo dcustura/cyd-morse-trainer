@@ -93,6 +93,7 @@ TEST(settings, set_defaults_populates_the_compiled_in_defaults)
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_WPM, settings.wpm);
     TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_KEYMODE, settings.keymode);
     TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_PADDLE_SWAP, settings.paddle_swap);
+    TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_PADDLE_DEBOUNCE, settings.paddle_debounce);
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_TONE_HZ, settings.tone_hz);
     TEST_ASSERT_EQUAL_UINT8(SETTINGS_DEFAULT_VOLUME_PCT, settings.volume_pct);
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_ENVELOPE_MS, settings.envelope_ms);

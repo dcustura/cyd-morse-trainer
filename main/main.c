@@ -52,13 +52,14 @@ void app_main(void)
                                                     settings.keymode, settings.wpm);
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
-                                                    settings.tone_hz, settings.volume_pct, settings.envelope_ms,
+                                                    settings.paddle_debounce, settings.tone_hz,
+                                                    settings.volume_pct, settings.envelope_ms,
                                                     settings.brightness_pct, settings.brightness_auto);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 
     lvgl_port_unlock();
 
-    paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm,
-                        settings.paddle_swap, settings.tone_hz, settings.volume_pct, settings.envelope_ms);
+    paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm, settings.paddle_swap,
+                        settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms);
 }

@@ -85,6 +85,11 @@ It does not teach receiving/copying code — it is a tool for practicing
    - **Paddle swap**: swaps which physical paddle lever is treated as dit
      vs dah, for operators who prefer the opposite orientation. Its popup
      offers "Normal"/"Swapped" buttons; tapping one selects it immediately.
+   - **Paddle debounce**: enables/disables software debounce while in
+     Iambic Mode A/B. Its popup offers "On"/"Off" buttons; tapping one
+     selects it immediately. This setting has no effect in Straight Key
+     mode, which is always debounced (a mechanical straight key bounces;
+     a clean paddle contact often does not need the extra latency).
    - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while
      the key is down. Its popup has `-`/`+` buttons and a "Test" button
      that briefly plays the sidetone at its current settings.
@@ -141,9 +146,11 @@ It does not teach receiving/copying code — it is a tool for practicing
   picked up while idling at a static output value.
 - **Debounce**: raw paddle/key contact closures are debounced in software
   so mechanical contact bounce does not corrupt timing or produce spurious
-  short elements.
-- **Persistence**: WPM, key mode, paddle swap, sidetone frequency, sidetone
-  volume, sidetone envelope, and touch calibration survive power loss. On
+  short elements. Straight Key mode is always debounced; Iambic Mode A/B
+  debouncing is controlled by the Paddle Debounce setting.
+- **Persistence**: WPM, key mode, paddle swap, paddle debounce, sidetone
+  frequency, sidetone volume, sidetone envelope, and touch calibration
+  survive power loss. On
   boot, the last-saved values are loaded and applied before the operator
   can key anything (or interact with the touchscreen, in the case of
   calibration).

@@ -9,6 +9,7 @@
 #define NVS_KEY_WPM "wpm"
 #define NVS_KEY_KEYMODE "keymode"
 #define NVS_KEY_SWAP "swap"
+#define NVS_KEY_DEBOUNCE "pdl_debounce"
 #define NVS_KEY_TONE_HZ "tone_hz"
 #define NVS_KEY_VOLUME_PCT "volume_pct"
 #define NVS_KEY_ENVELOPE_MS "envelope_ms"
@@ -43,6 +44,11 @@ static esp_err_t load_from_nvs(settings_t *out)
     uint8_t raw_swap;
     if (nvs_get_u8(handle, NVS_KEY_SWAP, &raw_swap) == ESP_OK) {
         out->paddle_swap = (raw_swap != 0);
+    }
+
+    uint8_t raw_debounce;
+    if (nvs_get_u8(handle, NVS_KEY_DEBOUNCE, &raw_debounce) == ESP_OK) {
+        out->paddle_debounce = (raw_debounce != 0);
     }
 
     uint16_t raw_tone_hz;
@@ -99,6 +105,7 @@ esp_err_t settings_store_save(const settings_t *in)
     nvs_set_u16(handle, NVS_KEY_WPM, in->wpm);
     nvs_set_u8(handle, NVS_KEY_KEYMODE, (uint8_t)in->keymode);
     nvs_set_u8(handle, NVS_KEY_SWAP, in->paddle_swap ? 1 : 0);
+    nvs_set_u8(handle, NVS_KEY_DEBOUNCE, in->paddle_debounce ? 1 : 0);
     nvs_set_u16(handle, NVS_KEY_TONE_HZ, in->tone_hz);
     nvs_set_u8(handle, NVS_KEY_VOLUME_PCT, in->volume_pct);
     nvs_set_u16(handle, NVS_KEY_ENVELOPE_MS, in->envelope_ms);

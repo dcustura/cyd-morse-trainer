@@ -25,6 +25,7 @@ static const char *TAG = "paddle_input";
 static iambic_keyer_t s_keyer;
 static morse_codec_t s_codec;
 static volatile bool s_paddle_swap;
+static volatile bool s_paddle_debounce;
 static QueueHandle_t s_decoded_char_queue;
 static _Atomic bool s_key_down_state;
 
@@ -86,8 +87,22 @@ static void paddle_task(void *arg)
         bool raw_dah = !gpio_get_level(BOARD_PADDLE_DAH_GPIO);
         bool swap = s_paddle_swap;
 
-        bool dit_contact = example_component_debounce_feed(&dit_db, swap ? raw_dah : raw_dit);
-        bool dah_contact = example_component_debounce_feed(&dah_db, swap ? raw_dit : raw_dah);
+        bool swapped_dit = swap ? raw_dah : raw_dit;
+        bool swapped_dah = swap ? raw_dit : raw_dah;
+
+        /* Straight key contact always bounces mechanically, so it's always
+         * debounced regardless of the setting; paddle debounce is optional
+         * since clean paddle contacts don't usually need it. */
+        bool debounce = s_keyer.mode == IAMBIC_KEYER_MODE_STRAIGHT || s_paddle_debounce;
+
+        bool dit_contact, dah_contact;
+        if (debounce) {
+            dit_contact = example_component_debounce_feed(&dit_db, swapped_dit);
+            dah_contact = example_component_debounce_feed(&dah_db, swapped_dah);
+        } else {
+            dit_contact = swapped_dit;
+            dah_contact = swapped_dah;
+        }
 
         bool key_down = iambic_keyer_service(&s_keyer, dit_contact, dah_contact, now_ms);
 
@@ -112,11 +127,13 @@ static void paddle_task(void *arg)
 }
 
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
-                         bool paddle_swap, uint16_t tone_hz, uint8_t volume_pct, uint16_t envelope_ms)
+                         bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
+                         uint16_t envelope_ms)
 {
     iambic_keyer_init(&s_keyer, mode, wpm);
     morse_codec_init(&s_codec, wpm);
     s_paddle_swap = paddle_swap;
+    s_paddle_debounce = paddle_debounce;
     s_decoded_char_queue = decoded_char_queue;
 
     sidetone_init();
@@ -151,6 +168,11 @@ void paddle_input_set_wpm(uint16_t wpm)
 void paddle_input_set_swap(bool swap)
 {
     s_paddle_swap = swap;
+}
+
+void paddle_input_set_debounce(bool debounce)
+{
+    s_paddle_debounce = debounce;
 }
 
 iambic_keyer_mode_t paddle_input_get_mode(void)

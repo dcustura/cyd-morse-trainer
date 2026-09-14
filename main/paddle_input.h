@@ -18,12 +18,17 @@ extern "C" {
  * Practice screen to display.
  */
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
-                         bool paddle_swap, uint16_t tone_hz, uint8_t volume_pct, uint16_t envelope_ms);
+                         bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
+                         uint16_t envelope_ms);
 
 /* Live-apply setting changes (called from the Settings screen). */
 void paddle_input_set_mode(iambic_keyer_mode_t mode);
 void paddle_input_set_wpm(uint16_t wpm);
 void paddle_input_set_swap(bool swap);
+
+/* Enables/disables debounce while in paddle (Mode A/B) keying; Straight Key
+ * mode is always debounced regardless of this setting. */
+void paddle_input_set_debounce(bool debounce);
 
 /* Current keyer settings, kept live-updated by the setters above (used by
  * the Practice screen to refresh its status label after a Settings save). */

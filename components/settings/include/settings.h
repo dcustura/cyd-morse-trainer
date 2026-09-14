@@ -22,6 +22,7 @@ extern "C" {
 #define SETTINGS_DEFAULT_WPM 15
 #define SETTINGS_DEFAULT_KEYMODE IAMBIC_KEYER_MODE_B
 #define SETTINGS_DEFAULT_PADDLE_SWAP false
+#define SETTINGS_DEFAULT_PADDLE_DEBOUNCE true
 #define SETTINGS_DEFAULT_TONE_HZ 600
 #define SETTINGS_DEFAULT_VOLUME_PCT 50
 #define SETTINGS_DEFAULT_ENVELOPE_MS 10
@@ -32,6 +33,7 @@ typedef struct {
     uint16_t wpm;
     iambic_keyer_mode_t keymode;
     bool paddle_swap;
+    bool paddle_debounce;
     uint16_t tone_hz;
     uint8_t volume_pct;
     uint16_t envelope_ms;

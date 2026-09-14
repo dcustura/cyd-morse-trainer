@@ -67,6 +67,7 @@ static settings_t s_current_settings;
 static lv_obj_t *s_wpm_tile_value;
 static lv_obj_t *s_keymode_tile_value;
 static lv_obj_t *s_swap_tile_value;
+static lv_obj_t *s_debounce_tile_value;
 static lv_obj_t *s_tone_tile_value;
 static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
@@ -102,6 +103,7 @@ static void refresh_tile_labels(void)
 
     lv_label_set_text(s_keymode_tile_value, keymode_text(s_current_settings.keymode));
     lv_label_set_text(s_swap_tile_value, s_current_settings.paddle_swap ? "Swapped" : "Normal");
+    lv_label_set_text(s_debounce_tile_value, s_current_settings.paddle_debounce ? "On" : "Off");
 
     snprintf(text, sizeof(text), s_field_info[FIELD_TONE_HZ].unit_fmt, (int)s_current_settings.tone_hz);
     lv_label_set_text(s_tone_tile_value, text);
@@ -449,6 +451,56 @@ static void swap_tile_cb(lv_event_t *e)
     create_action_button(content, "Close", msgbox_close_cb, mbox, true);
 }
 
+static void debounce_select_cb(lv_event_t *e)
+{
+    bool debounce = (bool)(intptr_t)lv_event_get_user_data(e);
+    s_current_settings.paddle_debounce = debounce;
+    paddle_input_set_debounce(debounce);
+    settings_store_save(&s_current_settings);
+    refresh_tile_labels();
+}
+
+static void debounce_tile_cb(lv_event_t *e)
+{
+    (void)e;
+
+    lv_obj_t *mbox = lv_msgbox_create(NULL);
+    lv_msgbox_add_title(mbox, "Paddle Debounce");
+    lv_msgbox_add_text(mbox, "Straight Key mode is always debounced regardless of this setting.");
+    lv_obj_t *content = lv_msgbox_get_content(mbox);
+    strip_pane_style(content);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t *options_row = lv_obj_create(content);
+    strip_pane_style(options_row);
+    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
+
+    static const struct {
+        const char *label;
+        bool debounce;
+    } options[] = {
+        {"On", true},
+        {"Off", false},
+    };
+
+    for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
+        lv_obj_t *btn = lv_button_create(options_row);
+        display_style_tile(btn);
+        lv_obj_set_flex_grow(btn, 1);
+        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
+        lv_obj_add_event_cb(btn, debounce_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].debounce);
+        lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
+        lv_obj_t *label = lv_label_create(btn);
+        lv_label_set_text(label, options[i].label);
+        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
+        lv_obj_center(label);
+    }
+
+    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
+}
+
 static void nav_btn_cb(lv_event_t *e)
 {
     lv_obj_t *target_screen = (lv_obj_t *)lv_event_get_user_data(e);
@@ -622,6 +674,11 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
     lv_obj_set_flex_grow(swap_tile, 1);
     lv_obj_set_height(swap_tile, LV_PCT(100));
 
+    lv_obj_t *debounce_tile = create_tile(row, "Paddle\nDebounce", 0, 0, debounce_tile_cb, NULL,
+                                           &s_debounce_tile_value);
+    lv_obj_set_flex_grow(debounce_tile, 1);
+    lv_obj_set_height(debounce_tile, LV_PCT(100));
+
     return scr;
 }
 
@@ -674,14 +731,16 @@ static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
-                              uint16_t initial_wpm, bool initial_swap, uint16_t initial_tone_hz,
-                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
-                              uint8_t initial_brightness_pct, bool initial_brightness_auto)
+                              uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
+                              uint16_t initial_tone_hz, uint8_t initial_volume_pct,
+                              uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
+                              bool initial_brightness_auto)
 {
     s_current_settings = (settings_t){
         .wpm = initial_wpm,
         .keymode = initial_mode,
         .paddle_swap = initial_swap,
+        .paddle_debounce = initial_debounce,
         .tone_hz = initial_tone_hz,
         .volume_pct = initial_volume_pct,
         .envelope_ms = initial_envelope_ms,
