@@ -11,15 +11,15 @@ extern "C" {
  * Create the Settings screen: a 3x2 grid of tappable tiles (Keyer, Sidetone,
  * Brightness, Touchscreen, Reset to Factory Defaults, and a final "< Back"
  * tile), filling the whole display with no scrolling and no separate title
- * bar. "Keyer" navigates to a submenu (created internally) with WPM, Key
- * Mode, Paddle Swap, and Paddle Debounce tiles; "Sidetone" navigates to a
- * submenu with Pitch, Volume, and Smoothing tiles. Tapping a numeric tile
- * (WPM, Pitch/Volume/Smoothing, Brightness) opens a popup with -/+ buttons
- * (supporting press-and-hold repeat) and, for the sidetone fields (Pitch/
- * Volume/Smoothing), a "Test" button that plays the sidetone at its current
- * settings. The Brightness popup additionally has an "Auto"/"Manual"
- * toggle button: in Auto mode the backlight is driven by the onboard
- * ambient-light sensor and the tile shows "Auto" instead of a percentage;
+ * bar. "Keyer" navigates to a submenu (created internally) with a 2x2 grid
+ * of WPM, Key Mode, Paddle Swap, and Paddle Debounce tiles; "Sidetone"
+ * navigates to a submenu with Pitch, Volume, and Smoothing tiles. Tapping a
+ * numeric tile (WPM, Pitch/Volume/Smoothing, Brightness) opens a popup with
+ * -/+ buttons (supporting press-and-hold repeat) and, for the sidetone
+ * fields (Pitch/Volume/Smoothing), a "Test" button that plays the sidetone
+ * at its current settings. The Brightness popup additionally has an
+ * "Auto"/"Manual" toggle button: in Auto mode the backlight is driven by the
+ * onboard ambient-light sensor and the tile shows "Auto" instead of a percentage;
  * pressing +/- always switches back to Manual immediately. Tapping Key Mode,
  * Paddle Swap, or Paddle Debounce opens a popup listing its
  * options as a row of equal-width, finger-sized buttons (Key Mode:

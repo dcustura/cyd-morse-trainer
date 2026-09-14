@@ -654,30 +654,18 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
     lv_label_set_text(title, "Keyer");
     lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
 
-    lv_obj_t *row = lv_obj_create(scr);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_all(row, 2, 0);
-    lv_obj_set_style_pad_column(row, 4, 0);
-    lv_obj_set_width(row, LV_PCT(100));
-    lv_obj_set_flex_grow(row, 1);
+    lv_obj_t *grid = lv_obj_create(scr);
+    lv_obj_set_style_pad_all(grid, 2, 0);
+    lv_obj_set_size(grid, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_flex_grow(grid, 1);
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
 
-    lv_obj_t *wpm_tile = create_tile(row, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM,
-                                      &s_wpm_tile_value);
-    lv_obj_set_flex_grow(wpm_tile, 1);
-    lv_obj_set_height(wpm_tile, LV_PCT(100));
-
-    lv_obj_t *keymode_tile = create_tile(row, "Key Mode", 0, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
-    lv_obj_set_flex_grow(keymode_tile, 1);
-    lv_obj_set_height(keymode_tile, LV_PCT(100));
-
-    lv_obj_t *swap_tile = create_tile(row, "Paddle Swap", 0, 0, swap_tile_cb, NULL, &s_swap_tile_value);
-    lv_obj_set_flex_grow(swap_tile, 1);
-    lv_obj_set_height(swap_tile, LV_PCT(100));
-
-    lv_obj_t *debounce_tile = create_tile(row, "Paddle\nDebounce", 0, 0, debounce_tile_cb, NULL,
-                                           &s_debounce_tile_value);
-    lv_obj_set_flex_grow(debounce_tile, 1);
-    lv_obj_set_height(debounce_tile, LV_PCT(100));
+    create_tile(grid, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
+    create_tile(grid, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
+    create_tile(grid, "Paddle Swap", 0, 1, swap_tile_cb, NULL, &s_swap_tile_value);
+    create_tile(grid, "Paddle\nDebounce", 1, 1, debounce_tile_cb, NULL, &s_debounce_tile_value);
 
     return scr;
 }
