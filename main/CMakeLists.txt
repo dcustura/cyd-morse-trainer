@@ -11,7 +11,7 @@ idf_component_register(SRCS "main.c"
                              "ui_settings.c"
                              "ui_touch_test.c"
                        INCLUDE_DIRS "."
-                       REQUIRES example_component
+                       REQUIRES debouncer
                                 iambic_keyer
                                 morse_codec
                                 settings

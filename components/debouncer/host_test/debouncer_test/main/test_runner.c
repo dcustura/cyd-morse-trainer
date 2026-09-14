@@ -3,7 +3,7 @@
 
 static void run_all_tests(void)
 {
-    RUN_TEST_GROUP(example_component);
+    RUN_TEST_GROUP(debouncer);
 }
 
 void app_main(void)

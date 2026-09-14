@@ -40,7 +40,7 @@ the key is down. See `docs/functional-spec.md` for the full behavior spec
     ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, straight key)
     ├── morse_settings/      # persisted trainer settings (WPM, key mode, paddle swap, tone, ...)
     ├── touch_calibration/   # touchscreen calibration math
-    └── example_component/   # hardware-independent example, kept as a reference for the host_test pattern below
+    └── debouncer/           # consecutive-sample debounce filter, used by paddle_input for straight key / paddle contacts
 ```
 
 Each component under `components/` is hardware-independent logic with its
@@ -72,7 +72,7 @@ idf.py build
 ```
 
 The same pattern applies to `iambic_keyer`, `morse_settings`,
-`touch_calibration`, and `example_component`. A passing run ends with a
+`touch_calibration`, and `debouncer`. A passing run ends with a
 Unity summary line such as `5 Tests 0 Failures 0 Ignored OK`.
 
 ### Host build prerequisites
@@ -96,7 +96,7 @@ toolchain rather than a cross-compiler, so it needs:
 ### Adding tests for a new component
 
 1. Create `components/<name>/host_test/<name>_test/`.
-2. Copy the structure from `components/example_component/host_test/example_component_test/`:
+2. Copy the structure from `components/debouncer/host_test/debouncer_test/`:
    - `CMakeLists.txt` — sets `COMPONENTS main`, adds `EXTRA_COMPONENT_DIRS`
      pointing back at `components/`, then declares the project.
    - `sdkconfig.defaults` — pins `CONFIG_IDF_TARGET="linux"` and enables

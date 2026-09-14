@@ -18,7 +18,7 @@ typedef struct {
     uint8_t threshold;
     uint8_t counter;
     bool state;
-} example_component_debounce_t;
+} debouncer_t;
 
 /**
  * Initialize a debounce filter.
@@ -28,16 +28,16 @@ typedef struct {
  *                       flip the state. A value of 0 is treated as 1.
  * @param initial_state Starting output state.
  */
-void example_component_debounce_init(example_component_debounce_t *db, uint8_t threshold, bool initial_state);
+void debouncer_init(debouncer_t *db, uint8_t threshold, bool initial_state);
 
 /**
  * Feed one sample into the filter and get the (possibly updated) state.
  *
- * @param db     Filter previously initialized with example_component_debounce_init().
+ * @param db     Filter previously initialized with debouncer_init().
  * @param sample Raw input sample for this step.
  * @return The debounced output state after processing this sample.
  */
-bool example_component_debounce_feed(example_component_debounce_t *db, bool sample);
+bool debouncer_feed(debouncer_t *db, bool sample);
 
 #ifdef __cplusplus
 }

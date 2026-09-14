@@ -1,13 +1,13 @@
-#include "example_component.h"
+#include "debouncer.h"
 
-void example_component_debounce_init(example_component_debounce_t *db, uint8_t threshold, bool initial_state)
+void debouncer_init(debouncer_t *db, uint8_t threshold, bool initial_state)
 {
     db->threshold = threshold > 0 ? threshold : 1;
     db->counter = 0;
     db->state = initial_state;
 }
 
-bool example_component_debounce_feed(example_component_debounce_t *db, bool sample)
+bool debouncer_feed(debouncer_t *db, bool sample)
 {
     if (sample == db->state) {
         db->counter = 0;

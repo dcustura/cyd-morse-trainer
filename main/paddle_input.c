@@ -2,7 +2,7 @@
 
 #include "board_pins.h"
 #include "sidetone.h"
-#include "example_component.h"
+#include "debouncer.h"
 #include "morse_codec.h"
 
 #include "driver/gpio.h"
@@ -72,10 +72,10 @@ static void paddle_task(void *arg)
     configure_input_gpio(BOARD_PADDLE_DIT_GPIO);
     configure_input_gpio(BOARD_PADDLE_DAH_GPIO);
 
-    example_component_debounce_t dit_db;
-    example_component_debounce_t dah_db;
-    example_component_debounce_init(&dit_db, PADDLE_DEBOUNCE_THRESHOLD, false);
-    example_component_debounce_init(&dah_db, PADDLE_DEBOUNCE_THRESHOLD, false);
+    debouncer_t dit_db;
+    debouncer_t dah_db;
+    debouncer_init(&dit_db, PADDLE_DEBOUNCE_THRESHOLD, false);
+    debouncer_init(&dah_db, PADDLE_DEBOUNCE_THRESHOLD, false);
 
     bool prev_key_down = false;
     uint32_t last_morse_tick_ms = 0;
@@ -97,8 +97,8 @@ static void paddle_task(void *arg)
 
         bool dit_contact, dah_contact;
         if (debounce) {
-            dit_contact = example_component_debounce_feed(&dit_db, swapped_dit);
-            dah_contact = example_component_debounce_feed(&dah_db, swapped_dah);
+            dit_contact = debouncer_feed(&dit_db, swapped_dit);
+            dah_contact = debouncer_feed(&dah_db, swapped_dah);
         } else {
             dit_contact = swapped_dit;
             dah_contact = swapped_dah;
