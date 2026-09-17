@@ -227,6 +227,81 @@ static lv_obj_t *create_action_button(lv_obj_t *parent, const char *text, lv_eve
     return btn;
 }
 
+static void nav_btn_cb(lv_event_t *e)
+{
+    lv_obj_t *target_screen = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_scr_load(target_screen);
+}
+
+/* Shared by every submenu screen (Touchscreen/Keyer/Sidetone): a scrollable
+ * column with a "< Back" + title bar on top, leaving the caller to add its
+ * own content below. */
+static lv_obj_t *create_submenu_screen(lv_obj_t *settings_screen, const char *title)
+{
+    lv_obj_t *scr = lv_obj_create(NULL);
+    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(scr, 4, 0);
+
+    lv_obj_t *top_bar = lv_obj_create(scr);
+    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
+
+    lv_obj_t *back_btn = lv_button_create(top_bar);
+    display_style_button_dismiss(back_btn);
+    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
+    lv_obj_t *back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, "< Back");
+    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
+
+    lv_obj_t *title_label = lv_label_create(top_bar);
+    lv_label_set_text(title_label, title);
+    lv_obj_set_style_text_color(title_label, display_compensate_color(lv_color_white()), 0);
+
+    return scr;
+}
+
+/* Shared by Paddle Swap/Paddle Debounce: a two-button on/off choice with an
+ * optional help line and a Close button. */
+typedef struct {
+    const char *label;
+    bool value;
+} binary_option_t;
+
+static void open_binary_popup(const char *title, const char *help_text, const binary_option_t options[2],
+                               lv_event_cb_t select_cb)
+{
+    lv_obj_t *mbox = lv_msgbox_create(NULL);
+    lv_msgbox_add_title(mbox, title);
+    if (help_text != NULL) {
+        lv_msgbox_add_text(mbox, help_text);
+    }
+    lv_obj_t *content = lv_msgbox_get_content(mbox);
+    strip_pane_style(content);
+    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    lv_obj_t *options_row = lv_obj_create(content);
+    strip_pane_style(options_row);
+    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
+
+    for (size_t i = 0; i < 2; i++) {
+        lv_obj_t *btn = lv_button_create(options_row);
+        display_style_tile(btn);
+        lv_obj_set_flex_grow(btn, 1);
+        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
+        lv_obj_add_event_cb(btn, select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].value);
+        lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
+        lv_obj_t *label = lv_label_create(btn);
+        lv_label_set_text(label, options[i].label);
+        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
+        lv_obj_center(label);
+    }
+
+    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
+}
+
 static void test_tone_stop_cb(lv_timer_t *timer)
 {
     sidetone_key(false);
@@ -426,41 +501,8 @@ static void swap_select_cb(lv_event_t *e)
 static void swap_tile_cb(lv_event_t *e)
 {
     (void)e;
-
-    lv_obj_t *mbox = lv_msgbox_create(NULL);
-    lv_msgbox_add_title(mbox, "Paddle Swap");
-    lv_obj_t *content = lv_msgbox_get_content(mbox);
-    strip_pane_style(content);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    lv_obj_t *options_row = lv_obj_create(content);
-    strip_pane_style(options_row);
-    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
-
-    static const struct {
-        const char *label;
-        bool swap;
-    } options[] = {
-        {"Normal", false},
-        {"Swapped", true},
-    };
-
-    for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
-        lv_obj_t *btn = lv_button_create(options_row);
-        display_style_tile(btn);
-        lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
-        lv_obj_add_event_cb(btn, swap_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].swap);
-        lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text(label, options[i].label);
-        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
-        lv_obj_center(label);
-    }
-
-    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
+    static const binary_option_t options[2] = {{"Normal", false}, {"Swapped", true}};
+    open_binary_popup("Paddle Swap", NULL, options, swap_select_cb);
 }
 
 static void debounce_select_cb(lv_event_t *e)
@@ -475,48 +517,9 @@ static void debounce_select_cb(lv_event_t *e)
 static void debounce_tile_cb(lv_event_t *e)
 {
     (void)e;
-
-    lv_obj_t *mbox = lv_msgbox_create(NULL);
-    lv_msgbox_add_title(mbox, "Paddle Debounce");
-    lv_msgbox_add_text(mbox, "Straight Key mode is always debounced regardless of this setting.");
-    lv_obj_t *content = lv_msgbox_get_content(mbox);
-    strip_pane_style(content);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    lv_obj_t *options_row = lv_obj_create(content);
-    strip_pane_style(options_row);
-    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
-
-    static const struct {
-        const char *label;
-        bool debounce;
-    } options[] = {
-        {"On", true},
-        {"Off", false},
-    };
-
-    for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
-        lv_obj_t *btn = lv_button_create(options_row);
-        display_style_tile(btn);
-        lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
-        lv_obj_add_event_cb(btn, debounce_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].debounce);
-        lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text(label, options[i].label);
-        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
-        lv_obj_center(label);
-    }
-
-    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
-}
-
-static void nav_btn_cb(lv_event_t *e)
-{
-    lv_obj_t *target_screen = (lv_obj_t *)lv_event_get_user_data(e);
-    lv_scr_load(target_screen);
+    static const binary_option_t options[2] = {{"On", true}, {"Off", false}};
+    open_binary_popup("Paddle Debounce", "Straight Key mode is always debounced regardless of this setting.",
+                       options, debounce_select_cb);
 }
 
 static void calibrate_btn_cb(lv_event_t *e)
@@ -606,25 +609,7 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
 static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                        lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = lv_obj_create(NULL);
-    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_all(scr, 4, 0);
-
-    lv_obj_t *top_bar = lv_obj_create(scr);
-    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
-
-    lv_obj_t *back_btn = lv_button_create(top_bar);
-    display_style_button_dismiss(back_btn);
-    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "< Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
-
-    lv_obj_t *title = lv_label_create(top_bar);
-    lv_label_set_text(title, "Touchscreen");
-    lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
+    lv_obj_t *scr = create_submenu_screen(settings_screen, "Touchscreen");
 
     lv_obj_t *row = lv_obj_create(scr);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
@@ -646,25 +631,7 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
 
 static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = lv_obj_create(NULL);
-    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_all(scr, 4, 0);
-
-    lv_obj_t *top_bar = lv_obj_create(scr);
-    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
-
-    lv_obj_t *back_btn = lv_button_create(top_bar);
-    display_style_button_dismiss(back_btn);
-    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "< Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
-
-    lv_obj_t *title = lv_label_create(top_bar);
-    lv_label_set_text(title, "Keyer");
-    lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
+    lv_obj_t *scr = create_submenu_screen(settings_screen, "Keyer");
 
     lv_obj_t *grid = lv_obj_create(scr);
     lv_obj_set_style_pad_all(grid, 2, 0);
@@ -684,25 +651,7 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
 
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = lv_obj_create(NULL);
-    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_all(scr, 4, 0);
-
-    lv_obj_t *top_bar = lv_obj_create(scr);
-    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
-
-    lv_obj_t *back_btn = lv_button_create(top_bar);
-    display_style_button_dismiss(back_btn);
-    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "< Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
-
-    lv_obj_t *title = lv_label_create(top_bar);
-    lv_label_set_text(title, "Sidetone");
-    lv_obj_set_style_text_color(title, display_compensate_color(lv_color_white()), 0);
+    lv_obj_t *scr = create_submenu_screen(settings_screen, "Sidetone");
 
     lv_obj_t *row = lv_obj_create(scr);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
