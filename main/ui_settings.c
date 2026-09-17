@@ -26,6 +26,10 @@
 #define BRIGHTNESS_PCT_MIN SETTINGS_BRIGHTNESS_PCT_MIN
 #define BRIGHTNESS_PCT_MAX SETTINGS_BRIGHTNESS_PCT_MAX
 #define TEST_TONE_DURATION_MS 300
+/* Settings changes are batched and flushed to NVS this long after the last
+ * edit, rather than on every step/tap, to keep flash wear down when the
+ * user is dragging a value up or down. */
+#define SETTINGS_SAVE_DELAY_MS 2000
 #define STEP_BTN_SIZE 60
 #define VALUE_LABEL_WIDTH 70
 #define OPTION_BTN_HEIGHT 70
@@ -79,6 +83,33 @@ static lv_obj_t *s_brightness_tile_value;
 static numeric_field_t s_popup_field;
 static lv_obj_t *s_popup_value_label;
 static lv_obj_t *s_popup_brightness_auto_btn;
+
+static lv_timer_t *s_save_timer;
+
+static void save_timer_cb(lv_timer_t *timer)
+{
+    (void)timer;
+    settings_store_save(&s_current_settings);
+    s_save_timer = NULL;
+}
+
+/* Debounces settings_store_save(): repeated calls within
+ * SETTINGS_SAVE_DELAY_MS collapse into a single NVS write. */
+static void schedule_settings_save(void)
+{
+    if (s_save_timer != NULL) {
+        lv_timer_reset(s_save_timer);
+        return;
+    }
+    s_save_timer = lv_timer_create(save_timer_cb, SETTINGS_SAVE_DELAY_MS, NULL);
+    if (s_save_timer == NULL) {
+        /* Timer allocation failed; fall back to an immediate save rather
+         * than silently dropping the change. */
+        settings_store_save(&s_current_settings);
+        return;
+    }
+    lv_timer_set_repeat_count(s_save_timer, 1);
+}
 
 static const char *keymode_text(iambic_keyer_mode_t mode)
 {
@@ -176,7 +207,7 @@ static void field_set_value(numeric_field_t field, int32_t value)
     default:
         return;
     }
-    settings_store_save(&s_current_settings);
+    schedule_settings_save();
 }
 
 static void settings_screen_loaded_cb(lv_event_t *e)
@@ -334,7 +365,7 @@ static void brightness_auto_toggle_cb(lv_event_t *e)
     if (!s_current_settings.brightness_auto) {
         display_set_brightness(s_current_settings.brightness_pct);
     }
-    settings_store_save(&s_current_settings);
+    schedule_settings_save();
 
     lv_label_set_text(lv_obj_get_child(s_popup_brightness_auto_btn, 0),
                        s_current_settings.brightness_auto ? "Manual" : "Auto");
@@ -434,7 +465,7 @@ static void keymode_select_cb(lv_event_t *e)
     iambic_keyer_mode_t mode = (iambic_keyer_mode_t)(intptr_t)lv_event_get_user_data(e);
     s_current_settings.keymode = mode;
     paddle_input_set_mode(mode);
-    settings_store_save(&s_current_settings);
+    schedule_settings_save();
     refresh_tile_labels();
 }
 
@@ -494,7 +525,7 @@ static void swap_select_cb(lv_event_t *e)
     bool swap = (bool)(intptr_t)lv_event_get_user_data(e);
     s_current_settings.paddle_swap = swap;
     paddle_input_set_swap(swap);
-    settings_store_save(&s_current_settings);
+    schedule_settings_save();
     refresh_tile_labels();
 }
 
@@ -510,7 +541,7 @@ static void debounce_select_cb(lv_event_t *e)
     bool debounce = (bool)(intptr_t)lv_event_get_user_data(e);
     s_current_settings.paddle_debounce = debounce;
     paddle_input_set_debounce(debounce);
-    settings_store_save(&s_current_settings);
+    schedule_settings_save();
     refresh_tile_labels();
 }
 
