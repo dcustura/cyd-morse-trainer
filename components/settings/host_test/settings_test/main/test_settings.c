@@ -70,6 +70,21 @@ TEST(settings, clamp_envelope_ms_clamps_out_of_range_values)
     TEST_ASSERT_EQUAL_UINT16(100, settings_clamp_envelope_ms(65535));
 }
 
+TEST(settings, clamp_brightness_pct_passes_in_range_values_through)
+{
+    TEST_ASSERT_EQUAL_UINT8(10, settings_clamp_brightness_pct(10));
+    TEST_ASSERT_EQUAL_UINT8(50, settings_clamp_brightness_pct(50));
+    TEST_ASSERT_EQUAL_UINT8(100, settings_clamp_brightness_pct(100));
+}
+
+TEST(settings, clamp_brightness_pct_clamps_out_of_range_values)
+{
+    TEST_ASSERT_EQUAL_UINT8(10, settings_clamp_brightness_pct(0));
+    TEST_ASSERT_EQUAL_UINT8(10, settings_clamp_brightness_pct(9));
+    TEST_ASSERT_EQUAL_UINT8(100, settings_clamp_brightness_pct(101));
+    TEST_ASSERT_EQUAL_UINT8(100, settings_clamp_brightness_pct(255));
+}
+
 TEST(settings, validate_keymode_passes_valid_values_through)
 {
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_MODE_A, settings_validate_keymode(IAMBIC_KEYER_MODE_A));
@@ -98,6 +113,8 @@ TEST(settings, set_defaults_populates_the_compiled_in_defaults)
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_TONE_HZ, settings.tone_hz);
     TEST_ASSERT_EQUAL_UINT8(SETTINGS_DEFAULT_VOLUME_PCT, settings.volume_pct);
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_ENVELOPE_MS, settings.envelope_ms);
+    TEST_ASSERT_EQUAL_UINT8(SETTINGS_DEFAULT_BRIGHTNESS_PCT, settings.brightness_pct);
+    TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_BRIGHTNESS_AUTO, settings.brightness_auto);
 }
 
 TEST_GROUP_RUNNER(settings)
@@ -110,6 +127,8 @@ TEST_GROUP_RUNNER(settings)
     RUN_TEST_CASE(settings, clamp_volume_pct_clamps_out_of_range_values);
     RUN_TEST_CASE(settings, clamp_envelope_ms_passes_in_range_values_through);
     RUN_TEST_CASE(settings, clamp_envelope_ms_clamps_out_of_range_values);
+    RUN_TEST_CASE(settings, clamp_brightness_pct_passes_in_range_values_through);
+    RUN_TEST_CASE(settings, clamp_brightness_pct_clamps_out_of_range_values);
     RUN_TEST_CASE(settings, validate_keymode_passes_valid_values_through);
     RUN_TEST_CASE(settings, validate_keymode_falls_back_to_default_for_invalid_bytes);
     RUN_TEST_CASE(settings, set_defaults_populates_the_compiled_in_defaults);
