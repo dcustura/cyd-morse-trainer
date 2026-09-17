@@ -20,11 +20,13 @@ extern "C" {
  * at its current settings. The Brightness popup additionally has an
  * "Auto"/"Manual" toggle button: in Auto mode the backlight is driven by the
  * onboard ambient-light sensor and the tile shows "Auto" instead of a percentage;
- * pressing +/- always switches back to Manual immediately. Tapping Key Mode,
- * Paddle Swap, or Paddle Debounce opens a popup listing its
- * options as a row of equal-width, finger-sized buttons (Key Mode:
- * "Mode A"/"Mode B"/"Straight"; Paddle Swap: "Normal"/"Swapped"; Paddle
- * Debounce: "On"/"Off" -- this only affects Mode A/B; Straight Key mode is
+ * pressing +/- always switches back to Manual immediately. Tapping Key Mode
+ * opens a popup listing its four options ("Mode A"/"Mode B"/"Straight"/
+ * "Ultimatic") as a 3-column x 2-row grid of finger-sized buttons, with
+ * "Close" filling the last cell. Tapping Paddle Swap or Paddle Debounce
+ * opens a popup listing its two options as a row of equal-width,
+ * finger-sized buttons (Paddle Swap: "Normal"/"Swapped"; Paddle Debounce:
+ * "On"/"Off" -- this only affects Mode A/B/Ultimatic; Straight Key mode is
  * always debounced). Every change is applied to the running trainer and
  * persisted to NVS immediately when made; there is no OK/Cancel or
  * discard-on-cancel step. "Touchscreen" navigates to a submenu screen

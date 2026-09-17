@@ -15,7 +15,11 @@ the key is down. See `docs/functional-spec.md` for the full behavior spec
 ## Hardware
 
 - Board: ESP32-2432S028R, 2.8" 320×240 TFT (ST7789-compatible) with
-  resistive XPT2046 touch, onboard speaker.
+  resistive XPT2046 touch, onboard speaker, and an onboard LDR (ambient
+  light sensor, GPIO34) used for auto-brightness. On stock boards the LDR
+  divider is high-impedance enough that the ADC reads a flat 0 regardless
+  of light — Auto brightness is a no-op without a hardware rework (see
+  `main/auto_brightness.c`); Manual brightness is unaffected.
 - External input: a two-lever iambic paddle (or a straight key) wired to two
   GPIOs on the board's header — dit and dah. A straight key is wired to the
   same GPIO used for "dit" in paddle mode.
@@ -37,8 +41,8 @@ the key is down. See `docs/functional-spec.md` for the full behavior spec
 ├── main/                    # app entry point, LVGL UI screens, display/touch/paddle glue
 └── components/
     ├── morse_codec/         # Morse element sequence -> character decoding
-    ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, straight key)
-    ├── morse_settings/      # persisted trainer settings (WPM, key mode, paddle swap, tone, ...)
+    ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, Ultimatic, straight key)
+    ├── settings/            # persisted trainer settings (WPM, key mode, paddle swap, tone, brightness, ...)
     ├── touch_calibration/   # touchscreen calibration math
     └── debouncer/           # consecutive-sample debounce filter, used by paddle_input for straight key / paddle contacts
 ```
@@ -71,7 +75,7 @@ idf.py build
 ./build/morse_codec_test.elf
 ```
 
-The same pattern applies to `iambic_keyer`, `morse_settings`,
+The same pattern applies to `iambic_keyer`, `settings`,
 `touch_calibration`, and `debouncer`. A passing run ends with a
 Unity summary line such as `5 Tests 0 Failures 0 Ignored OK`.
 
