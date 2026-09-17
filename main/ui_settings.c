@@ -371,13 +371,15 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_msgbox_add_title(mbox, "Key Mode");
     lv_obj_t *content = lv_msgbox_get_content(mbox);
     strip_pane_style(content);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-    lv_obj_t *options_row = lv_obj_create(content);
-    strip_pane_style(options_row);
-    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
+    /* 3 columns x 2 rows: the four mode options fill row 0 and the start of
+     * row 1, and Close always sits in the last cell (bottom-right). */
+    lv_obj_t *grid = lv_obj_create(content);
+    strip_pane_style(grid);
+    lv_obj_set_size(grid, LV_PCT(100), LV_SIZE_CONTENT);
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {OPTION_BTN_HEIGHT, OPTION_BTN_HEIGHT, LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
 
     static const struct {
         const char *label;
@@ -390,10 +392,10 @@ static void keymode_tile_cb(lv_event_t *e)
     };
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
-        lv_obj_t *btn = lv_button_create(options_row);
+        lv_obj_t *btn = lv_button_create(grid);
         display_style_tile(btn);
-        lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
+        lv_obj_set_grid_cell(btn, LV_GRID_ALIGN_STRETCH, (int32_t)(i % 3), 1, LV_GRID_ALIGN_STRETCH,
+                              (int32_t)(i / 3), 1);
         lv_obj_add_event_cb(btn, keymode_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].mode);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
         lv_obj_t *label = lv_label_create(btn);
@@ -402,7 +404,14 @@ static void keymode_tile_cb(lv_event_t *e)
         lv_obj_center(label);
     }
 
-    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
+    lv_obj_t *close_btn = lv_button_create(grid);
+    display_style_button_dismiss(close_btn);
+    lv_obj_set_grid_cell(close_btn, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
+    lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
+    lv_obj_t *close_label = lv_label_create(close_btn);
+    lv_label_set_text(close_label, "Close");
+    lv_obj_set_style_text_color(close_label, display_compensate_color(lv_color_white()), 0);
+    lv_obj_center(close_label);
 }
 
 static void swap_select_cb(lv_event_t *e)
