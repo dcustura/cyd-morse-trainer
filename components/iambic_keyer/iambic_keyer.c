@@ -59,6 +59,18 @@ static bool is_sending(const iambic_keyer_t *k)
     return k->state == IAMBIC_KEYER_STATE_SEND_DIT || k->state == IAMBIC_KEYER_STATE_SEND_DAH;
 }
 
+/* Shared SEND_DIT/SEND_DAH handling: latch a squeeze-tap on the opposite
+ * paddle, then move on to GAP once the element's duration has elapsed. Same
+ * in Iambic and Ultimatic. */
+static void advance_sending(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
+{
+    latch_opposite(k, dit_contact, dah_contact);
+    if (now_ms >= k->element_end_ms) {
+        k->state = IAMBIC_KEYER_STATE_GAP;
+        k->gap_end_ms = now_ms + k->unit_ms;
+    }
+}
+
 static bool service_iambic(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
 {
     switch (k->state) {
@@ -72,11 +84,7 @@ static bool service_iambic(iambic_keyer_t *k, bool dit_contact, bool dah_contact
 
     case IAMBIC_KEYER_STATE_SEND_DIT:
     case IAMBIC_KEYER_STATE_SEND_DAH:
-        latch_opposite(k, dit_contact, dah_contact);
-        if (now_ms >= k->element_end_ms) {
-            k->state = IAMBIC_KEYER_STATE_GAP;
-            k->gap_end_ms = now_ms + k->unit_ms;
-        }
+        advance_sending(k, dit_contact, dah_contact, now_ms);
         break;
 
     case IAMBIC_KEYER_STATE_GAP:
@@ -146,11 +154,7 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
 
     case IAMBIC_KEYER_STATE_SEND_DIT:
     case IAMBIC_KEYER_STATE_SEND_DAH:
-        latch_opposite(k, dit_contact, dah_contact);
-        if (now_ms >= k->element_end_ms) {
-            k->state = IAMBIC_KEYER_STATE_GAP;
-            k->gap_end_ms = now_ms + k->unit_ms;
-        }
+        advance_sending(k, dit_contact, dah_contact, now_ms);
         break;
 
     case IAMBIC_KEYER_STATE_GAP:
@@ -193,9 +197,7 @@ bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact,
         return dit_contact;
     case IAMBIC_KEYER_MODE_ULTIMATIC:
         return service_ultimatic(k, dit_contact, dah_contact, now_ms);
-    case IAMBIC_KEYER_MODE_A:
-    case IAMBIC_KEYER_MODE_B:
-    default:
+    default: /* IAMBIC_KEYER_MODE_A, IAMBIC_KEYER_MODE_B */
         return service_iambic(k, dit_contact, dah_contact, now_ms);
     }
 }
