@@ -89,6 +89,8 @@ static const char *keymode_text(iambic_keyer_mode_t mode)
         return "Mode B";
     case IAMBIC_KEYER_MODE_STRAIGHT:
         return "Straight";
+    case IAMBIC_KEYER_MODE_ULTIMATIC:
+        return "Ultimatic";
     default:
         return "?";
     }
@@ -384,6 +386,7 @@ static void keymode_tile_cb(lv_event_t *e)
         {"Mode A", IAMBIC_KEYER_MODE_A},
         {"Mode B", IAMBIC_KEYER_MODE_B},
         {"Straight", IAMBIC_KEYER_MODE_STRAIGHT},
+        {"Ultimatic", IAMBIC_KEYER_MODE_ULTIMATIC},
     };
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {

@@ -176,6 +176,8 @@ static const char *mode_name(iambic_keyer_mode_t mode)
         return "Iambic B";
     case IAMBIC_KEYER_MODE_STRAIGHT:
         return "Straight Key";
+    case IAMBIC_KEYER_MODE_ULTIMATIC:
+        return "Ultimatic";
     default:
         return "?";
     }

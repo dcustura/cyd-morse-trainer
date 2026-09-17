@@ -75,11 +75,12 @@ TEST(settings, validate_keymode_passes_valid_values_through)
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_MODE_A, settings_validate_keymode(IAMBIC_KEYER_MODE_A));
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_MODE_B, settings_validate_keymode(IAMBIC_KEYER_MODE_B));
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_MODE_STRAIGHT, settings_validate_keymode(IAMBIC_KEYER_MODE_STRAIGHT));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_MODE_ULTIMATIC, settings_validate_keymode(IAMBIC_KEYER_MODE_ULTIMATIC));
 }
 
 TEST(settings, validate_keymode_falls_back_to_default_for_invalid_bytes)
 {
-    TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_KEYMODE, settings_validate_keymode(3));
+    TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_KEYMODE, settings_validate_keymode(4));
     TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_KEYMODE, settings_validate_keymode(255));
 }
 

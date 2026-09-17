@@ -11,6 +11,7 @@ typedef enum {
     IAMBIC_KEYER_MODE_A = 0,
     IAMBIC_KEYER_MODE_B,
     IAMBIC_KEYER_MODE_STRAIGHT,
+    IAMBIC_KEYER_MODE_ULTIMATIC,
 } iambic_keyer_mode_t;
 
 typedef enum {
@@ -21,8 +22,10 @@ typedef enum {
 } iambic_keyer_state_t;
 
 /**
- * Iambic paddle keyer state machine (Curtis mode A/B) plus a straight-key
- * passthrough mode.
+ * Iambic paddle keyer state machine (Curtis mode A/B), an Ultimatic mode
+ * (squeeze repeats whichever paddle was pressed most recently, with no
+ * alternation and no dot/dash memory), plus a straight-key passthrough
+ * mode.
  *
  * Pure logic: the caller supplies a monotonically increasing millisecond
  * timestamp on every service() call rather than the keyer reading a clock
@@ -41,6 +44,9 @@ typedef struct {
                              * after a full release (mode B only) */
     bool forced_extra;     /* currently sending the one forced element from opposite_latched */
     bool sending_dit;      /* which element type the current SEND/GAP state represents */
+    bool ultimatic_last_dit;   /* Ultimatic only: which paddle has priority during a squeeze */
+    bool prev_dit_contact;     /* Ultimatic only: previous-tick raw dit level, for rising-edge detection */
+    bool prev_dah_contact;     /* Ultimatic only: previous-tick raw dah level, for rising-edge detection */
 } iambic_keyer_t;
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm);

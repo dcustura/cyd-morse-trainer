@@ -58,6 +58,7 @@ iambic_keyer_mode_t settings_validate_keymode(uint8_t raw)
     case IAMBIC_KEYER_MODE_A:
     case IAMBIC_KEYER_MODE_B:
     case IAMBIC_KEYER_MODE_STRAIGHT:
+    case IAMBIC_KEYER_MODE_ULTIMATIC:
         return (iambic_keyer_mode_t)raw;
     default:
         return SETTINGS_DEFAULT_KEYMODE;

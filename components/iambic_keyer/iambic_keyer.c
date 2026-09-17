@@ -8,6 +8,9 @@ static void reset_state(iambic_keyer_t *k)
     k->opposite_latched = false;
     k->forced_extra = false;
     k->sending_dit = false;
+    k->ultimatic_last_dit = true; /* tie-break favors dit, matching the IDLE dit-first check */
+    k->prev_dit_contact = false;
+    k->prev_dah_contact = false;
 }
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm)
@@ -115,10 +118,68 @@ static bool service_iambic(iambic_keyer_t *k, bool dit_contact, bool dah_contact
     return is_sending(k);
 }
 
+static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
+{
+    /* Track which paddle most recently transitioned pressed, to resolve
+     * squeeze priority. dah is checked first, dit second, so that a
+     * same-tick double rising-edge ties toward dit, consistent with the
+     * dit-first checks below and in service_iambic's IDLE case. */
+    if (dah_contact && !k->prev_dah_contact) {
+        k->ultimatic_last_dit = false;
+    }
+    if (dit_contact && !k->prev_dit_contact) {
+        k->ultimatic_last_dit = true;
+    }
+    k->prev_dit_contact = dit_contact;
+    k->prev_dah_contact = dah_contact;
+
+    switch (k->state) {
+    case IAMBIC_KEYER_STATE_IDLE:
+        if (dit_contact && dah_contact) {
+            start_element(k, k->ultimatic_last_dit, now_ms);
+        } else if (dit_contact) {
+            start_element(k, true, now_ms);
+        } else if (dah_contact) {
+            start_element(k, false, now_ms);
+        }
+        break;
+
+    case IAMBIC_KEYER_STATE_SEND_DIT:
+    case IAMBIC_KEYER_STATE_SEND_DAH:
+        if (now_ms >= k->element_end_ms) {
+            k->state = IAMBIC_KEYER_STATE_GAP;
+            k->gap_end_ms = now_ms + k->unit_ms;
+        }
+        break;
+
+    case IAMBIC_KEYER_STATE_GAP:
+        if (now_ms >= k->gap_end_ms) {
+            if (dit_contact && dah_contact) {
+                start_element(k, k->ultimatic_last_dit, now_ms);
+            } else if (dit_contact) {
+                start_element(k, true, now_ms);
+            } else if (dah_contact) {
+                start_element(k, false, now_ms);
+            } else {
+                k->state = IAMBIC_KEYER_STATE_IDLE;
+            }
+        }
+        break;
+    }
+
+    return is_sending(k);
+}
+
 bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
 {
-    if (k->mode == IAMBIC_KEYER_MODE_STRAIGHT) {
+    switch (k->mode) {
+    case IAMBIC_KEYER_MODE_STRAIGHT:
         return dit_contact;
+    case IAMBIC_KEYER_MODE_ULTIMATIC:
+        return service_ultimatic(k, dit_contact, dah_contact, now_ms);
+    case IAMBIC_KEYER_MODE_A:
+    case IAMBIC_KEYER_MODE_B:
+    default:
+        return service_iambic(k, dit_contact, dah_contact, now_ms);
     }
-    return service_iambic(k, dit_contact, dah_contact, now_ms);
 }

@@ -180,6 +180,126 @@ TEST(iambic_keyer, mode_b_sends_exactly_one_extra_element_for_a_released_tap)
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
 }
 
+TEST(iambic_keyer, ultimatic_single_dit_hold_behaves_like_iambic)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+
+    for (uint32_t t = 0; t < 2 * (2u * U); ++t) {
+        bool out = iambic_keyer_service(&s_keyer, true, false, t);
+        uint32_t phase = t % (2u * U);
+        bool expect = phase < U; /* element for the first U ms of each 2U-ms cycle, gap for the rest */
+        TEST_ASSERT_EQUAL_MESSAGE(expect, out, "ultimatic single-dit-hold cycle mismatch");
+    }
+}
+
+TEST(iambic_keyer, ultimatic_squeeze_repeats_last_pressed_paddle_not_alternating)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+
+    /* Press dit first (t=0), then dah joins the squeeze at t=10 while dit
+     * is still sending: dah is now the more-recently-pressed paddle, so it
+     * must win at the next decision point and keep repeating -- unlike
+     * Iambic, which would alternate dit/dah every element. */
+    iambic_keyer_service(&s_keyer, true, false, 0); /* start dit, element_end=60 */
+    for (uint32_t t = 1; t <= 9; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+    for (uint32_t t = 10; t <= 59; ++t) {
+        iambic_keyer_service(&s_keyer, true, true, t); /* dah joins mid-dit-element */
+    }
+    bool out = iambic_keyer_service(&s_keyer, true, true, 60); /* dit's trailing gap starts, gap_end=120 */
+    TEST_ASSERT_FALSE(out);
+    for (uint32_t t = 61; t <= 119; ++t) {
+        iambic_keyer_service(&s_keyer, true, true, t);
+    }
+
+    /* Gap ends at t=120, squeeze still held: dah has priority (its rising
+     * edge at t=10 came after dit's at t=0). */
+    out = iambic_keyer_service(&s_keyer, true, true, 120);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DAH, s_keyer.state);
+    TEST_ASSERT_FALSE(s_keyer.sending_dit);
+
+    for (uint32_t t = 121; t <= 299; ++t) {
+        out = iambic_keyer_service(&s_keyer, true, true, t);
+        TEST_ASSERT_TRUE(out);
+    }
+    out = iambic_keyer_service(&s_keyer, true, true, 300); /* dah's trailing gap */
+    TEST_ASSERT_FALSE(out);
+    for (uint32_t t = 301; t <= 359; ++t) {
+        iambic_keyer_service(&s_keyer, true, true, t);
+    }
+
+    /* Gap ends again: still dah, no alternation, ever, while squeezed. */
+    out = iambic_keyer_service(&s_keyer, true, true, 360);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DAH, s_keyer.state);
+    TEST_ASSERT_FALSE(s_keyer.sending_dit);
+}
+
+TEST(iambic_keyer, ultimatic_switches_to_still_held_paddle_when_priority_paddle_released)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+
+    /* Dah held alone first (element_end=180), dit joins at t=1 -- making
+     * dit the more-recently-pressed, hence priority, paddle. */
+    iambic_keyer_service(&s_keyer, false, true, 0);
+    for (uint32_t t = 1; t <= 179; ++t) {
+        iambic_keyer_service(&s_keyer, true, true, t);
+    }
+    bool out = iambic_keyer_service(&s_keyer, true, true, 180); /* gap starts, gap_end=240 */
+    TEST_ASSERT_FALSE(out);
+
+    /* Release dah mid-gap; dit stays held. */
+    for (uint32_t t = 181; t <= 239; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+
+    /* Gap ends: only dit is held now, so Ultimatic switches to dit. */
+    out = iambic_keyer_service(&s_keyer, true, false, 240);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
+    TEST_ASSERT_TRUE(s_keyer.sending_dit);
+}
+
+TEST(iambic_keyer, ultimatic_drops_a_tap_released_before_gap_end_no_memory)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+
+    /* Same shape as mode_a_drops_a_tap_that_was_released_before_gap_end:
+     * dah tapped mid-dit-element and released well before the gap ends,
+     * both paddles released for the rest of the gap. Ultimatic has no
+     * dot/dash memory at all (not even Mode B's one-shot), so this must
+     * go idle, not send a delayed dah. */
+    iambic_keyer_service(&s_keyer, true, false, 0); /* start dit, element_end=60 */
+    for (uint32_t t = 1; t <= 29; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+    iambic_keyer_service(&s_keyer, true, true, 30); /* dah tapped mid-element */
+    bool out = false;
+    for (uint32_t t = 31; t <= 119; ++t) {
+        out = iambic_keyer_service(&s_keyer, false, false, t); /* both released before gap ends at t=120 */
+    }
+    TEST_ASSERT_FALSE(out);
+
+    out = iambic_keyer_service(&s_keyer, false, false, 120);
+    TEST_ASSERT_FALSE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
+}
+
+TEST(iambic_keyer, ultimatic_simultaneous_first_press_ties_toward_dit)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+
+    /* Both paddles rise on the very same tick from IDLE with no prior
+     * press: the deterministic tie-break must favor dit, matching every
+     * other mode's dit-first convention. */
+    bool out = iambic_keyer_service(&s_keyer, true, true, 0);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
+    TEST_ASSERT_TRUE(s_keyer.sending_dit);
+}
+
 TEST(iambic_keyer, straight_key_mode_ignores_dah_and_tracks_dit_directly)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_STRAIGHT, TEST_WPM);
@@ -221,6 +341,11 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, mode_a_drops_a_tap_that_was_released_before_gap_end);
     RUN_TEST_CASE(iambic_keyer, tap_while_holding_primary_paddle_inserts_opposite_element);
     RUN_TEST_CASE(iambic_keyer, mode_b_sends_exactly_one_extra_element_for_a_released_tap);
+    RUN_TEST_CASE(iambic_keyer, ultimatic_single_dit_hold_behaves_like_iambic);
+    RUN_TEST_CASE(iambic_keyer, ultimatic_squeeze_repeats_last_pressed_paddle_not_alternating);
+    RUN_TEST_CASE(iambic_keyer, ultimatic_switches_to_still_held_paddle_when_priority_paddle_released);
+    RUN_TEST_CASE(iambic_keyer, ultimatic_drops_a_tap_released_before_gap_end_no_memory);
+    RUN_TEST_CASE(iambic_keyer, ultimatic_simultaneous_first_press_ties_toward_dit);
     RUN_TEST_CASE(iambic_keyer, straight_key_mode_ignores_dah_and_tracks_dit_directly);
     RUN_TEST_CASE(iambic_keyer, set_wpm_mid_sequence_changes_the_next_elements_duration);
 }
