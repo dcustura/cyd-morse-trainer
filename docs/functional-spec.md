@@ -57,12 +57,18 @@ It does not teach receiving/copying code — it is a tool for practicing
      `/SK`), so they read as a single procedural unit rather than two
      ordinary letters, with two exceptions that act as control characters
      instead of being displayed:
-     - **HH** ("error, keyed over") erases the word currently being typed
-       (back to the last space, forced line break, or prosign badge)
-       instead of appearing in the text, matching its traditional meaning
-       as a correction signal. If the current word is empty because the
-       last thing shown was an unknown-sequence placeholder, HH removes
-       that placeholder instead.
+     - **HH** ("error, keyed over") erases one word at a time instead of
+       appearing in the text, matching its traditional meaning as a
+       correction signal: each HH trims the last (partial or complete)
+       word since the last forced line break or prosign badge, so sending
+       it repeatedly walks back through however many words were typed
+       since then, like repeated word-backspace. Once every word since
+       that point has been erased, the *next* HH deletes the unknown-
+       sequence placeholder immediately before it, if any — so HH also
+       cleans up a preceding mis-keyed `*`, even if text was typed after
+       it. HH never reaches back past a forced line break or a real
+       prosign badge; right after one, with nothing typed since, it's a
+       no-op.
      - **SK** ("end of contact") displays its `/SK` badge as usual, then
        forces a blank line afterward, so the next transmission starts
        clearly separated.

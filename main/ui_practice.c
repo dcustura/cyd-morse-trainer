@@ -28,6 +28,12 @@ static char *s_plain_buf;
 static size_t s_plain_len;
 static size_t s_plain_cap;
 
+/* Tracks the unknown-sequence marker span immediately preceding the current
+ * plain run (s_plain_span), valid for as long as that run exists - i.e.
+ * until a new prosign badge, another unknown marker, a forced line break, or
+ * Clear ends it. See erase_last_word(). */
+static lv_span_t *s_trailing_unknown_span;
+
 static void reset_plain_run(void)
 {
     s_plain_span = NULL;
@@ -81,23 +87,29 @@ static bool s_suppress_leading_space;
  * so it draws with zero width - no stray glyph, unlike padding with spaces
  * would produce (and spaces run the risk of being silently eaten by
  * lv_spangroup's leading-space-collapsing on the next auto-wrapped line, so
- * padding can't reliably produce a guaranteed blank line either). */
+ * padding can't reliably produce a guaranteed blank line either).
+ *
+ * Ends the run right after inserting the newline, the same as a real prosign
+ * badge, so a forced line break is a hard boundary HH can never erase back
+ * across - without this, the trim in erase_last_word() would treat '\n' as
+ * just another non-space character and happily eat through it into whatever
+ * preceded the break. */
 static void force_line_break(void)
 {
     append_plain_char('\n');
+    reset_plain_run();
+    s_trailing_unknown_span = NULL;
     s_suppress_leading_space = true;
 }
 
-/* Tracks the most recently appended unknown-sequence marker span, valid only
- * as long as nothing else has been appended after it - see erase_last_word(). */
-static lv_span_t *s_trailing_unknown_span;
-
-/* HH ("error, back up") erases the word currently being typed, matching its
- * traditional meaning as a correction signal. It reaches back into the
- * current plain run (the text since the last badge/newline) and, if that
- * run is empty because the very last thing shown was a garbled/unknown
- * sequence, removes that marker too - typing HH right after a real prosign
- * badge or a forced line break is still a no-op. */
+/* HH ("error, back up") erases the current plain run one word at a time,
+ * matching its traditional meaning as a correction signal: each HH trims the
+ * last word off the run (repeated HH therefore walks back through however
+ * many words were typed since the last badge/newline/Clear, exactly like
+ * repeated word-backspace); once the run is fully empty, the next HH deletes
+ * the garbled/unknown marker that preceded it, if any. Typing HH right after
+ * a real prosign badge or a forced line break, with nothing typed since, is
+ * still a no-op - it does not reach back past those. */
 static void erase_last_word(void)
 {
     if (s_plain_span != NULL && s_plain_len > 0) {
@@ -156,7 +168,6 @@ static void append_decoded_char(char ch)
     }
 
     append_plain_char(ch);
-    s_trailing_unknown_span = NULL;
 
     /* BT and AR are sent as one unbroken sequence that also happens to be
      * the standard timing for '=' and '+' (see morse_codec.h); by the same
