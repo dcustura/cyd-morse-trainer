@@ -146,6 +146,7 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
 
     case IAMBIC_KEYER_STATE_SEND_DIT:
     case IAMBIC_KEYER_STATE_SEND_DAH:
+        latch_opposite(k, dit_contact, dah_contact);
         if (now_ms >= k->element_end_ms) {
             k->state = IAMBIC_KEYER_STATE_GAP;
             k->gap_end_ms = now_ms + k->unit_ms;
@@ -153,9 +154,24 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
         break;
 
     case IAMBIC_KEYER_STATE_GAP:
+        latch_opposite(k, dit_contact, dah_contact);
         if (now_ms >= k->gap_end_ms) {
+            bool same_now = k->sending_dit ? dit_contact : dah_contact;
+
             if (dit_contact && dah_contact) {
+                /* Both paddles are actually down right now: a live squeeze,
+                 * decided purely by whichever was pressed more recently --
+                 * no alternation, unlike Iambic. */
                 start_element(k, k->ultimatic_last_dit, now_ms);
+            } else if (same_now && k->opposite_latched) {
+                /* The held paddle is still down, but the opposite paddle
+                 * was tapped and released sometime during this
+                 * element/gap: insert it once, then fall back to whichever
+                 * paddle is actually held on the next decision -- this is
+                 * plain squeeze-insert, the same as Iambic's, not a
+                 * standing alternation and not memory across a full
+                 * release (see the idle fallback below). */
+                start_element(k, !k->sending_dit, now_ms);
             } else if (dit_contact) {
                 start_element(k, true, now_ms);
             } else if (dah_contact) {

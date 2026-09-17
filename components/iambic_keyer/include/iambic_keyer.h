@@ -23,9 +23,10 @@ typedef enum {
 
 /**
  * Iambic paddle keyer state machine (Curtis mode A/B), an Ultimatic mode
- * (squeeze repeats whichever paddle was pressed most recently, with no
- * alternation and no dot/dash memory), plus a straight-key passthrough
- * mode.
+ * (a live squeeze repeats whichever paddle was pressed most recently, with
+ * no alternation; a paddle tapped and released while the other stays held
+ * is still inserted once, but nothing is remembered once both paddles are
+ * fully released), plus a straight-key passthrough mode.
  *
  * Pure logic: the caller supplies a monotonically increasing millisecond
  * timestamp on every service() call rather than the keyer reading a clock
@@ -40,11 +41,11 @@ typedef struct {
     uint32_t element_end_ms;
     uint32_t gap_end_ms;
     bool opposite_latched; /* opposite paddle touched during the current element+gap: inserted
-                             * next if the held paddle is still down (both modes), or once more
-                             * after a full release (mode B only) */
-    bool forced_extra;     /* currently sending the one forced element from opposite_latched */
+                             * next if the held paddle is still down (Iambic A/B and Ultimatic),
+                             * or once more after a full release (mode B only) */
+    bool forced_extra;     /* currently sending the one forced element from opposite_latched (Iambic only) */
     bool sending_dit;      /* which element type the current SEND/GAP state represents */
-    bool ultimatic_last_dit;   /* Ultimatic only: which paddle has priority during a squeeze */
+    bool ultimatic_last_dit;   /* Ultimatic only: which paddle has priority during a live squeeze */
     bool prev_dit_contact;     /* Ultimatic only: previous-tick raw dit level, for rising-edge detection */
     bool prev_dah_contact;     /* Ultimatic only: previous-tick raw dah level, for rising-edge detection */
 } iambic_keyer_t;

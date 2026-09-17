@@ -192,6 +192,67 @@ TEST(iambic_keyer, ultimatic_single_dit_hold_behaves_like_iambic)
     }
 }
 
+TEST(iambic_keyer, ultimatic_tap_while_holding_primary_paddle_inserts_opposite_element_once)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+
+    /* Hold dit throughout; briefly tap dah in passing (standard squeeze
+     * technique) and release it well before dit's own gap ends. Ultimatic
+     * must still insert the tapped dah once -- exactly like Iambic's
+     * squeeze-insert -- even though it never alternates on a live squeeze. */
+    iambic_keyer_service(&s_keyer, true, false, 0); /* start dit, element_end=60 */
+    for (uint32_t t = 1; t <= 29; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+    iambic_keyer_service(&s_keyer, true, true, 30); /* dah tapped mid-element -> latched */
+    for (uint32_t t = 31; t <= 119; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t); /* dah released, dit stays held */
+    }
+
+    /* Gap ends at t=120 with dit still held and dah's tap latched: the dah
+     * must be inserted now instead of just repeating dit. */
+    bool out = iambic_keyer_service(&s_keyer, true, false, 120);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DAH, s_keyer.state);
+    TEST_ASSERT_FALSE(s_keyer.sending_dit);
+
+    /* dit remains held throughout the inserted dah's element+gap: unlike
+     * Iambic, Ultimatic must not treat dit's continued presence as reason
+     * to alternate back and forth -- the dah's own 180ms timer runs to
+     * completion regardless. */
+    for (uint32_t t = 121; t <= 299; ++t) {
+        out = iambic_keyer_service(&s_keyer, true, false, t);
+        TEST_ASSERT_TRUE_MESSAGE(out, "dah element (180ms) must finish on its own timer");
+    }
+    out = iambic_keyer_service(&s_keyer, true, false, 300); /* dah's trailing gap starts, gap_end=360 */
+    TEST_ASSERT_FALSE(out);
+    for (uint32_t t = 301; t <= 359; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+
+    /* Gap ends: dah's tap is long over and was never re-latched (dit was
+     * merely held, never tapped), so this resumes plain dit -- once, not
+     * as an alternation -- and it keeps repeating dit for as long as dit
+     * alone remains held. */
+    out = iambic_keyer_service(&s_keyer, true, false, 360);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
+    TEST_ASSERT_TRUE(s_keyer.sending_dit);
+
+    for (uint32_t t = 361; t <= 419; ++t) {
+        out = iambic_keyer_service(&s_keyer, true, false, t);
+        TEST_ASSERT_TRUE(out);
+    }
+    out = iambic_keyer_service(&s_keyer, true, false, 420); /* dit's trailing gap */
+    TEST_ASSERT_FALSE(out);
+    for (uint32_t t = 421; t <= 479; ++t) {
+        iambic_keyer_service(&s_keyer, true, false, t);
+    }
+    out = iambic_keyer_service(&s_keyer, true, false, 480);
+    TEST_ASSERT_TRUE(out);
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state); /* still dit, no alternation */
+}
+
 TEST(iambic_keyer, ultimatic_squeeze_repeats_last_pressed_paddle_not_alternating)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
@@ -342,6 +403,7 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, tap_while_holding_primary_paddle_inserts_opposite_element);
     RUN_TEST_CASE(iambic_keyer, mode_b_sends_exactly_one_extra_element_for_a_released_tap);
     RUN_TEST_CASE(iambic_keyer, ultimatic_single_dit_hold_behaves_like_iambic);
+    RUN_TEST_CASE(iambic_keyer, ultimatic_tap_while_holding_primary_paddle_inserts_opposite_element_once);
     RUN_TEST_CASE(iambic_keyer, ultimatic_squeeze_repeats_last_pressed_paddle_not_alternating);
     RUN_TEST_CASE(iambic_keyer, ultimatic_switches_to_still_held_paddle_when_priority_paddle_released);
     RUN_TEST_CASE(iambic_keyer, ultimatic_drops_a_tap_released_before_gap_end_no_memory);
