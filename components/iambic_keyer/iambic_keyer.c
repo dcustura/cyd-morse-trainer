@@ -51,12 +51,13 @@ static void latch_opposite(iambic_keyer_t *k, bool dit_contact, bool dah_contact
     }
 }
 
-bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
+static bool is_sending(const iambic_keyer_t *k)
 {
-    if (k->mode == IAMBIC_KEYER_MODE_STRAIGHT) {
-        return dit_contact;
-    }
+    return k->state == IAMBIC_KEYER_STATE_SEND_DIT || k->state == IAMBIC_KEYER_STATE_SEND_DAH;
+}
 
+static bool service_iambic(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
+{
     switch (k->state) {
     case IAMBIC_KEYER_STATE_IDLE:
         if (dit_contact) {
@@ -111,5 +112,13 @@ bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact,
         break;
     }
 
-    return k->state == IAMBIC_KEYER_STATE_SEND_DIT || k->state == IAMBIC_KEYER_STATE_SEND_DAH;
+    return is_sending(k);
+}
+
+bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
+{
+    if (k->mode == IAMBIC_KEYER_MODE_STRAIGHT) {
+        return dit_contact;
+    }
+    return service_iambic(k, dit_contact, dah_contact, now_ms);
 }
