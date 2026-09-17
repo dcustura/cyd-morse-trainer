@@ -17,70 +17,141 @@ static lv_obj_t *s_text_spans;
 static lv_obj_t *s_keying_dot;
 static QueueHandle_t s_decoded_char_queue;
 
-/* The trailing run of plain (letter/digit/punctuation/space) characters is
- * accumulated into one growing span rather than one span per character, to
- * avoid piling up an unbounded number of span objects during a long
- * session. A prosign or unknown-sequence placeholder gets its own
- * specially-styled span and ends the current run; the next plain character
- * starts a new one. */
-static lv_span_t *s_plain_span;
-static char *s_plain_buf;
-static size_t s_plain_len;
-static size_t s_plain_cap;
+/* A unit HH can erase: either a run of plain (letter/digit/punctuation/
+ * space) characters, erasable one word at a time via its own growing
+ * buffer, or a single unknown-sequence "*" marker, erasable as one whole
+ * unit. Letters/digits/spaces keep extending the topmost plain unit rather
+ * than getting one span per character, to avoid piling up an unbounded
+ * number of span objects during a long session; an unknown marker always
+ * gets pushed as its own unit, so the next plain character starts a fresh
+ * one on top of it.
+ *
+ * A real prosign badge (a decodable SK/VE/CT, or the forced line break after
+ * BT/AR/SK) is a hard boundary HH must never cross: appending one clears the
+ * whole stack below instead of pushing onto it (its own span stays visible,
+ * just untracked from here on), so repeated HH always stops there rather
+ * than reaching into an already-finished transmission. */
+typedef struct {
+    lv_span_t *span;
+    bool is_marker;
+    char *buf; /* unused (NULL) when is_marker */
+    size_t len;
+    size_t cap;
+} erase_unit_t;
 
-/* Tracks the unknown-sequence marker span immediately preceding the current
- * plain run (s_plain_span), valid for as long as that run exists - i.e.
- * until a new prosign badge, another unknown marker, a forced line break, or
- * Clear ends it. See erase_last_word(). */
-static lv_span_t *s_trailing_unknown_span;
+static erase_unit_t *s_erase_stack;
+static size_t s_erase_count;
+static size_t s_erase_cap;
 
-static void reset_plain_run(void)
+static void clear_erase_stack(void)
 {
-    s_plain_span = NULL;
-    s_plain_len = 0;
+    for (size_t i = 0; i < s_erase_count; i++) {
+        free(s_erase_stack[i].buf);
+    }
+    s_erase_count = 0;
+}
+
+static erase_unit_t *push_erase_unit(void)
+{
+    if (s_erase_count + 1 > s_erase_cap) {
+        size_t new_cap = (s_erase_cap == 0) ? 8 : s_erase_cap * 2;
+        erase_unit_t *grown = realloc(s_erase_stack, new_cap * sizeof(*grown));
+        if (grown == NULL) {
+            return NULL;
+        }
+        s_erase_stack = grown;
+        s_erase_cap = new_cap;
+    }
+    return &s_erase_stack[s_erase_count++];
+}
+
+/* The plain unit to extend: the topmost stack entry if it already is one,
+ * otherwise a freshly pushed one (e.g. the stack is empty, or the last thing
+ * pushed was an unknown marker or got cleared by a badge/line break). */
+static erase_unit_t *current_plain_unit(void)
+{
+    if (s_erase_count > 0 && !s_erase_stack[s_erase_count - 1].is_marker) {
+        return &s_erase_stack[s_erase_count - 1];
+    }
+
+    erase_unit_t *unit = push_erase_unit();
+    if (unit == NULL) {
+        return NULL;
+    }
+    *unit = (erase_unit_t){ .span = lv_spangroup_add_span(s_text_spans) };
+    return unit;
 }
 
 static void append_plain_char(char ch)
 {
-    if (s_plain_span == NULL) {
-        s_plain_span = lv_spangroup_add_span(s_text_spans);
-        s_plain_len = 0;
+    erase_unit_t *unit = current_plain_unit();
+    if (unit == NULL) {
+        return;
     }
 
-    if (s_plain_len + 1 >= s_plain_cap) {
-        size_t new_cap = (s_plain_cap == 0) ? 16 : s_plain_cap * 2;
-        char *grown = realloc(s_plain_buf, new_cap);
+    if (unit->len + 1 >= unit->cap) {
+        size_t new_cap = (unit->cap == 0) ? 16 : unit->cap * 2;
+        char *grown = realloc(unit->buf, new_cap);
         if (grown == NULL) {
             return;
         }
-        s_plain_buf = grown;
-        s_plain_cap = new_cap;
+        unit->buf = grown;
+        unit->cap = new_cap;
     }
 
-    s_plain_buf[s_plain_len++] = ch;
-    s_plain_buf[s_plain_len] = '\0';
-    lv_spangroup_set_span_text(s_text_spans, s_plain_span, s_plain_buf);
+    unit->buf[unit->len++] = ch;
+    unit->buf[unit->len] = '\0';
+    lv_spangroup_set_span_text(s_text_spans, unit->span, unit->buf);
 }
 
-/* Adds a standalone styled span (a prosign abbreviation or the
- * unknown-sequence placeholder) and ends the current plain run so the next
- * plain character starts a fresh span rather than continuing this one. */
-static lv_span_t *append_special_span(const char *text, lv_color_t color)
+static lv_span_t *add_styled_span(const char *text, lv_color_t color)
 {
     lv_span_t *span = lv_spangroup_add_span(s_text_spans);
     lv_style_t *style = lv_span_get_style(span);
     lv_style_set_text_color(style, color);
     lv_spangroup_set_span_text(s_text_spans, span, text);
-    reset_plain_run();
     return span;
 }
 
-/* Whether the very next decoded event, if it's a word-gap SPACE, should be
- * dropped instead of rendered. Set after force_line_break(): lv_spangroup
- * only eats leading spaces that follow an *automatic* wrap, not an explicit
- * '\n', so a word gap the operator happens to key right after BT/AR/SK would
- * otherwise show up as a stray leading blank on the new line. */
-static bool s_suppress_leading_space;
+static void append_unknown_marker(void)
+{
+    char text[2] = { MORSE_CODEC_UNKNOWN_CHAR, '\0' };
+    lv_span_t *span = add_styled_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
+
+    erase_unit_t *unit = push_erase_unit();
+    if (unit == NULL) {
+        return;
+    }
+    *unit = (erase_unit_t){ .span = span, .is_marker = true };
+}
+
+static void append_prosign_badge(const char *name)
+{
+    char text[8];
+    snprintf(text, sizeof(text), "/%s", name);
+    add_styled_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_GREEN)));
+    clear_erase_stack();
+}
+
+/* Whether the top of the erase stack is currently sitting at a word
+ * boundary: empty (nothing pushed yet, or the stack was just cleared by a
+ * badge/line break/Clear), a marker, or a plain run already ending in a
+ * space. A word-gap SPACE decoded in this state would add nothing but a
+ * stray/redundant blank, so append_decoded_char() drops it instead of
+ * appending it - see there. This also matters for HH: the codec emits a
+ * word-gap SPACE after essentially any character, HH included, once the
+ * following pause is long enough, and without this check that space would
+ * get appended right after an HH-triggered erase, so the *next* HH would
+ * just strip that stray space back off instead of removing more of the run -
+ * repeated HH would appear to stall after one press. */
+static bool at_word_boundary(void)
+{
+    if (s_erase_count == 0 || s_erase_stack[s_erase_count - 1].is_marker) {
+        return true;
+    }
+    const erase_unit_t *unit = &s_erase_stack[s_erase_count - 1];
+    return unit->len == 0 || unit->buf[unit->len - 1] == ' ' || unit->buf[unit->len - 1] == '\n';
+}
 
 /* Embeds a literal newline in the growing plain run; lv_spangroup forces a
  * line break there. '\n' isn't in lv_font_unscii_8's glyph range (32-127),
@@ -89,55 +160,68 @@ static bool s_suppress_leading_space;
  * lv_spangroup's leading-space-collapsing on the next auto-wrapped line, so
  * padding can't reliably produce a guaranteed blank line either).
  *
- * Ends the run right after inserting the newline, the same as a real prosign
- * badge, so a forced line break is a hard boundary HH can never erase back
- * across - without this, the trim in erase_last_word() would treat '\n' as
- * just another non-space character and happily eat through it into whatever
- * preceded the break. */
+ * Clears the erase stack right after inserting the newline, the same as a
+ * real prosign badge, so a forced line break is a hard boundary HH can never
+ * erase back across - without this, the trim in erase_last_word() would
+ * treat '\n' as just another non-space character and happily eat through it
+ * into whatever preceded the break. Clearing the stack also means
+ * at_word_boundary() is automatically true right after, so a word gap the
+ * operator happens to key next doesn't show up as a stray leading blank on
+ * the new line. */
 static void force_line_break(void)
 {
     append_plain_char('\n');
-    reset_plain_run();
-    s_trailing_unknown_span = NULL;
-    s_suppress_leading_space = true;
+    clear_erase_stack();
 }
 
-/* HH ("error, back up") erases the current plain run one word at a time,
- * matching its traditional meaning as a correction signal: each HH trims the
- * last word off the run (repeated HH therefore walks back through however
- * many words were typed since the last badge/newline/Clear, exactly like
- * repeated word-backspace); once the run is fully empty, the next HH deletes
- * the garbled/unknown marker that preceded it, if any. Typing HH right after
- * a real prosign badge or a forced line break, with nothing typed since, is
- * still a no-op - it does not reach back past those. */
+/* HH ("error, back up") erases the top of the erase stack one unit at a
+ * time, matching its traditional meaning as a correction signal: each HH
+ * either trims the last word off the topmost plain run (deleting the run
+ * entirely once it's fully drained) or, if the top is an unknown-sequence
+ * marker, deletes that marker outright. Repeated HH therefore walks back
+ * through however many words and garbled markers were sent since the last
+ * badge/line break/Clear, one unit per press, like repeated word-backspace -
+ * it stops only once the stack is empty, which happens right after a real
+ * prosign badge or a forced line break (with nothing typed since) or at the
+ * very start of the text; HH never reaches back past those. */
 static void erase_last_word(void)
 {
-    if (s_plain_span != NULL && s_plain_len > 0) {
-        size_t new_len = s_plain_len;
-        if (new_len > 0 && s_plain_buf[new_len - 1] == ' ') {
-            new_len--;
-        }
-        while (new_len > 0 && s_plain_buf[new_len - 1] != ' ') {
-            new_len--;
-        }
+    if (s_erase_count == 0) {
+        return;
+    }
+    erase_unit_t *top = &s_erase_stack[s_erase_count - 1];
 
-        s_plain_len = new_len;
-        s_plain_buf[s_plain_len] = '\0';
-        lv_spangroup_set_span_text(s_text_spans, s_plain_span, s_plain_buf);
+    if (top->is_marker) {
+        lv_spangroup_delete_span(s_text_spans, top->span);
+        s_erase_count--;
         return;
     }
 
-    if (s_trailing_unknown_span != NULL) {
-        lv_spangroup_delete_span(s_text_spans, s_trailing_unknown_span);
-        s_trailing_unknown_span = NULL;
+    size_t new_len = top->len;
+    if (new_len > 0 && top->buf[new_len - 1] == ' ') {
+        new_len--;
     }
+    while (new_len > 0 && top->buf[new_len - 1] != ' ') {
+        new_len--;
+    }
+    top->len = new_len;
+
+    if (top->len == 0) {
+        /* Fully drained: drop this unit entirely so the next HH reaches
+         * whatever precedes it instead of re-trimming nothing forever. */
+        lv_spangroup_delete_span(s_text_spans, top->span);
+        free(top->buf);
+        s_erase_count--;
+        return;
+    }
+
+    top->buf[top->len] = '\0';
+    lv_spangroup_set_span_text(s_text_spans, top->span, top->buf);
 }
 
 static void append_decoded_char(char ch)
 {
-    bool suppress_space = s_suppress_leading_space;
-    s_suppress_leading_space = false;
-    if (suppress_space && ch == ' ') {
+    if (ch == ' ' && at_word_boundary()) {
         return;
     }
 
@@ -147,17 +231,13 @@ static void append_decoded_char(char ch)
     }
 
     if (ch == MORSE_CODEC_UNKNOWN_CHAR) {
-        char text[2] = { ch, '\0' };
-        s_trailing_unknown_span = append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
+        append_unknown_marker();
         return;
     }
 
     const char *prosign_name = morse_codec_prosign_name(ch);
     if (prosign_name != NULL) {
-        char text[8];
-        snprintf(text, sizeof(text), "/%s", prosign_name);
-        append_special_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_GREEN)));
-        s_trailing_unknown_span = NULL;
+        append_prosign_badge(prosign_name);
 
         if (ch == MORSE_CODEC_PROSIGN_SK) {
             /* End of contact: leave a blank line before whatever follows. */
@@ -254,9 +334,7 @@ static void clear_btn_cb(lv_event_t *e)
     while (lv_spangroup_get_span_count(s_text_spans) > 0) {
         lv_spangroup_delete_span(s_text_spans, lv_spangroup_get_child(s_text_spans, 0));
     }
-    reset_plain_run();
-    s_suppress_leading_space = false;
-    s_trailing_unknown_span = NULL;
+    clear_erase_stack();
     paddle_input_reset_decoder();
     lv_obj_scroll_to_y(s_text_container, 0, LV_ANIM_OFF);
 }
@@ -293,7 +371,6 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_set_width(s_text_spans, LV_PCT(100));
     lv_obj_set_style_text_font(s_text_spans, &lv_font_unscii_8, 0);
     lv_obj_set_style_text_line_space(s_text_spans, 8, 0);
-    reset_plain_run();
 
     /* A plain divider line instead of a bordered pane around the button
      * row, so the text area above keeps as much screen height as possible. */
