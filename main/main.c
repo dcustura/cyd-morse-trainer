@@ -7,6 +7,7 @@
 #include "touch_cal_store.h"
 #include "touch_calibration.h"
 #include "ui_calibration.h"
+#include "ui_help.h"
 #include "ui_menu.h"
 #include "ui_practice.h"
 #include "ui_settings.h"
@@ -51,6 +52,8 @@ void app_main(void)
     lv_obj_t *practice_screen = ui_practice_create(decoded_char_queue, menu_screen,
                                                     settings.keymode, settings.wpm,
                                                     settings.practice_large_text);
+    lv_obj_t *help_screen = ui_help_create(practice_screen);
+    ui_practice_set_help_screen(help_screen);
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
                                                     settings.paddle_debounce, settings.tone_hz,

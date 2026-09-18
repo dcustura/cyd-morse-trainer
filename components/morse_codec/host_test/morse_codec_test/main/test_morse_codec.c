@@ -251,6 +251,21 @@ TEST(morse_codec, set_wpm_mid_stream_changes_subsequent_classification)
     TEST_ASSERT_EQUAL('E', out); /* the 150ms element classified as a dit at 10 WPM -> lone dit -> 'E' */
 }
 
+TEST(morse_codec, pattern_for_char_returns_the_encode_direction_pattern)
+{
+    TEST_ASSERT_EQUAL_STRING("-.-.", morse_codec_pattern_for_char('C'));
+    TEST_ASSERT_EQUAL_STRING("-....-", morse_codec_pattern_for_char('-'));
+    TEST_ASSERT_EQUAL_STRING("...-.-", morse_codec_pattern_for_char(MORSE_CODEC_PROSIGN_SK));
+    TEST_ASSERT_NULL(morse_codec_pattern_for_char(MORSE_CODEC_UNKNOWN_CHAR));
+}
+
+TEST(morse_codec, wpm_to_unit_ms_matches_paris_timing_and_clamps_zero)
+{
+    TEST_ASSERT_EQUAL_UINT32(60, morse_codec_wpm_to_unit_ms(20));
+    TEST_ASSERT_EQUAL_UINT32(1200, morse_codec_wpm_to_unit_ms(1));
+    TEST_ASSERT_EQUAL_UINT32(1200, morse_codec_wpm_to_unit_ms(0)); /* 0 wpm treated as 1 wpm */
+}
+
 TEST_GROUP_RUNNER(morse_codec)
 {
     RUN_TEST_CASE(morse_codec, element_duration_equal_to_two_units_is_dit);
@@ -263,4 +278,6 @@ TEST_GROUP_RUNNER(morse_codec)
     RUN_TEST_CASE(morse_codec, decodes_punctuation);
     RUN_TEST_CASE(morse_codec, prosigns_sharing_a_punctuation_sequence_decode_to_that_punctuation);
     RUN_TEST_CASE(morse_codec, unique_prosigns_decode_to_a_named_sentinel);
+    RUN_TEST_CASE(morse_codec, pattern_for_char_returns_the_encode_direction_pattern);
+    RUN_TEST_CASE(morse_codec, wpm_to_unit_ms_matches_paris_timing_and_clamps_zero);
 }

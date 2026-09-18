@@ -57,6 +57,16 @@ const char *morse_codec_prosign_name(char ch)
     return NULL;
 }
 
+const char *morse_codec_pattern_for_char(char ch)
+{
+    for (size_t i = 0; i < sizeof(MORSE_TABLE) / sizeof(MORSE_TABLE[0]); ++i) {
+        if (MORSE_TABLE[i].ch == ch) {
+            return MORSE_TABLE[i].seq;
+        }
+    }
+    return NULL;
+}
+
 static void reset_decode_state(morse_codec_t *codec)
 {
     codec->key_down = false;
@@ -78,16 +88,19 @@ void morse_codec_reset(morse_codec_t *codec)
     reset_decode_state(codec);
 }
 
-void morse_codec_set_wpm(morse_codec_t *codec, uint16_t wpm)
+uint32_t morse_codec_wpm_to_unit_ms(uint16_t wpm)
 {
     if (wpm == 0) {
         wpm = 1;
     }
-    codec->wpm = wpm;
-    codec->unit_ms = 1200u / wpm;
-    if (codec->unit_ms == 0) {
-        codec->unit_ms = 1;
-    }
+    uint32_t unit_ms = 1200u / wpm;
+    return (unit_ms == 0) ? 1u : unit_ms;
+}
+
+void morse_codec_set_wpm(morse_codec_t *codec, uint16_t wpm)
+{
+    codec->wpm = (wpm == 0) ? 1 : wpm;
+    codec->unit_ms = morse_codec_wpm_to_unit_ms(wpm);
 }
 
 static char morse_lookup(const char *elements, uint8_t count)

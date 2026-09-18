@@ -325,18 +325,29 @@ void display_style_button_teal(lv_obj_t *btn)
     lv_obj_add_style(btn, &s_style, 0);
 }
 
+static lv_style_t s_tile_style;
+static bool s_tile_style_inited = false;
+
+static void ensure_tile_style_inited(void)
+{
+    if (!s_tile_style_inited) {
+        lv_style_init(&s_tile_style);
+        lv_style_set_bg_color(&s_tile_style, display_compensate_color(lv_palette_darken(LV_PALETTE_TEAL, 4)));
+        lv_style_set_text_color(&s_tile_style, display_compensate_color(lv_color_white()));
+        s_tile_style_inited = true;
+    }
+}
+
 void display_style_tile(lv_obj_t *tile)
 {
-    static lv_style_t s_style;
-    static bool s_style_inited = false;
+    ensure_tile_style_inited();
+    lv_obj_add_style(tile, &s_tile_style, 0);
+}
 
-    if (!s_style_inited) {
-        lv_style_init(&s_style);
-        lv_style_set_bg_color(&s_style, display_compensate_color(lv_palette_darken(LV_PALETTE_TEAL, 4)));
-        lv_style_set_text_color(&s_style, display_compensate_color(lv_color_white()));
-        s_style_inited = true;
-    }
-    lv_obj_add_style(tile, &s_style, 0);
+void display_style_tile_items(lv_obj_t *matrix)
+{
+    ensure_tile_style_inited();
+    lv_obj_add_style(matrix, &s_tile_style, LV_PART_ITEMS);
 }
 
 void display_style_button_dismiss(lv_obj_t *btn)

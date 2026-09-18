@@ -40,11 +40,15 @@ It does not teach receiving/copying code — it is a tool for practicing
      anti-aliased custom monospace font sized for easier reading at a
      distance, fewer characters per line). Changing the setting restyles the
      text area immediately without losing its content.
-   - Shows the currently active WPM and key mode (read-only, informational),
-     refreshed whenever Settings are saved.
+   - Shows the currently active WPM and key mode (read-only, informational)
+     as two short lines, e.g. `18 WPM` and `Iambic B`, refreshed whenever
+     Settings are saved.
    - A small red indicator dot (bottom-right of the screen, vertically
      centered on the Clear/Back buttons) lights up whenever the key/paddle
      is down and the sidetone is sounding, and goes dark when it releases.
+   - An icon-only Help button (list glyph, bottom-right, left of the
+     indicator dot and Back) opens the **Morse Reference screen** (see
+     below).
    - "Clear" button empties the decoded text and resets in-progress decode
      state.
    - "Back" button returns to the Main Menu.
@@ -189,6 +193,31 @@ It does not teach receiving/copying code — it is a tool for practicing
      screen exists to diagnose: swipe down from near the top edge to go
      Back (to the Touchscreen submenu), swipe up from near the bottom edge
      to Clear the drawn dots.
+6. **Morse Reference screen** — reachable from the Practice screen's Help
+   button. No header: the whole screen is a row of tabs — "A-Z", "0-9",
+   "/?", Prosigns, and "Back" as a same-sized fifth tab-bar slot (tapping
+   it returns to the Practice screen, stopping any tone still sounding,
+   rather than switching to a tab) — each showing a grid of large tappable
+   buttons filling the rest of the screen.
+   - Each tab's grid holds every decodable character in that category (the
+     same character set as the Practice screen: the 26 letters, 10 digits,
+     standard Morse punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and
+     the 8 prosigns SK/HH/VE/CT/BT/AR/KN/AS), with every button on a tab the
+     same size (a category whose count doesn't divide evenly into rows gets
+     a blank filler slot rather than uneven button widths). Only one tab's
+     grid is on screen at a time, so its buttons are large and easy to hit.
+     Tabs switch only by tapping the tab bar; swiping the grid does not
+     change tabs.
+   - Deliberately no on-screen readout of which character or pattern was
+     last played: the screen is meant for learning each code by ear, not by
+     sight.
+   - Tapping a button plays that character's Morse code audibly (dit/dah
+     timing at the trainer's currently configured WPM, so it always sounds
+     like the speed being practiced) once, and highlights the tapped button
+     until a different one is tapped. Holding a button down doesn't repeat
+     it, and any tap - the same button or a different one - is ignored
+     while a tone is still sounding, so plays can never overlap; the next
+     tap is only honored once the current character has finished playing.
 
 ## Behavior details
 

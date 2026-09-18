@@ -28,6 +28,13 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
  */
 void ui_practice_set_text_size(bool large_text);
 
+/**
+ * The Help screen isn't known yet at creation time (it's created afterwards,
+ * since it needs the Practice screen as its own Back target) - call this
+ * once it exists, before the Help button can be used.
+ */
+void ui_practice_set_help_screen(lv_obj_t *help_screen);
+
 #ifdef __cplusplus
 }
 #endif

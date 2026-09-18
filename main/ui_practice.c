@@ -4,6 +4,7 @@
 #include "fonts.h"
 #include "morse_codec.h"
 #include "paddle_input.h"
+#include "ui_help.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,7 @@ static lv_obj_t *s_mode_label;
 static lv_obj_t *s_text_container;
 static lv_obj_t *s_text_spans;
 static lv_obj_t *s_keying_dot;
+static lv_obj_t *s_help_screen;
 static QueueHandle_t s_decoded_char_queue;
 
 /* A unit HH can erase: either a run of plain (letter/digit/punctuation/
@@ -279,8 +281,8 @@ static const char *mode_name(iambic_keyer_mode_t mode)
 
 static void update_status_label(void)
 {
-    lv_label_set_text_fmt(s_wpm_label, "WPM: %u", (unsigned)paddle_input_get_wpm());
-    lv_label_set_text_fmt(s_mode_label, "Mode: %s", mode_name(paddle_input_get_mode()));
+    lv_label_set_text_fmt(s_wpm_label, "%u WPM", (unsigned)paddle_input_get_wpm());
+    lv_label_set_text(s_mode_label, mode_name(paddle_input_get_mode()));
 }
 
 static void screen_loaded_cb(lv_event_t *e)
@@ -321,6 +323,11 @@ void ui_practice_set_text_size(bool large_text)
     scroll_text_to_bottom();
 }
 
+void ui_practice_set_help_screen(lv_obj_t *help_screen)
+{
+    s_help_screen = help_screen;
+}
+
 static void drain_queue_timer_cb(lv_timer_t *timer)
 {
     (void)timer;
@@ -354,6 +361,12 @@ static void back_btn_cb(lv_event_t *e)
 {
     lv_obj_t *menu_screen = (lv_obj_t *)lv_event_get_user_data(e);
     lv_scr_load(menu_screen);
+}
+
+static void help_btn_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_help_screen);
 }
 
 lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen,
@@ -396,7 +409,13 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_set_style_border_width(btn_row, 0, 0);
     lv_obj_set_style_pad_all(btn_row, 4, 0);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(btn_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    /* SPACE_BETWEEN, with status_col/right_group as real flex children
+     * (below) rather than absolutely-positioned overlays: the flex engine
+     * then guarantees Clear/status/right never overlap, however wide
+     * right_group grows (e.g. once Help was added, an IGNORE_LAYOUT +
+     * manual-align right_group here used to grow leftward into status_col's
+     * centered text instead of pushing it out of the way). */
+    lv_obj_set_flex_align(btn_row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_size(btn_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     lv_obj_t *clear_btn = lv_button_create(btn_row);
@@ -406,33 +425,40 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_label_set_text(clear_label, "Clear");
     lv_obj_set_style_text_color(clear_label, display_compensate_color(lv_color_white()), 0);
 
-    /* status_col (WPM/Mode) is centered in btn_row independent of Clear's
-     * and right_group's widths, so it stays visually centered regardless of
-     * label length. */
+    /* status_col (WPM/Mode) is not clickable itself - just a layout wrapper
+     * around the two labels - so it never intercepts taps meant for a
+     * sibling it happens to sit near. */
     lv_obj_t *status_col = lv_obj_create(btn_row);
     lv_obj_remove_style_all(status_col);
+    lv_obj_clear_flag(status_col, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_flex_flow(status_col, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_size(status_col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_add_flag(status_col, LV_OBJ_FLAG_IGNORE_LAYOUT);
-    lv_obj_align(status_col, LV_ALIGN_CENTER, 0, 0);
 
     s_wpm_label = lv_label_create(status_col);
-    lv_label_set_text_fmt(s_wpm_label, "WPM: %u", (unsigned)initial_wpm);
+    lv_label_set_text_fmt(s_wpm_label, "%u WPM", (unsigned)initial_wpm);
 
     s_mode_label = lv_label_create(status_col);
-    lv_label_set_text_fmt(s_mode_label, "Mode: %s", mode_name(initial_mode));
+    lv_label_set_text(s_mode_label, mode_name(initial_mode));
 
-    /* right_group (the keying dot, then Back) is right-anchored in btn_row
-     * as a unit, with Back as its last child so Back itself stays flush
-     * against the row's right edge - the dot sits just to Back's left. */
+    /* right_group (Help, then the keying dot, then Back) - likewise not
+     * clickable itself, only its button/dot children are. */
     lv_obj_t *right_group = lv_obj_create(btn_row);
     lv_obj_remove_style_all(right_group);
+    lv_obj_clear_flag(right_group, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_flex_flow(right_group, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(right_group, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(right_group, 8, 0);
     lv_obj_set_size(right_group, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_add_flag(right_group, LV_OBJ_FLAG_IGNORE_LAYOUT);
-    lv_obj_align(right_group, LV_ALIGN_RIGHT_MID, 0, 0);
+
+    /* Icon-only: no text label, just the LV_SYMBOL_LIST glyph, since no
+     * dedicated "help" glyph exists in LVGL's built-in symbol set and a
+     * reference list is what this actually opens. */
+    lv_obj_t *help_btn = lv_button_create(right_group);
+    display_style_tile(help_btn);
+    lv_obj_add_event_cb(help_btn, help_btn_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *help_label = lv_label_create(help_btn);
+    lv_label_set_text(help_label, LV_SYMBOL_LIST);
+    lv_obj_set_style_text_color(help_label, display_compensate_color(lv_color_white()), 0);
 
     /* Layout must run once so clear_btn's height reflects its label/padding. */
     lv_obj_update_layout(btn_row);

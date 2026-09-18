@@ -69,6 +69,14 @@ void morse_codec_reset(morse_codec_t *codec);
 void morse_codec_set_wpm(morse_codec_t *codec, uint16_t wpm);
 
 /**
+ * The standard PARIS-timing dit/unit duration in milliseconds for a given
+ * keying speed (0 is treated as 1 wpm). Exposed standalone for callers that
+ * need element timing without running a full codec instance, e.g. to play
+ * a reference tone at the trainer's current WPM.
+ */
+uint32_t morse_codec_wpm_to_unit_ms(uint16_t wpm);
+
+/**
  * Feed one key transition (key_down flips relative to the codec's current
  * state; callers should only call this on real edges). timestamp_ms must be
  * monotonically increasing across calls.
@@ -95,6 +103,15 @@ morse_codec_event_t morse_codec_tick(morse_codec_t *codec, uint32_t timestamp_ms
  *         MORSE_CODEC_PROSIGN_* values.
  */
 const char *morse_codec_prosign_name(char ch);
+
+/**
+ * Look up the dit/dash pattern for a character or prosign sentinel value
+ * (the encode-direction mirror of the codec's own decode table).
+ *
+ * @return a static string of '.'/'-' (e.g. "-.-." for 'C'), or NULL if ch
+ *         has no known Morse pattern.
+ */
+const char *morse_codec_pattern_for_char(char ch);
 
 #ifdef __cplusplus
 }

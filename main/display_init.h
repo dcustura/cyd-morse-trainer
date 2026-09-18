@@ -84,6 +84,14 @@ void display_style_button_teal(lv_obj_t *btn);
 void display_style_tile(lv_obj_t *tile);
 
 /**
+ * The same tile look as display_style_tile(), but for an lv_buttonmatrix's
+ * individual buttons (its LV_PART_ITEMS part) rather than a standalone
+ * lv_obj - button matrix cells aren't separate widgets, so they can't take
+ * display_style_tile() directly.
+ */
+void display_style_tile_items(lv_obj_t *matrix);
+
+/**
  * Style a Back/Close/dismiss button: a dark neutral gray background with
  * white text, visually distinct from the dark teal used for value/action
  * buttons so an exit action always stands out from a setting-changing one.
