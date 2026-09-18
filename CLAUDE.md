@@ -33,19 +33,8 @@ Manager (EIM). Follow these baseline rules when working here.
 - Use the installation path reported by `eim list` when a task needs
   `IDF_PATH` or direct access to a matching ESP-IDF checkout. Do not guess
   paths.
-- Currently installed/selected version: **v6.1**
-  (`/home/dorin/.espressif/v6.1/esp-idf`).
 
 ## Standard Commands
-
-Run via the MCP tools or `eim run "idf.py <command>"`:
-
-- Select target: `set-target <TARGET>`
-- Build: `build`
-- Flash: `-p <PORT> flash`
-- Monitor: `-p <PORT> monitor`
-- Flash and monitor: `-p <PORT> flash monitor`
-- Clean: `clean` / `fullclean`
 
 `set-target` clears the build directory and moves the previous `sdkconfig` to
 `sdkconfig.old`. Ask the user before running it — it replaces configuration
