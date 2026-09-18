@@ -34,7 +34,12 @@ It does not teach receiving/copying code — it is a tool for practicing
    "Practice" and "Settings".
 2. **Practice screen** — reachable from the Main Menu.
    - Shows a scrolling text area of decoded characters, updated live as the
-     operator keys.
+     operator keys, in one of two sizes set by the Text Size setting
+     (Settings' Display submenu): Small (the compact bitmap font, ~26
+     characters per visible line at the default width) or Large (a smoother,
+     anti-aliased custom monospace font sized for easier reading at a
+     distance, fewer characters per line). Changing the setting restyles the
+     text area immediately without losing its content.
    - Shows the currently active WPM and key mode (read-only, informational),
      refreshed whenever Settings are saved.
    - A small red indicator dot (bottom-right of the screen, vertically
@@ -75,16 +80,21 @@ It does not teach receiving/copying code — it is a tool for practicing
      as a distinguishable placeholder (`*`, in red) rather than silently
      dropped, so the operator can see a mis-keyed character happened.
 3. **Settings screen** — reachable from the Main Menu.
-   - A grid of six large, tappable tiles (three columns × two rows) filling
-     the whole display with no scrolling and no separate title bar: Keyer,
-     Sidetone, Brightness, Touchscreen, Reset to Defaults, and "< Back" (in
-     that grid order). There is no slider or dropdown anywhere on this
-     screen or its submenus, and no OK/Cancel step — every change is
-     applied to the running trainer and persisted to NVS the moment it's
-     made. "< Back" returns to the Main Menu.
-   - **Keyer** tile opens a submenu screen (its own "< Back" returns to
-     Settings) with a 2×2 grid of tiles, each opening a popup to change
-     just that value:
+   - A grid of large, tappable tiles (three columns × two rows) filling the
+     whole display with no scrolling and no separate title bar: Keyer,
+     Sidetone, and Display fill the top row; the bottom row has Reset to
+     Defaults and a Back tile (marked with a left-chevron icon), leaving one
+     cell empty. There is no slider or dropdown anywhere on this screen or
+     its submenus, and no OK/Cancel step — every change is applied to the
+     running trainer and persisted to NVS the moment it's made (writes are
+     briefly debounced so rapid taps or a held `-`/`+` button don't hit NVS
+     on every step). Back returns to the Main Menu.
+   - Every submenu screen (Keyer/Sidetone/Display/Touchscreen) follows the
+     same pattern as this top-level grid: no separate title bar, and Back
+     (left-chevron icon) is just the last tile in the grid, sized N×M with
+     N = M or N = M + 1 so tiles stay wide rather than tall and narrow.
+   - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles (one
+     cell left empty), each opening a popup to change just that value:
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
        popup has `-`/`+` buttons (press-and-hold to repeat).
      - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key, or
@@ -124,9 +134,8 @@ It does not teach receiving/copying code — it is a tool for practicing
        Straight Key mode, which is always debounced (a mechanical
        straight key bounces; a clean paddle contact often does not need
        the extra latency).
-   - **Sidetone** tile opens a submenu screen (its own "< Back" returns to
-     Settings) with a row of three tiles, each opening a popup to change
-     just that value:
+   - **Sidetone** tile opens a submenu screen with a 2×2 grid of tiles (one
+     cell left empty), each opening a popup to change just that value:
      - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while
        the key is down. Its popup has `-`/`+` buttons and a "Test" button
        that briefly plays the sidetone at its current settings.
@@ -136,27 +145,31 @@ It does not teach receiving/copying code — it is a tool for practicing
      - **Smoothing** (2–100 ms): duration of the attack/decay ramp shaping
        each key-down/key-up transition, to avoid audible keying clicks.
        Its popup has `-`/`+` buttons and the same "Test" button.
-   - **Brightness** (10–100%): backlight brightness. Its popup has `-`/`+`
-     buttons and an "Auto"/"Manual" toggle button; toggling to Auto drives
-     brightness from the onboard LDR (ambient light sensor) instead, and
-     stepping `-`/`+` always switches back to Manual. On stock
-     ESP32-2432S028R boards, Auto has no visible effect (the LDR divider
-     reads a flat, unlit value regardless of ambient light) — see the
-     README's Hardware section.
-   - **Touchscreen** tile opens a submenu screen (its own "< Back" returns
-     to Settings) with two tiles:
-     - "Calibrate" opens the Touch Calibration screen to redo calibration
-       (its Back button returns to this submenu).
-     - "Verify Calibration" opens the Verify Calibration screen to check
-       the current calibration visually (its swipe-Back also returns to
-       this submenu).
+   - **Display** tile opens a submenu screen with a 2×2 grid of tiles:
+     - **Brightness** (10–100%): backlight brightness. Its popup has `-`/`+`
+       buttons and an "Auto"/"Manual" toggle button; toggling to Auto drives
+       brightness from the onboard LDR (ambient light sensor) instead, and
+       stepping `-`/`+` always switches back to Manual. On stock
+       ESP32-2432S028R boards, Auto has no visible effect (the LDR divider
+       reads a flat, unlit value regardless of ambient light) — see the
+       README's Hardware section.
+     - **Touchscreen** tile opens a further submenu screen with a 2×2 grid
+       of tiles (one cell left empty):
+       - "Calibrate" opens the Touch Calibration screen to redo calibration
+         (its Back button returns to this submenu).
+       - "Verify Calibration" opens the Verify Calibration screen to check
+         the current calibration visually (its swipe-Back also returns to
+         this submenu).
+     - **Text Size**: Small or Large decoded-text font on the Practice
+       screen (see the Practice screen's description above). Its popup
+       offers "Small"/"Large" buttons; tapping one selects it immediately.
    - "Reset to Defaults" tile, after a Yes/No confirmation, erases both
      the keyer settings and the touch calibration and restarts the
      device, which then comes up as if never configured (lands on the
      Touch Calibration screen with compiled-in defaults).
-4. **Touch Calibration screen** — reachable from Settings' Touchscreen
-   submenu ("Calibrate"), and shown automatically at first boot before any
-   calibration exists.
+4. **Touch Calibration screen** — reachable from Settings' Display >
+   Touchscreen submenu ("Calibrate"), and shown automatically at first boot
+   before any calibration exists.
    - A 5-point calibration: the operator taps 4 corner crosshair targets
      (inset from the true screen edges so they can't be clipped) plus a
      center point used as a precision check.
@@ -166,8 +179,8 @@ It does not teach receiving/copying code — it is a tool for practicing
      from the Touchscreen submenu for re-calibration (returning there); the
      mandatory first-run flow has no way out, since there is no prior
      calibration to fall back to.
-5. **Verify Calibration screen** — reachable from Settings' Touchscreen
-   submenu ("Verify Calibration").
+5. **Verify Calibration screen** — reachable from Settings' Display >
+   Touchscreen submenu ("Verify Calibration").
    - A full-screen canvas: every touch draws a dot at the exact calibrated
      coordinate (with a live X/Y label), so miscalibration is visible
      directly rather than inferred from misses on real widgets.
@@ -198,15 +211,17 @@ It does not teach receiving/copying code — it is a tool for practicing
   A/B/Ultimatic debouncing is controlled by the Paddle Debounce setting.
 - **Persistence**: WPM, key mode, paddle swap, paddle debounce, sidetone
   frequency, sidetone volume, sidetone envelope, screen brightness,
-  brightness auto/manual mode, and touch calibration survive power loss. On
-  boot, the last-saved values are loaded and applied before the operator
-  can key anything (or interact with the touchscreen, in the case of
-  calibration).
+  brightness auto/manual mode, Practice text size, and touch calibration
+  survive power loss. On boot, the last-saved values are loaded and applied
+  before the operator can key anything (or interact with the touchscreen, in
+  the case of calibration). Settings writes to NVS are debounced by a couple
+  of seconds after the last edit, rather than on every tap/step, to reduce
+  flash wear.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
   paddle swap, paddle debounce on, 600 Hz sidetone, 50% sidetone volume,
-  10 ms sidetone envelope, 100% brightness, brightness auto mode off. No
-  default touch calibration exists — it must be created via the first-boot
-  calibration flow.
+  10 ms sidetone envelope, 100% brightness, brightness auto mode off, Small
+  Practice text size. No default touch calibration exists — it must be
+  created via the first-boot calibration flow.
 - **Factory reset**: erases saved keyer settings and touch calibration
   together and restarts the device, so it comes back up exactly as an
   unconfigured device would.
