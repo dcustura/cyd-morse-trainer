@@ -49,12 +49,14 @@ void app_main(void)
     lv_obj_t *calibration_screen = ui_calibration_create(menu_screen);
     lv_obj_t *touch_test_screen = ui_touch_test_create();
     lv_obj_t *practice_screen = ui_practice_create(decoded_char_queue, menu_screen,
-                                                    settings.keymode, settings.wpm);
+                                                    settings.keymode, settings.wpm,
+                                                    settings.practice_large_text);
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
                                                     settings.paddle_debounce, settings.tone_hz,
                                                     settings.volume_pct, settings.envelope_ms,
-                                                    settings.brightness_pct, settings.brightness_auto);
+                                                    settings.brightness_pct, settings.brightness_auto,
+                                                    settings.practice_large_text);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 

@@ -7,6 +7,7 @@
 #include "sidetone.h"
 #include "touch_cal_store.h"
 #include "ui_calibration.h"
+#include "ui_practice.h"
 #include "ui_touch_test.h"
 
 #include "esp_system.h"
@@ -66,6 +67,7 @@ static lv_obj_t *s_settings_screen;
 static lv_obj_t *s_touch_submenu_screen;
 static lv_obj_t *s_keyer_submenu_screen;
 static lv_obj_t *s_sidetone_submenu_screen;
+static lv_obj_t *s_display_submenu_screen;
 static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
@@ -76,6 +78,7 @@ static lv_obj_t *s_tone_tile_value;
 static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
 static lv_obj_t *s_brightness_tile_value;
+static lv_obj_t *s_text_size_tile_value;
 
 /* Only one popup can be open at a time; these track the one currently shown.
  * s_popup_brightness_auto_btn is only set (non-NULL) while the Brightness
@@ -153,6 +156,8 @@ static void refresh_tile_labels(void)
         snprintf(text, sizeof(text), s_field_info[FIELD_BRIGHTNESS].unit_fmt, (int)s_current_settings.brightness_pct);
         lv_label_set_text(s_brightness_tile_value, text);
     }
+
+    lv_label_set_text(s_text_size_tile_value, s_current_settings.practice_large_text ? "Large" : "Small");
 }
 
 static int32_t field_get_value(numeric_field_t field)
@@ -536,6 +541,22 @@ static void swap_tile_cb(lv_event_t *e)
     open_binary_popup("Paddle Swap", NULL, options, swap_select_cb);
 }
 
+static void text_size_select_cb(lv_event_t *e)
+{
+    bool large = (bool)(intptr_t)lv_event_get_user_data(e);
+    s_current_settings.practice_large_text = large;
+    ui_practice_set_text_size(large);
+    schedule_settings_save();
+    refresh_tile_labels();
+}
+
+static void text_size_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    static const binary_option_t options[2] = {{"Small", false}, {"Large", true}};
+    open_binary_popup("Practice Text Size", NULL, options, text_size_select_cb);
+}
+
 static void debounce_select_cb(lv_event_t *e)
 {
     bool debounce = (bool)(intptr_t)lv_event_get_user_data(e);
@@ -576,6 +597,12 @@ static void sidetone_tile_cb(lv_event_t *e)
 {
     (void)e;
     lv_scr_load(s_sidetone_submenu_screen);
+}
+
+static void display_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_display_submenu_screen);
 }
 
 static void reset_confirm_btn_cb(lv_event_t *e)
@@ -680,6 +707,36 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
     return scr;
 }
 
+static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
+                                         lv_obj_t *touch_test_screen)
+{
+    lv_obj_t *scr = create_submenu_screen(settings_screen, "Display");
+
+    lv_obj_t *row = lv_obj_create(scr);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_all(row, 2, 0);
+    lv_obj_set_style_pad_column(row, 4, 0);
+    lv_obj_set_width(row, LV_PCT(100));
+    lv_obj_set_flex_grow(row, 1);
+
+    lv_obj_t *brightness_tile = create_tile(row, "Brightness", 0, 0, numeric_tile_cb,
+                                             (void *)(intptr_t)FIELD_BRIGHTNESS, &s_brightness_tile_value);
+    lv_obj_set_flex_grow(brightness_tile, 1);
+    lv_obj_set_height(brightness_tile, LV_PCT(100));
+
+    s_touch_submenu_screen = create_touch_submenu(scr, calibration_screen, touch_test_screen);
+    ui_touch_test_set_back_target(s_touch_submenu_screen);
+    lv_obj_t *touch_tile = create_tile(row, "Touchscreen", 0, 0, touch_tile_cb, NULL, NULL);
+    lv_obj_set_flex_grow(touch_tile, 1);
+    lv_obj_set_height(touch_tile, LV_PCT(100));
+
+    lv_obj_t *text_size_tile = create_tile(row, "Text Size", 0, 0, text_size_tile_cb, NULL, &s_text_size_tile_value);
+    lv_obj_set_flex_grow(text_size_tile, 1);
+    lv_obj_set_height(text_size_tile, LV_PCT(100));
+
+    return scr;
+}
+
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
     lv_obj_t *scr = create_submenu_screen(settings_screen, "Sidetone");
@@ -714,7 +771,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
                               uint16_t initial_tone_hz, uint8_t initial_volume_pct,
                               uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
-                              bool initial_brightness_auto)
+                              bool initial_brightness_auto, bool initial_large_text)
 {
     s_current_settings = (settings_t){
         .wpm = initial_wpm,
@@ -726,6 +783,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
         .envelope_ms = initial_envelope_ms,
         .brightness_pct = initial_brightness_pct,
         .brightness_auto = initial_brightness_auto,
+        .practice_large_text = initial_large_text,
     };
 
     lv_obj_t *scr = lv_obj_create(NULL);
@@ -740,19 +798,16 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 
     create_tile(grid, "Keyer", 0, 0, keyer_tile_cb, NULL, NULL);
     create_tile(grid, "Sidetone", 1, 0, sidetone_tile_cb, NULL, NULL);
-    create_tile(grid, "Brightness", 2, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_BRIGHTNESS,
-                &s_brightness_tile_value);
+    create_tile(grid, "Display", 2, 0, display_tile_cb, NULL, NULL);
 
-    create_tile(grid, "Touchscreen", 0, 1, touch_tile_cb, NULL, NULL);
     create_tile(grid, "Reset to\nDefaults", 1, 1, reset_btn_cb, NULL, NULL);
 
     lv_obj_t *back_tile = create_tile(grid, "< Back", 2, 1, nav_btn_cb, menu_screen, NULL);
     display_style_button_dismiss(back_tile);
 
-    s_touch_submenu_screen = create_touch_submenu(scr, calibration_screen, touch_test_screen);
-    ui_touch_test_set_back_target(s_touch_submenu_screen);
     s_keyer_submenu_screen = create_keyer_submenu(scr);
     s_sidetone_submenu_screen = create_sidetone_submenu(scr);
+    s_display_submenu_screen = create_display_submenu(scr, calibration_screen, touch_test_screen);
 
     refresh_tile_labels();
 

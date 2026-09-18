@@ -14,9 +14,18 @@ extern "C" {
  * label, and Clear/Back buttons. Must be called while holding the LVGL
  * lock (lvgl_port_lock). Starts an lv_timer that drains decoded_char_queue
  * (populated by paddle_input.c) and appends each character to the text area.
+ * initial_large_text selects the decoded-text font at creation (see
+ * ui_practice_set_text_size()).
  */
 lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen,
-                              iambic_keyer_mode_t initial_mode, uint16_t initial_wpm);
+                              iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
+                              bool initial_large_text);
+
+/**
+ * Switches the Practice screen's decoded-text font between the 8px and 16px
+ * unscii fonts, live, even while the screen isn't the one currently shown.
+ */
+void ui_practice_set_text_size(bool large_text);
 
 #ifdef __cplusplus
 }

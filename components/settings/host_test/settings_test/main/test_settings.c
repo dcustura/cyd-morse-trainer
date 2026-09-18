@@ -115,6 +115,7 @@ TEST(settings, set_defaults_populates_the_compiled_in_defaults)
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_ENVELOPE_MS, settings.envelope_ms);
     TEST_ASSERT_EQUAL_UINT8(SETTINGS_DEFAULT_BRIGHTNESS_PCT, settings.brightness_pct);
     TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_BRIGHTNESS_AUTO, settings.brightness_auto);
+    TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_PRACTICE_LARGE_TEXT, settings.practice_large_text);
 }
 
 TEST_GROUP_RUNNER(settings)
