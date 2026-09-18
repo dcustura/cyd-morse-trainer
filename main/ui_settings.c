@@ -270,7 +270,7 @@ static void nav_btn_cb(lv_event_t *e)
 }
 
 /* Shared by every submenu screen (Touchscreen/Keyer/Sidetone/Display): a bare
- * screen for the caller to lay out as a tile grid, with "< Back" as its own
+ * screen for the caller to lay out as a tile grid, with "Back" as its own
  * grid tile (see ui_settings_create()'s main grid for the same pattern) --
  * no separate title bar, since the submenu the user just navigated into is
  * self-evident from context. */
@@ -660,7 +660,7 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
     create_tile(scr, "Calibrate", 0, 0, calibrate_btn_cb, calibration_screen, NULL);
     create_tile(scr, "Verify\nCalibration", 1, 0, nav_btn_cb, touch_test_screen, NULL);
 
-    lv_obj_t *back_tile = create_tile(scr, "< Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
     display_style_button_dismiss(back_tile);
 
     return scr;
@@ -679,7 +679,7 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
     create_tile(scr, "Paddle Swap", 2, 0, swap_tile_cb, NULL, &s_swap_tile_value);
     create_tile(scr, "Paddle\nDebounce", 0, 1, debounce_tile_cb, NULL, &s_debounce_tile_value);
 
-    lv_obj_t *back_tile = create_tile(scr, "< Back", 2, 1, nav_btn_cb, settings_screen, NULL);
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, nav_btn_cb, settings_screen, NULL);
     display_style_button_dismiss(back_tile);
 
     return scr;
@@ -703,7 +703,7 @@ static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *cal
 
     create_tile(scr, "Text Size", 0, 1, text_size_tile_cb, NULL, &s_text_size_tile_value);
 
-    lv_obj_t *back_tile = create_tile(scr, "< Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
     display_style_button_dismiss(back_tile);
 
     return scr;
@@ -721,7 +721,7 @@ static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
     create_tile(scr, "Volume", 1, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME, &s_volume_tile_value);
     create_tile(scr, "Smoothing", 0, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE, &s_envelope_tile_value);
 
-    lv_obj_t *back_tile = create_tile(scr, "< Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
     display_style_button_dismiss(back_tile);
 
     return scr;
@@ -763,7 +763,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 
     create_tile(grid, "Reset to\nDefaults", 1, 1, reset_btn_cb, NULL, NULL);
 
-    lv_obj_t *back_tile = create_tile(grid, "< Back", 2, 1, nav_btn_cb, menu_screen, NULL);
+    lv_obj_t *back_tile = create_tile(grid, LV_SYMBOL_LEFT " Back", 2, 1, nav_btn_cb, menu_screen, NULL);
     display_style_button_dismiss(back_tile);
 
     s_keyer_submenu_screen = create_keyer_submenu(scr);
