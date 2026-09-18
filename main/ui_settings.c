@@ -269,31 +269,15 @@ static void nav_btn_cb(lv_event_t *e)
     lv_scr_load(target_screen);
 }
 
-/* Shared by every submenu screen (Touchscreen/Keyer/Sidetone): a scrollable
- * column with a "< Back" + title bar on top, leaving the caller to add its
- * own content below. */
-static lv_obj_t *create_submenu_screen(lv_obj_t *settings_screen, const char *title)
+/* Shared by every submenu screen (Touchscreen/Keyer/Sidetone/Display): a bare
+ * screen for the caller to lay out as a tile grid, with "< Back" as its own
+ * grid tile (see ui_settings_create()'s main grid for the same pattern) --
+ * no separate title bar, since the submenu the user just navigated into is
+ * self-evident from context. */
+static lv_obj_t *create_submenu_screen(void)
 {
     lv_obj_t *scr = lv_obj_create(NULL);
-    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_pad_all(scr, 4, 0);
-
-    lv_obj_t *top_bar = lv_obj_create(scr);
-    lv_obj_set_flex_flow(top_bar, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(top_bar, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_size(top_bar, LV_PCT(100), LV_SIZE_CONTENT);
-
-    lv_obj_t *back_btn = lv_button_create(top_bar);
-    display_style_button_dismiss(back_btn);
-    lv_obj_add_event_cb(back_btn, nav_btn_cb, LV_EVENT_CLICKED, settings_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "< Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
-
-    lv_obj_t *title_label = lv_label_create(top_bar);
-    lv_label_set_text(title_label, title);
-    lv_obj_set_style_text_color(title_label, display_compensate_color(lv_color_white()), 0);
-
     return scr;
 }
 
@@ -667,42 +651,36 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
 static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                        lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(settings_screen, "Touchscreen");
+    lv_obj_t *scr = create_submenu_screen();
 
-    lv_obj_t *row = lv_obj_create(scr);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_all(row, 2, 0);
-    lv_obj_set_style_pad_column(row, 4, 0);
-    lv_obj_set_width(row, LV_PCT(100));
-    lv_obj_set_flex_grow(row, 1);
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
 
-    lv_obj_t *calibrate_tile = create_tile(row, "Calibrate", 0, 0, calibrate_btn_cb, calibration_screen, NULL);
-    lv_obj_set_flex_grow(calibrate_tile, 1);
-    lv_obj_set_height(calibrate_tile, LV_PCT(100));
+    create_tile(scr, "Calibrate", 0, 0, calibrate_btn_cb, calibration_screen, NULL);
+    create_tile(scr, "Verify\nCalibration", 1, 0, nav_btn_cb, touch_test_screen, NULL);
 
-    lv_obj_t *verify_tile = create_tile(row, "Verify\nCalibration", 0, 0, nav_btn_cb, touch_test_screen, NULL);
-    lv_obj_set_flex_grow(verify_tile, 1);
-    lv_obj_set_height(verify_tile, LV_PCT(100));
+    lv_obj_t *back_tile = create_tile(scr, "< Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    display_style_button_dismiss(back_tile);
 
     return scr;
 }
 
 static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(settings_screen, "Keyer");
+    lv_obj_t *scr = create_submenu_screen();
 
-    lv_obj_t *grid = lv_obj_create(scr);
-    lv_obj_set_style_pad_all(grid, 2, 0);
-    lv_obj_set_size(grid, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_set_flex_grow(grid, 1);
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
     static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
+    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
 
-    create_tile(grid, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
-    create_tile(grid, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
-    create_tile(grid, "Paddle Swap", 0, 1, swap_tile_cb, NULL, &s_swap_tile_value);
-    create_tile(grid, "Paddle\nDebounce", 1, 1, debounce_tile_cb, NULL, &s_debounce_tile_value);
+    create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
+    create_tile(scr, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
+    create_tile(scr, "Paddle Swap", 2, 0, swap_tile_cb, NULL, &s_swap_tile_value);
+    create_tile(scr, "Paddle\nDebounce", 0, 1, debounce_tile_cb, NULL, &s_debounce_tile_value);
+
+    lv_obj_t *back_tile = create_tile(scr, "< Back", 2, 1, nav_btn_cb, settings_screen, NULL);
+    display_style_button_dismiss(back_tile);
 
     return scr;
 }
@@ -710,58 +688,41 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
 static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                          lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(settings_screen, "Display");
+    lv_obj_t *scr = create_submenu_screen();
 
-    lv_obj_t *row = lv_obj_create(scr);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_all(row, 2, 0);
-    lv_obj_set_style_pad_column(row, 4, 0);
-    lv_obj_set_width(row, LV_PCT(100));
-    lv_obj_set_flex_grow(row, 1);
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
 
-    lv_obj_t *brightness_tile = create_tile(row, "Brightness", 0, 0, numeric_tile_cb,
-                                             (void *)(intptr_t)FIELD_BRIGHTNESS, &s_brightness_tile_value);
-    lv_obj_set_flex_grow(brightness_tile, 1);
-    lv_obj_set_height(brightness_tile, LV_PCT(100));
+    create_tile(scr, "Brightness", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_BRIGHTNESS,
+                &s_brightness_tile_value);
 
     s_touch_submenu_screen = create_touch_submenu(scr, calibration_screen, touch_test_screen);
     ui_touch_test_set_back_target(s_touch_submenu_screen);
-    lv_obj_t *touch_tile = create_tile(row, "Touchscreen", 0, 0, touch_tile_cb, NULL, NULL);
-    lv_obj_set_flex_grow(touch_tile, 1);
-    lv_obj_set_height(touch_tile, LV_PCT(100));
+    create_tile(scr, "Touchscreen", 1, 0, touch_tile_cb, NULL, NULL);
 
-    lv_obj_t *text_size_tile = create_tile(row, "Text Size", 0, 0, text_size_tile_cb, NULL, &s_text_size_tile_value);
-    lv_obj_set_flex_grow(text_size_tile, 1);
-    lv_obj_set_height(text_size_tile, LV_PCT(100));
+    create_tile(scr, "Text Size", 0, 1, text_size_tile_cb, NULL, &s_text_size_tile_value);
+
+    lv_obj_t *back_tile = create_tile(scr, "< Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    display_style_button_dismiss(back_tile);
 
     return scr;
 }
 
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(settings_screen, "Sidetone");
+    lv_obj_t *scr = create_submenu_screen();
 
-    lv_obj_t *row = lv_obj_create(scr);
-    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_all(row, 2, 0);
-    lv_obj_set_style_pad_column(row, 4, 0);
-    lv_obj_set_width(row, LV_PCT(100));
-    lv_obj_set_flex_grow(row, 1);
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
 
-    lv_obj_t *tone_tile = create_tile(row, "Pitch", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ,
-                                       &s_tone_tile_value);
-    lv_obj_set_flex_grow(tone_tile, 1);
-    lv_obj_set_height(tone_tile, LV_PCT(100));
+    create_tile(scr, "Pitch", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ, &s_tone_tile_value);
+    create_tile(scr, "Volume", 1, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME, &s_volume_tile_value);
+    create_tile(scr, "Smoothing", 0, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE, &s_envelope_tile_value);
 
-    lv_obj_t *volume_tile = create_tile(row, "Volume", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME,
-                                         &s_volume_tile_value);
-    lv_obj_set_flex_grow(volume_tile, 1);
-    lv_obj_set_height(volume_tile, LV_PCT(100));
-
-    lv_obj_t *envelope_tile = create_tile(row, "Smoothing", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE,
-                                           &s_envelope_tile_value);
-    lv_obj_set_flex_grow(envelope_tile, 1);
-    lv_obj_set_height(envelope_tile, LV_PCT(100));
+    lv_obj_t *back_tile = create_tile(scr, "< Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    display_style_button_dismiss(back_tile);
 
     return scr;
 }
