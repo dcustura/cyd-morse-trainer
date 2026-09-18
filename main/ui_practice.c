@@ -1,6 +1,7 @@
 #include "ui_practice.h"
 
 #include "display_init.h"
+#include "fonts.h"
 #include "morse_codec.h"
 #include "paddle_input.h"
 
@@ -314,7 +315,7 @@ static void scroll_text_to_bottom(void)
 
 void ui_practice_set_text_size(bool large_text)
 {
-    lv_obj_set_style_text_font(s_text_spans, large_text ? &lv_font_unscii_16 : &lv_font_unscii_8, 0);
+    lv_obj_set_style_text_font(s_text_spans, large_text ? &lv_font_dejavu_mono_16_12 : &lv_font_unscii_8, 0);
     lv_obj_set_style_text_line_space(s_text_spans, large_text ? TEXT_LINE_SPACE_LARGE_PX : TEXT_LINE_SPACE_SMALL_PX,
                                       0);
     scroll_text_to_bottom();

@@ -22,8 +22,9 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
                               bool initial_large_text);
 
 /**
- * Switches the Practice screen's decoded-text font between the 8px and 16px
- * unscii fonts, live, even while the screen isn't the one currently shown.
+ * Switches the Practice screen's decoded-text font, live, even while the
+ * screen isn't the one currently shown: 8px unscii_8 for "Small", or the
+ * custom 12x16 anti-aliased monospace font (see main/fonts.h) for "Large".
  */
 void ui_practice_set_text_size(bool large_text);
 

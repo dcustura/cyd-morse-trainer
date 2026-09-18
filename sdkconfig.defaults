@@ -13,15 +13,10 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 # and trips the watchdog.
 CONFIG_FREERTOS_HZ=1000
 
-# Fixed-width fonts (both generated from the same unscii-8.ttf source, same
-# 0x20-0x7F ASCII glyph range, just rendered at different pixel sizes):
-# - unscii_8: Settings screen's numeric popup/tile value labels, and the
-#   Practice screen's decoded text when "Small" text size is selected.
-# - unscii_16: Practice screen's decoded text when "Large" text size is
-#   selected; fixed-width keeps the erase-stack/line-wrap logic in
-#   main/ui_practice.c simple (see comments there).
+# Fixed-width font used for the Settings screen's numeric popup/tile value
+# labels, and the Practice screen's decoded text when "Small" text size is
+# selected (see main/fonts.h for the custom font used for "Large").
 CONFIG_LV_FONT_UNSCII_8=y
-CONFIG_LV_FONT_UNSCII_16=y
 
 # The Practice screen's decoded-text area accumulates a long, spaceless run
 # of characters between word gaps; LVGL's default (0 = disabled) never

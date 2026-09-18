@@ -1,6 +1,7 @@
 idf_component_register(SRCS "main.c"
                              "auto_brightness.c"
                              "display_init.c"
+                             "fonts/lv_font_dejavu_mono_16_12.c"
                              "sidetone.c"
                              "paddle_input.c"
                              "settings_store.c"

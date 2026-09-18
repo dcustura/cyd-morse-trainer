@@ -30,7 +30,8 @@ extern "C" {
  * "On"/"Off" -- this only affects Mode A/B/Ultimatic; Straight Key mode is
  * always debounced). Tapping Text Size opens a similar popup
  * ("Small"/"Large") that switches the Practice screen's decoded-text font
- * between 8px and 16px immediately, live, even while Practice isn't the
+ * immediately between a small fixed-width font and a larger, anti-aliased
+ * monospace font (see main/fonts.h), live, even while Practice isn't the
  * screen currently shown. Every change is applied to the running trainer
  * and persisted to NVS immediately when made; there is no OK/Cancel or
  * discard-on-cancel step. "Touchscreen" navigates to a submenu screen
