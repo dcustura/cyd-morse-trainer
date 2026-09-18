@@ -426,7 +426,7 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_center(minus_label);
 
     s_popup_value_label = lv_label_create(row);
-    lv_obj_set_style_text_font(s_popup_value_label, &lv_font_unscii_8, 0);
+    lv_obj_set_style_text_font(s_popup_value_label, &lv_font_montserrat_12, 0);
     lv_obj_set_width(s_popup_value_label, VALUE_LABEL_WIDTH);
     lv_obj_set_style_text_align(s_popup_value_label, LV_TEXT_ALIGN_CENTER, 0);
     update_popup_value_label();
@@ -656,7 +656,7 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
 
     if (value_label_out != NULL) {
         lv_obj_t *value_label = lv_label_create(tile);
-        lv_obj_set_style_text_font(value_label, &lv_font_unscii_8, 0);
+        lv_obj_set_style_text_font(value_label, &lv_font_montserrat_12, 0);
         lv_obj_set_style_text_color(value_label, display_compensate_color(lv_color_white()), 0);
         *value_label_out = value_label;
     }
