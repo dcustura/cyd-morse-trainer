@@ -335,7 +335,7 @@ static void open_binary_popup(const char *title, const char *help_text, const bi
         lv_obj_center(label);
     }
 
-    create_action_button(content, "Close", msgbox_close_cb, mbox, true);
+    create_action_button(content, LV_SYMBOL_CLOSE " Close", msgbox_close_cb, mbox, true);
 }
 
 static void test_tone_stop_cb(lv_timer_t *timer)
@@ -373,7 +373,7 @@ static void brightness_auto_toggle_cb(lv_event_t *e)
     schedule_settings_save();
 
     lv_label_set_text(lv_obj_get_child(s_popup_brightness_auto_btn, 0),
-                       s_current_settings.brightness_auto ? "Manual" : "Auto");
+                       s_current_settings.brightness_auto ? LV_SYMBOL_REFRESH " Manual" : LV_SYMBOL_REFRESH " Auto");
     update_popup_value_label();
     refresh_tile_labels();
 }
@@ -421,7 +421,7 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_add_event_cb(minus_btn, numeric_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)(-info->step));
     lv_obj_add_event_cb(minus_btn, numeric_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)(-info->step));
     lv_obj_t *minus_label = lv_label_create(minus_btn);
-    lv_label_set_text(minus_label, "-");
+    lv_label_set_text(minus_label, LV_SYMBOL_MINUS);
     lv_obj_set_style_text_color(minus_label, display_compensate_color(lv_color_white()), 0);
     lv_obj_center(minus_label);
 
@@ -437,7 +437,7 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_add_event_cb(plus_btn, numeric_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)(info->step));
     lv_obj_add_event_cb(plus_btn, numeric_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)(info->step));
     lv_obj_t *plus_label = lv_label_create(plus_btn);
-    lv_label_set_text(plus_label, "+");
+    lv_label_set_text(plus_label, LV_SYMBOL_PLUS);
     lv_obj_set_style_text_color(plus_label, display_compensate_color(lv_color_white()), 0);
     lv_obj_center(plus_label);
 
@@ -449,14 +449,14 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_set_size(actions_row, LV_PCT(100), LV_SIZE_CONTENT);
 
     if (info->has_test) {
-        create_action_button(actions_row, "Test", test_field_btn_cb, NULL, false);
+        create_action_button(actions_row, LV_SYMBOL_PLAY " Test", test_field_btn_cb, NULL, false);
     }
     if (field == FIELD_BRIGHTNESS) {
         s_popup_brightness_auto_btn = create_action_button(
-            actions_row, s_current_settings.brightness_auto ? "Manual" : "Auto", brightness_auto_toggle_cb, NULL,
-            false);
+            actions_row, s_current_settings.brightness_auto ? LV_SYMBOL_REFRESH " Manual" : LV_SYMBOL_REFRESH " Auto",
+            brightness_auto_toggle_cb, NULL, false);
     }
-    create_action_button(actions_row, "Close", msgbox_close_cb, mbox, true);
+    create_action_button(actions_row, LV_SYMBOL_CLOSE " Close", msgbox_close_cb, mbox, true);
 }
 
 static void numeric_tile_cb(lv_event_t *e)
@@ -520,7 +520,7 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_obj_set_grid_cell(close_btn, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
     lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
     lv_obj_t *close_label = lv_label_create(close_btn);
-    lv_label_set_text(close_label, "Close");
+    lv_label_set_text(close_label, LV_SYMBOL_CLOSE " Close");
     lv_obj_set_style_text_color(close_label, display_compensate_color(lv_color_white()), 0);
     lv_obj_center(close_label);
 }
@@ -636,8 +636,8 @@ static void reset_btn_cb(lv_event_t *e)
     lv_obj_set_style_pad_column(actions_row, 8, 0);
     lv_obj_set_size(actions_row, LV_PCT(100), LV_SIZE_CONTENT);
 
-    create_action_button(actions_row, "Reset", reset_confirm_btn_cb, mbox, false);
-    create_action_button(actions_row, "Cancel", reset_confirm_btn_cb, mbox, true);
+    create_action_button(actions_row, LV_SYMBOL_TRASH " Reset", reset_confirm_btn_cb, mbox, false);
+    create_action_button(actions_row, LV_SYMBOL_CLOSE " Cancel", reset_confirm_btn_cb, mbox, true);
 }
 
 static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
