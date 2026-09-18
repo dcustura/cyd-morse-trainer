@@ -1,5 +1,11 @@
 # Agent Instructions
 
+## Documentation
+
+- If a change affects functionality (new features, changed behavior, altered
+  UI flows, etc.), update `docs/functional-spec.md` to match in the same
+  change.
+
 ## UI Layout
 
 - When laying out a screen as a grid of tiles (e.g. `main/ui_settings.c`'s
