@@ -2,6 +2,7 @@
 
 #include "lvgl.h"
 #include "iambic_keyer.h"
+#include "settings.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,16 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               uint16_t initial_tone_hz, uint8_t initial_volume_pct,
                               uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
                               bool initial_brightness_auto, bool initial_large_text);
+
+/**
+ * Update the Settings screen's cached values and visible tile labels to
+ * match *settings. For use by code outside this file (namely the CLI) that
+ * changes a setting through its live-apply function directly rather than
+ * through one of this screen's own popups, so the screen doesn't show a
+ * stale value the next time it's opened. Must be called while holding the
+ * LVGL lock (lvgl_port_lock).
+ */
+void ui_settings_sync(const settings_t *settings);
 
 #ifdef __cplusplus
 }

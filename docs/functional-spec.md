@@ -219,6 +219,40 @@ It does not teach receiving/copying code — it is a tool for practicing
      while a tone is still sounding, so plays can never overlap; the next
      tap is only honored once the current character has finished playing.
 
+## Serial CLI
+
+- The device exposes a line-based command console on the same UART already
+  used for the ESP-IDF log output and `idf.py monitor` (115200 baud) — no
+  separate hardware or connection is needed. Prompt: `morse> `.
+- Five commands, chosen for scripting: every response ends with exactly one
+  `OK` or `ERR <reason>` line, so a script can tell where a response ends
+  even though log lines from elsewhere in the firmware may appear between
+  commands.
+  - `get <key>` — prints `key=value` for one setting; `get settings` prints
+    every setting, one `key=value` line each.
+  - `set <key> <value>` — validates/clamps the value exactly like the
+    Settings screen does, applies it to the running trainer immediately
+    (keeping the Settings screen's tiles in sync so they don't show a stale
+    value next time it's opened), persists it to NVS right away, and echoes
+    back the value actually applied (which may differ from what was typed,
+    if it was out of range).
+  - `save` — persists the current settings to NVS (normally unnecessary,
+    since `set` already saves).
+  - `reset` — erases saved settings, the same as the Settings screen's
+    "Reset to Defaults" minus the touch-calibration erase and automatic
+    restart; a manual restart is required afterward for the defaults to
+    take effect.
+  - `log <none|error|warn|info|debug|verbose>` — sets the runtime log
+    verbosity for every module, so a script can quiet interleaved log
+    output before sending `get`/`set` commands.
+- Keys, matching the Settings screen's Keyer/Sidetone/Display submenus:
+  `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`), `paddle_swap`,
+  `paddle_debounce`, `tone_hz`, `volume_pct`, `envelope_ms`,
+  `brightness_pct`, `brightness_auto`, and `practice_large_text` (all
+  booleans as `on`/`off`). Setting `brightness_pct` while `brightness_auto`
+  is on switches back to manual first, the same as stepping `-`/`+` on the
+  Brightness popup.
+
 ## Behavior details
 
 - **Sidetone**: an audible tone plays for the exact duration the key is

@@ -1,4 +1,4 @@
-idf_component_register(SRCS "main.c"
+idf_component_register(SRCS "cli.c" "main.c"
                              "auto_brightness.c"
                              "display_init.c"
                              "fonts/lv_font_dejavu_mono_16_12.c"
@@ -18,6 +18,7 @@ idf_component_register(SRCS "main.c"
                                 morse_codec
                                 settings
                                 touch_calibration
+                                console
                                 driver
                                 esp_adc
                                 esp_driver_dac

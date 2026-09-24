@@ -1,5 +1,6 @@
 #include "esp_log.h"
 #include "auto_brightness.h"
+#include "cli.h"
 #include "display_init.h"
 #include "esp_lvgl_port.h"
 #include "paddle_input.h"
@@ -67,4 +68,6 @@ void app_main(void)
 
     paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm, settings.paddle_swap,
                         settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms);
+
+    cli_start(&settings);
 }

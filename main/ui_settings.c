@@ -774,3 +774,9 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 
     return scr;
 }
+
+void ui_settings_sync(const settings_t *settings)
+{
+    s_current_settings = *settings;
+    refresh_tile_labels();
+}
