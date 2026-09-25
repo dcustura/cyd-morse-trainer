@@ -64,9 +64,9 @@ It does not teach receiving/copying code — it is a tool for practicing
      convention: BT → `=`, AR → `+`, KN → `(`, AS → `&`. Sending BT or AR
      also forces a line break right after it, since both conventionally end
      a line of text. The remaining prosigns with no punctuation
-     equivalent — SK, HH, VE, CT — are shown as green `/XX` text (e.g.
-     `/SK`), so they read as a single procedural unit rather than two
-     ordinary letters, with two exceptions that act as control characters
+     equivalent — SK, HH, VE, CT — are shown as green `XX` text (e.g. `SK`),
+     so the color alone marks them as a single procedural unit rather than
+     two ordinary letters, with two exceptions that act as control characters
      instead of being displayed:
      - **HH** ("error, keyed over") erases one unit at a time instead of
        appearing in the text, matching its traditional meaning as a
