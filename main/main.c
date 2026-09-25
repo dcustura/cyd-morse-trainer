@@ -1,5 +1,6 @@
 #include "esp_log.h"
 #include "auto_brightness.h"
+#include "ble_hid_output.h"
 #include "cli.h"
 #include "display_init.h"
 #include "esp_lvgl_port.h"
@@ -60,14 +61,23 @@ void app_main(void)
                                                     settings.paddle_debounce, settings.tone_hz,
                                                     settings.volume_pct, settings.envelope_ms,
                                                     settings.brightness_pct, settings.brightness_auto,
-                                                    settings.practice_large_text);
+                                                    settings.practice_large_text, settings.ble_hid_enabled);
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 
     lvgl_port_unlock();
 
+    /* paddle_input_start() (which brings up sidetone's DMA-based DAC audio)
+     * must run before ble_hid_output_init(): both compete for this board's
+     * limited internal DMA-capable RAM, sidetone's DMA buffer is small and
+     * fixed, and unlike sidetone's hard ESP_ERROR_CHECK abort on allocation
+     * failure, ble_hid_output_init() degrades gracefully (logs and disables
+     * itself) if the BT stack can't get the RAM it wants -- so audio must
+     * claim its small, guaranteed share first. */
     paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm, settings.paddle_swap,
                         settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms);
+
+    ble_hid_output_init(settings.ble_hid_enabled);
 
     cli_start(&settings);
 }

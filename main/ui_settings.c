@@ -68,6 +68,7 @@ static lv_obj_t *s_touch_submenu_screen;
 static lv_obj_t *s_keyer_submenu_screen;
 static lv_obj_t *s_sidetone_submenu_screen;
 static lv_obj_t *s_display_submenu_screen;
+static lv_obj_t *s_bluetooth_submenu_screen;
 static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
@@ -79,6 +80,7 @@ static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
 static lv_obj_t *s_brightness_tile_value;
 static lv_obj_t *s_text_size_tile_value;
+static lv_obj_t *s_ble_hid_tile_value;
 
 /* Only one popup can be open at a time; these track the one currently shown.
  * s_popup_brightness_auto_btn is only set (non-NULL) while the Brightness
@@ -158,6 +160,8 @@ static void refresh_tile_labels(void)
     }
 
     lv_label_set_text(s_text_size_tile_value, s_current_settings.practice_large_text ? "Large" : "Small");
+
+    lv_label_set_text(s_ble_hid_tile_value, s_current_settings.ble_hid_enabled ? "On" : "Off");
 }
 
 static int32_t field_get_value(numeric_field_t field)
@@ -541,6 +545,23 @@ static void text_size_tile_cb(lv_event_t *e)
     open_binary_popup("Practice Text Size", NULL, options, text_size_select_cb);
 }
 
+static void ble_hid_select_cb(lv_event_t *e)
+{
+    bool enabled = (bool)(intptr_t)lv_event_get_user_data(e);
+    s_current_settings.ble_hid_enabled = enabled;
+    schedule_settings_save();
+    refresh_tile_labels();
+}
+
+static void ble_hid_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    static const binary_option_t options[2] = {{"On", true}, {"Off", false}};
+    open_binary_popup("BLE Keyboard", "Sends decoded Morse characters to a paired phone or PC as keystrokes. "
+                                       "Restart the device for this change to take effect.",
+                       options, ble_hid_select_cb);
+}
+
 static void debounce_select_cb(lv_event_t *e)
 {
     bool debounce = (bool)(intptr_t)lv_event_get_user_data(e);
@@ -587,6 +608,12 @@ static void display_tile_cb(lv_event_t *e)
 {
     (void)e;
     lv_scr_load(s_display_submenu_screen);
+}
+
+static void bluetooth_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_bluetooth_submenu_screen);
 }
 
 static void reset_confirm_btn_cb(lv_event_t *e)
@@ -709,6 +736,22 @@ static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *cal
     return scr;
 }
 
+static lv_obj_t *create_bluetooth_submenu(lv_obj_t *settings_screen)
+{
+    lv_obj_t *scr = create_submenu_screen();
+
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+
+    create_tile(scr, "BLE\nKeyboard", 0, 0, ble_hid_tile_cb, NULL, &s_ble_hid_tile_value);
+
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    display_style_button_dismiss(back_tile);
+
+    return scr;
+}
+
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
     lv_obj_t *scr = create_submenu_screen();
@@ -732,7 +775,8 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
                               uint16_t initial_tone_hz, uint8_t initial_volume_pct,
                               uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
-                              bool initial_brightness_auto, bool initial_large_text)
+                              bool initial_brightness_auto, bool initial_large_text,
+                              bool initial_ble_hid_enabled)
 {
     s_current_settings = (settings_t){
         .wpm = initial_wpm,
@@ -745,6 +789,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
         .brightness_pct = initial_brightness_pct,
         .brightness_auto = initial_brightness_auto,
         .practice_large_text = initial_large_text,
+        .ble_hid_enabled = initial_ble_hid_enabled,
     };
 
     lv_obj_t *scr = lv_obj_create(NULL);
@@ -760,6 +805,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     create_tile(grid, "Keyer", 0, 0, keyer_tile_cb, NULL, NULL);
     create_tile(grid, "Sidetone", 1, 0, sidetone_tile_cb, NULL, NULL);
     create_tile(grid, "Display", 2, 0, display_tile_cb, NULL, NULL);
+    create_tile(grid, "Bluetooth", 0, 1, bluetooth_tile_cb, NULL, NULL);
 
     create_tile(grid, "Reset to\nDefaults", 1, 1, reset_btn_cb, NULL, NULL);
 
@@ -769,6 +815,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     s_keyer_submenu_screen = create_keyer_submenu(scr);
     s_sidetone_submenu_screen = create_sidetone_submenu(scr);
     s_display_submenu_screen = create_display_submenu(scr, calibration_screen, touch_test_screen);
+    s_bluetooth_submenu_screen = create_bluetooth_submenu(scr);
 
     refresh_tile_labels();
 

@@ -35,3 +35,32 @@ CONFIG_LV_TXT_LINE_BREAK_LONG_POST_MIN_LEN=1
 # (see display_init.c) and draw buffer size are the other limits on actual
 # paint throughput; this just lets LVGL invalidate/flush more often.
 CONFIG_LV_DEF_REFR_PERIOD=16
+
+# BLE HID keyboard output (main/ble_hid_output.c): NimBLE instead of
+# Bluedroid, since this device only ever needs a peripheral BLE HID role and
+# NimBLE's footprint is far smaller than Bluedroid's combined classic+BLE
+# stack -- this board is already tight on flash/SRAM with LVGL + touch.
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_HID_SERVICE=y
+# Bonds must survive a restart, or a paired phone/PC has to re-pair every
+# power cycle; this feature is meant to be enabled once and left alone.
+CONFIG_BT_NIMBLE_NVS_PERSIST=y
+# This device only ever accepts one central (phone/PC) and never itself
+# scans/connects out, so the Central and Observer roles and their GATT
+# client support are pure overhead -- disabling them, and trimming
+# connection/report-instance counts to what a single-instance keyboard
+# actually needs, matters because the onboard DAC's DMA-based sidetone
+# synth (main/sidetone.c) competes with the BT stack for the same limited
+# internal DMA-capable RAM; measured on real hardware, the untrimmed
+# defaults left too little for sidetone_init() to allocate its DMA buffer,
+# aborting the boot as soon as BLE HID output was turned on.
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BTDM_CTRL_BLE_MAX_CONN=1
+# esp_hid's NimBLE HID-device backend (components/esp_hid/src/nimble_hidd.c)
+# calls the Battery Service API unconditionally, so BAS_SERVICE can't be
+# turned off even though this device doesn't report a battery level.
+CONFIG_BT_NIMBLE_SVC_HID_MAX_INSTANCES=1
+CONFIG_BT_NIMBLE_SVC_HID_MAX_RPTS=2

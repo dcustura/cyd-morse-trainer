@@ -27,6 +27,7 @@ typedef enum {
     KEY_BRIGHTNESS_PCT,
     KEY_BRIGHTNESS_AUTO,
     KEY_PRACTICE_LARGE_TEXT,
+    KEY_BLE_HID_ENABLED,
     KEY_COUNT,
 } cli_key_t;
 
@@ -41,6 +42,7 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_BRIGHTNESS_PCT] = "brightness_pct",
     [KEY_BRIGHTNESS_AUTO] = "brightness_auto",
     [KEY_PRACTICE_LARGE_TEXT] = "practice_large_text",
+    [KEY_BLE_HID_ENABLED] = "ble_hid_enabled",
 };
 
 static settings_t s_settings;
@@ -140,6 +142,9 @@ static void print_value(cli_key_t key)
         break;
     case KEY_PRACTICE_LARGE_TEXT:
         printf("practice_large_text=%s\n", s_settings.practice_large_text ? "on" : "off");
+        break;
+    case KEY_BLE_HID_ENABLED:
+        printf("ble_hid_enabled=%s\n", s_settings.ble_hid_enabled ? "on" : "off");
         break;
     default:
         break;
@@ -273,6 +278,14 @@ static int cmd_set(int argc, char **argv)
         lvgl_port_lock(0);
         ui_practice_set_text_size(flag);
         lvgl_port_unlock();
+        break;
+    case KEY_BLE_HID_ENABLED:
+        if (!parse_bool(val, &flag)) {
+            printf("ERR unknown value %s\n", val);
+            return 1;
+        }
+        s_settings.ble_hid_enabled = flag;
+        printf("note=restart required to apply\n");
         break;
     default:
         return 1;

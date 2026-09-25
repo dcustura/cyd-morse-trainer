@@ -29,6 +29,7 @@ extern "C" {
 #define SETTINGS_DEFAULT_BRIGHTNESS_PCT 100
 #define SETTINGS_DEFAULT_BRIGHTNESS_AUTO false
 #define SETTINGS_DEFAULT_PRACTICE_LARGE_TEXT false
+#define SETTINGS_DEFAULT_BLE_HID_ENABLED false
 
 typedef struct {
     uint16_t wpm;
@@ -41,6 +42,7 @@ typedef struct {
     uint8_t brightness_pct;
     bool brightness_auto;
     bool practice_large_text;
+    bool ble_hid_enabled;
 } settings_t;
 
 /** Clamp a WPM value to [SETTINGS_WPM_MIN, SETTINGS_WPM_MAX]. */

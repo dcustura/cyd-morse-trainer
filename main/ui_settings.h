@@ -10,12 +10,19 @@ extern "C" {
 
 /**
  * Create the Settings screen: a 3x2 grid of tappable tiles (Keyer, Sidetone,
- * Display, an empty cell, Reset to Factory Defaults, and a final "< Back"
+ * Display, Bluetooth, Reset to Factory Defaults, and a final "< Back"
  * tile), filling the whole display with no scrolling and no separate title
  * bar. "Keyer" navigates to a submenu (created internally) with a 2x2 grid
  * of WPM, Key Mode, Paddle Swap, and Paddle Debounce tiles; "Sidetone"
  * navigates to a submenu with Pitch, Volume, and Smoothing tiles; "Display"
- * navigates to a submenu with Brightness, Touchscreen, and Text Size tiles.
+ * navigates to a submenu with Brightness, Touchscreen, and Text Size tiles;
+ * "Bluetooth" navigates to a submenu with a single "BLE Keyboard" on/off
+ * tile, which sends decoded Morse characters to a paired phone/PC as
+ * keystrokes -- like every other toggle, "On"/"Off" is applied to
+ * settings_t and persisted immediately, but (unlike the others) doesn't
+ * take effect until the device is next restarted, since bringing the BLE
+ * radio stack up or down live isn't supported; its popup's help text says
+ * so.
  * Tapping a numeric tile (WPM, Pitch/Volume/Smoothing, Brightness) opens a
  * popup with -/+ buttons (supporting press-and-hold repeat) and, for the
  * sidetone fields (Pitch/Volume/Smoothing), a "Test" button that plays the
@@ -49,7 +56,8 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
                               uint16_t initial_tone_hz, uint8_t initial_volume_pct,
                               uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
-                              bool initial_brightness_auto, bool initial_large_text);
+                              bool initial_brightness_auto, bool initial_large_text,
+                              bool initial_ble_hid_enabled);
 
 /**
  * Update the Settings screen's cached values and visible tile labels to

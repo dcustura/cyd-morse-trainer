@@ -1,4 +1,4 @@
-idf_component_register(SRCS "cli.c" "main.c"
+idf_component_register(SRCS "ble_hid_output.c" "cli.c" "main.c"
                              "auto_brightness.c"
                              "display_init.c"
                              "fonts/lv_font_dejavu_mono_16_12.c"
@@ -18,9 +18,11 @@ idf_component_register(SRCS "cli.c" "main.c"
                                 morse_codec
                                 settings
                                 touch_calibration
+                                bt
                                 console
                                 driver
                                 esp_adc
+                                esp_hid
                                 esp_driver_dac
                                 esp_driver_ledc
                                 esp_lcd

@@ -86,17 +86,19 @@ It does not teach receiving/copying code — it is a tool for practicing
 3. **Settings screen** — reachable from the Main Menu.
    - A grid of large, tappable tiles (three columns × two rows) filling the
      whole display with no scrolling and no separate title bar: Keyer,
-     Sidetone, and Display fill the top row; the bottom row has Reset to
-     Defaults and a Back tile (marked with a left-chevron icon), leaving one
-     cell empty. There is no slider or dropdown anywhere on this screen or
-     its submenus, and no OK/Cancel step — every change is applied to the
+     Sidetone, and Display fill the top row; the bottom row has Bluetooth,
+     Reset to Defaults, and a Back tile (marked with a left-chevron icon).
+     There is no slider or dropdown anywhere on this screen or its
+     submenus, and no OK/Cancel step — every change is applied to the
      running trainer and persisted to NVS the moment it's made (writes are
      briefly debounced so rapid taps or a held `-`/`+` button don't hit NVS
-     on every step). Back returns to the Main Menu.
-   - Every submenu screen (Keyer/Sidetone/Display/Touchscreen) follows the
-     same pattern as this top-level grid: no separate title bar, and Back
-     (left-chevron icon) is just the last tile in the grid, sized N×M with
-     N = M or N = M + 1 so tiles stay wide rather than tall and narrow.
+     on every step), with one exception noted below (Bluetooth). Back
+     returns to the Main Menu.
+   - Every submenu screen (Keyer/Sidetone/Display/Touchscreen/Bluetooth)
+     follows the same pattern as this top-level grid: no separate title
+     bar, and Back (left-chevron icon) is just the last tile in the grid,
+     sized N×M with N = M or N = M + 1 so tiles stay wide rather than tall
+     and narrow.
    - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles (one
      cell left empty), each opening a popup to change just that value:
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
@@ -167,6 +169,23 @@ It does not teach receiving/copying code — it is a tool for practicing
      - **Text Size**: Small or Large decoded-text font on the Practice
        screen (see the Practice screen's description above). Its popup
        offers "Small"/"Large" buttons; tapping one selects it immediately.
+   - **Bluetooth** tile opens a submenu screen with a single **BLE
+     Keyboard** on/off tile (one cell left empty, plus Back): when on, the
+     device advertises itself as a BLE HID keyboard and, once a phone or PC
+     pairs and connects, sends every decoded Morse character to it as a
+     keystroke (letters sent with Shift, so they arrive uppercase, matching
+     the Practice screen's own decoded text; the HH prosign sends a
+     Backspace, since "error, keyed over" is conventionally a request to
+     erase; the unknown-sequence marker and every other prosign have no
+     sensible keystroke and are dropped). A decoded word-gap space is only
+     ever sent right after a real, non-Backspace keystroke -- never after
+     something with no keystroke (an unknown sequence or a dropped prosign)
+     and never right after HH's Backspace, so the pause that follows one of
+     those doesn't add a stray space of its own. Its popup offers
+     "On"/"Off" buttons and says a restart is required — unlike every other
+     toggle on this screen, flipping it only updates the persisted setting;
+     the BLE radio stack itself is brought up once at boot according to
+     that setting and isn't started or stopped live.
    - "Reset to Defaults" tile, after a Yes/No confirmation, erases both
      the keyer settings and the touch calibration and restarts the
      device, which then comes up as if never configured (lands on the
@@ -235,7 +254,10 @@ It does not teach receiving/copying code — it is a tool for practicing
     (keeping the Settings screen's tiles in sync so they don't show a stale
     value next time it's opened), persists it to NVS right away, and echoes
     back the value actually applied (which may differ from what was typed,
-    if it was out of range).
+    if it was out of range). The one exception is `ble_hid_enabled`, which
+    only updates the persisted setting and prints an extra
+    `note=restart required to apply` line, matching the Settings screen's
+    Bluetooth tile.
   - `save` — persists the current settings to NVS (normally unnecessary,
     since `set` already saves).
   - `reset` — erases saved settings, the same as the Settings screen's
@@ -245,13 +267,13 @@ It does not teach receiving/copying code — it is a tool for practicing
   - `log <none|error|warn|info|debug|verbose>` — sets the runtime log
     verbosity for every module, so a script can quiet interleaved log
     output before sending `get`/`set` commands.
-- Keys, matching the Settings screen's Keyer/Sidetone/Display submenus:
-  `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`), `paddle_swap`,
-  `paddle_debounce`, `tone_hz`, `volume_pct`, `envelope_ms`,
-  `brightness_pct`, `brightness_auto`, and `practice_large_text` (all
-  booleans as `on`/`off`). Setting `brightness_pct` while `brightness_auto`
-  is on switches back to manual first, the same as stepping `-`/`+` on the
-  Brightness popup.
+- Keys, matching the Settings screen's Keyer/Sidetone/Display/Bluetooth
+  submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
+  `paddle_swap`, `paddle_debounce`, `tone_hz`, `volume_pct`, `envelope_ms`,
+  `brightness_pct`, `brightness_auto`, `practice_large_text`, and
+  `ble_hid_enabled` (all booleans as `on`/`off`). Setting `brightness_pct`
+  while `brightness_auto` is on switches back to manual first, the same as
+  stepping `-`/`+` on the Brightness popup.
 
 ## Behavior details
 

@@ -30,8 +30,12 @@ static const char *TAG = "display_init";
 
 /* Partial draw buffer sized to fit internal SRAM (no PSRAM assumed). Bumped
  * from /10 to /3 lines to cut the number of flush passes per full-screen
- * redraw; re-check free heap on hardware if this ever needs to grow further. */
-#define LVGL_DRAW_BUFF_LINES (LCD_V_RES / 3)
+ * redraw; re-check free heap on hardware if this ever needs to grow further.
+ * Dropped back to /6 (halving the two draw buffers from 100KB to 50KB
+ * combined) to leave enough of this board's internal SRAM free for BLE HID
+ * output (main/ble_hid_output.c) to coexist with the display -- measured on
+ * real hardware, /3 left too little for NimBLE's steady-state RAM needs. */
+#define LVGL_DRAW_BUFF_LINES (LCD_V_RES / 6)
 
 /* Confirmed on real hardware: despite this board being universally marketed
  * as shipping an ILI9341, this specific unit's TFT controller identifies
