@@ -7,6 +7,7 @@
 #include "ui_help.h"
 #include "ui_settings.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #define QUEUE_DRAIN_PERIOD_MS 30
@@ -133,7 +134,9 @@ static void append_unknown_marker(void)
 
 static void append_prosign_badge(const char *name)
 {
-    add_styled_span(name, display_compensate_color(lv_palette_main(LV_PALETTE_GREEN)));
+    char text[8];
+    snprintf(text, sizeof(text), "%s ", name);
+    add_styled_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_GREEN)));
     clear_erase_stack();
 }
 
