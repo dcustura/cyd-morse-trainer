@@ -40,6 +40,19 @@ static void configure_input_gpio(int gpio)
     ESP_ERROR_CHECK(gpio_config(&cfg));
 }
 
+#define KEY_OUTPUT_ON_LEVEL  0 /* active-low: matches the CYD's common-anode onboard RGB LED */
+#define KEY_OUTPUT_OFF_LEVEL 1
+
+static void configure_output_gpio(int gpio, int initial_level)
+{
+    const gpio_config_t cfg = {
+        .pin_bit_mask = 1ULL << gpio,
+        .mode = GPIO_MODE_OUTPUT,
+    };
+    ESP_ERROR_CHECK(gpio_config(&cfg));
+    gpio_set_level(gpio, initial_level);
+}
+
 static void handle_decode_event(morse_codec_event_t event, char out_char)
 {
     char queued_char;
@@ -73,6 +86,7 @@ static void paddle_task(void *arg)
 
     configure_input_gpio(BOARD_PADDLE_DIT_GPIO);
     configure_input_gpio(BOARD_PADDLE_DAH_GPIO);
+    configure_output_gpio(BOARD_KEY_OUTPUT_GPIO, KEY_OUTPUT_OFF_LEVEL);
 
     debouncer_t dit_db;
     debouncer_t dah_db;
@@ -110,6 +124,7 @@ static void paddle_task(void *arg)
 
         if (key_down != prev_key_down) {
             sidetone_key(key_down);
+            gpio_set_level(BOARD_KEY_OUTPUT_GPIO, key_down ? KEY_OUTPUT_ON_LEVEL : KEY_OUTPUT_OFF_LEVEL);
             atomic_store_explicit(&s_key_down_state, key_down, memory_order_relaxed);
             char out_char = 0;
             morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now_ms, &out_char);

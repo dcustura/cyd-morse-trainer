@@ -79,6 +79,23 @@ menu "Morse Trainer Hardware (ESP32-2432S028R / Cheap Yellow Display)"
         int "Paddle DAH GPIO"
         default 27
 
+    config MORSE_KEY_OUTPUT_GPIO
+        int "CW key output GPIO (default: CYD RGB LED pad - Blue)"
+        default 17
+        help
+            Mirrors the CW key state (on while sending a dit/dah/straight-key
+            contact, off otherwise) onto a digital output, driven active-low in
+            main/paddle_input.c. Intended for keying external gear (e.g. via an
+            optocoupler), with the onboard RGB LED doubling as a visual
+            indicator if left in place. GPIO17 is the commonly documented Blue
+            channel of the ESP32-2432S028R's onboard RGB LED, but unlike the
+            other pins in this file this hasn't been confirmed against real
+            hardware - this board's pinout has had a few surprises vs community
+            expectations before (see the TFT reset and touch IRQ entries
+            above). Verify against your unit, and flip the polarity constants
+            in code if this line idles high or your keying circuit expects the
+            opposite sense.
+
     config MORSE_LDR_GPIO
         int "Onboard LDR (ambient light sensor) ADC GPIO"
         default 34

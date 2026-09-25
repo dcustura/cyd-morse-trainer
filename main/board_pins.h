@@ -25,6 +25,7 @@
  * | Speaker (onboard amp)              | 26   | GPIO / DAC (DAC_CHAN_1) |
  * | Paddle DIT (also straight-key in)  | 22   | GPIO, input, pull-up |
  * | Paddle DAH                         | 27   | GPIO, input, pull-up |
+ * | CW key output (default: RGB LED Blue pad) | 17 | GPIO, output, active-low |
  * | Onboard LDR (ambient light)        | 34   | ADC1_CH6, input only |
  */
 
@@ -45,5 +46,6 @@
 #define BOARD_SPEAKER_GPIO       CONFIG_MORSE_SPEAKER_GPIO
 #define BOARD_PADDLE_DIT_GPIO    CONFIG_MORSE_PADDLE_DIT_GPIO
 #define BOARD_PADDLE_DAH_GPIO    CONFIG_MORSE_PADDLE_DAH_GPIO
+#define BOARD_KEY_OUTPUT_GPIO    CONFIG_MORSE_KEY_OUTPUT_GPIO
 
 #define BOARD_LDR_GPIO           CONFIG_MORSE_LDR_GPIO
