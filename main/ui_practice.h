@@ -35,6 +35,16 @@ void ui_practice_set_text_size(bool large_text);
  */
 void ui_practice_set_help_screen(lv_obj_t *help_screen);
 
+/**
+ * The Keyer submenu isn't known yet at creation time (it's created by
+ * ui_settings_create(), afterwards) - call this once it exists, before the
+ * WPM/Mode status label can be tapped. Tapping it sets the Keyer submenu's
+ * Back target (see ui_settings_set_keyer_back_target()) to the Practice
+ * screen, then navigates there, so its own Back tile returns here instead of
+ * to the Settings screen.
+ */
+void ui_practice_set_keyer_settings_screen(lv_obj_t *keyer_settings_screen);
+
 #ifdef __cplusplus
 }
 #endif

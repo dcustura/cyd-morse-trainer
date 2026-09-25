@@ -40,9 +40,11 @@ It does not teach receiving/copying code — it is a tool for practicing
      anti-aliased custom monospace font sized for easier reading at a
      distance, fewer characters per line). Changing the setting restyles the
      text area immediately without losing its content.
-   - Shows the currently active WPM and key mode (read-only, informational)
-     as two short lines, e.g. `18 WPM` and `Iambic B`, refreshed whenever
-     Settings are saved.
+   - Shows the currently active WPM and key mode as two short lines, e.g.
+     `18 WPM` and `Iambic B`, refreshed whenever Settings are saved. Tapping
+     it is a shortcut straight into the Settings screen's Keyer submenu (see
+     below); that submenu's own Back tile returns here instead of to the
+     Settings screen when entered this way.
    - A small red indicator dot (bottom-right of the screen, vertically
      centered on the Clear/Back buttons) lights up whenever the key/paddle
      is down and the sidetone is sounding, and goes dark when it releases.

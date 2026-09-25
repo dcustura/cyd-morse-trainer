@@ -62,6 +62,7 @@ void app_main(void)
                                                     settings.volume_pct, settings.envelope_ms,
                                                     settings.brightness_pct, settings.brightness_auto,
                                                     settings.practice_large_text, settings.ble_hid_enabled);
+    ui_practice_set_keyer_settings_screen(ui_settings_get_keyer_submenu());
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 

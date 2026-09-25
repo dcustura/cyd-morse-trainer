@@ -66,6 +66,7 @@ static const numeric_field_info_t s_field_info[FIELD_COUNT] = {
 static lv_obj_t *s_settings_screen;
 static lv_obj_t *s_touch_submenu_screen;
 static lv_obj_t *s_keyer_submenu_screen;
+static lv_obj_t *s_keyer_back_target;
 static lv_obj_t *s_sidetone_submenu_screen;
 static lv_obj_t *s_display_submenu_screen;
 static lv_obj_t *s_bluetooth_submenu_screen;
@@ -595,7 +596,14 @@ static void touch_tile_cb(lv_event_t *e)
 static void keyer_tile_cb(lv_event_t *e)
 {
     (void)e;
+    s_keyer_back_target = s_settings_screen;
     lv_scr_load(s_keyer_submenu_screen);
+}
+
+static void keyer_back_btn_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_keyer_back_target);
 }
 
 static void sidetone_tile_cb(lv_event_t *e)
@@ -693,7 +701,7 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
     return scr;
 }
 
-static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
+static lv_obj_t *create_keyer_submenu(void)
 {
     lv_obj_t *scr = create_submenu_screen();
 
@@ -706,7 +714,7 @@ static lv_obj_t *create_keyer_submenu(lv_obj_t *settings_screen)
     create_tile(scr, "Paddle Swap", 2, 0, swap_tile_cb, NULL, &s_swap_tile_value);
     create_tile(scr, "Paddle\nDebounce", 0, 1, debounce_tile_cb, NULL, &s_debounce_tile_value);
 
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, nav_btn_cb, settings_screen, NULL);
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, keyer_back_btn_cb, NULL, NULL);
     display_style_button_dismiss(back_tile);
 
     return scr;
@@ -812,7 +820,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     lv_obj_t *back_tile = create_tile(grid, LV_SYMBOL_LEFT " Back", 2, 1, nav_btn_cb, menu_screen, NULL);
     display_style_button_dismiss(back_tile);
 
-    s_keyer_submenu_screen = create_keyer_submenu(scr);
+    s_keyer_submenu_screen = create_keyer_submenu();
     s_sidetone_submenu_screen = create_sidetone_submenu(scr);
     s_display_submenu_screen = create_display_submenu(scr, calibration_screen, touch_test_screen);
     s_bluetooth_submenu_screen = create_bluetooth_submenu(scr);
@@ -826,4 +834,14 @@ void ui_settings_sync(const settings_t *settings)
 {
     s_current_settings = *settings;
     refresh_tile_labels();
+}
+
+lv_obj_t *ui_settings_get_keyer_submenu(void)
+{
+    return s_keyer_submenu_screen;
+}
+
+void ui_settings_set_keyer_back_target(lv_obj_t *back_target_screen)
+{
+    s_keyer_back_target = back_target_screen;
 }

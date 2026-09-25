@@ -5,6 +5,7 @@
 #include "morse_codec.h"
 #include "paddle_input.h"
 #include "ui_help.h"
+#include "ui_settings.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,7 @@ static lv_obj_t *s_text_container;
 static lv_obj_t *s_text_spans;
 static lv_obj_t *s_keying_dot;
 static lv_obj_t *s_help_screen;
+static lv_obj_t *s_keyer_settings_screen;
 static QueueHandle_t s_decoded_char_queue;
 
 /* A unit HH can erase: either a run of plain (letter/digit/punctuation/
@@ -328,6 +330,11 @@ void ui_practice_set_help_screen(lv_obj_t *help_screen)
     s_help_screen = help_screen;
 }
 
+void ui_practice_set_keyer_settings_screen(lv_obj_t *keyer_settings_screen)
+{
+    s_keyer_settings_screen = keyer_settings_screen;
+}
+
 static void drain_queue_timer_cb(lv_timer_t *timer)
 {
     (void)timer;
@@ -367,6 +374,13 @@ static void help_btn_cb(lv_event_t *e)
 {
     (void)e;
     lv_scr_load(s_help_screen);
+}
+
+static void keyer_settings_btn_cb(lv_event_t *e)
+{
+    lv_obj_t *practice_screen = (lv_obj_t *)lv_event_get_user_data(e);
+    ui_settings_set_keyer_back_target(practice_screen);
+    lv_scr_load(s_keyer_settings_screen);
 }
 
 lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen,
@@ -425,12 +439,18 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_label_set_text(clear_label, "Clear");
     lv_obj_set_style_text_color(clear_label, display_compensate_color(lv_color_white()), 0);
 
-    /* status_col (WPM/Mode) is not clickable itself - just a layout wrapper
-     * around the two labels - so it never intercepts taps meant for a
-     * sibling it happens to sit near. */
+    /* status_col (WPM/Mode) is tappable - it opens the Keyer settings - but
+     * stays a plain layout wrapper around the two labels otherwise (no
+     * button styling), so it doesn't visually compete with Clear/Help/Back.
+     * lv_obj_create() objects default to clickable, so remove_style_all()
+     * below leaves that on; it does strip the default object theme's
+     * padding though, so it's added back explicitly here - without it the
+     * tap target would shrink to the bare bounding box of the two text
+     * labels, much smaller than the finger-sized buttons beside it. */
     lv_obj_t *status_col = lv_obj_create(btn_row);
     lv_obj_remove_style_all(status_col);
-    lv_obj_clear_flag(status_col, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_pad_all(status_col, 10, 0);
+    lv_obj_add_event_cb(status_col, keyer_settings_btn_cb, LV_EVENT_CLICKED, scr);
     lv_obj_set_flex_flow(status_col, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_size(status_col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
