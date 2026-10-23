@@ -27,6 +27,7 @@ static iambic_keyer_t s_keyer;
 static morse_codec_t s_codec;
 static volatile bool s_paddle_swap;
 static volatile bool s_paddle_debounce;
+static volatile bool s_straight_ring_input;
 static QueueHandle_t s_decoded_char_queue;
 static _Atomic bool s_key_down_state;
 
@@ -102,14 +103,21 @@ static void paddle_task(void *arg)
         bool raw_dit = !gpio_get_level(BOARD_PADDLE_DIT_GPIO); /* active-low: pressed = 0 */
         bool raw_dah = !gpio_get_level(BOARD_PADDLE_DAH_GPIO);
         bool swap = s_paddle_swap;
+        bool straight = s_keyer.mode == IAMBIC_KEYER_MODE_STRAIGHT;
 
-        bool swapped_dit = swap ? raw_dah : raw_dit;
-        bool swapped_dah = swap ? raw_dit : raw_dah;
+        /* Paddle Swap has no effect in Straight Key mode -- its tile isn't
+         * even shown there (see ui_settings.c) -- so the key signal always
+         * starts from the real dit/"tip" GPIO, unswapped, regardless of
+         * whatever Paddle Swap was left set to in another key mode. A key
+         * wired to the other ("ring") terminal is handled by Ring Input's
+         * OR-fold below instead, not by swapping here. */
+        bool swapped_dit = (!straight && swap) ? raw_dah : raw_dit;
+        bool swapped_dah = (!straight && swap) ? raw_dit : raw_dah;
 
         /* Straight key contact always bounces mechanically, so it's always
          * debounced regardless of the setting; paddle debounce is optional
          * since clean paddle contacts don't usually need it. */
-        bool debounce = s_keyer.mode == IAMBIC_KEYER_MODE_STRAIGHT || s_paddle_debounce;
+        bool debounce = straight || s_paddle_debounce;
 
         bool dit_contact, dah_contact;
         if (debounce) {
@@ -118,6 +126,14 @@ static void paddle_task(void *arg)
         } else {
             dit_contact = swapped_dit;
             dah_contact = swapped_dah;
+        }
+
+        /* Straight Key mode only: fold in the "ring" (dah) GPIO as part of
+         * the key signal too, for a key wired across both conductors of a
+         * TRS jack. No effect in any other key mode -- dah_contact is
+         * otherwise unused by the keyer in Straight Key mode. */
+        if (straight && s_straight_ring_input) {
+            dit_contact = dit_contact || dah_contact;
         }
 
         bool key_down = iambic_keyer_service(&s_keyer, dit_contact, dah_contact, now_ms);
@@ -145,12 +161,13 @@ static void paddle_task(void *arg)
 
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
                          bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
-                         uint16_t envelope_ms)
+                         uint16_t envelope_ms, bool straight_ring_input)
 {
     iambic_keyer_init(&s_keyer, mode, wpm);
     morse_codec_init(&s_codec, wpm);
     s_paddle_swap = paddle_swap;
     s_paddle_debounce = paddle_debounce;
+    s_straight_ring_input = straight_ring_input;
     s_decoded_char_queue = decoded_char_queue;
 
     sidetone_init();
@@ -190,6 +207,11 @@ void paddle_input_set_swap(bool swap)
 void paddle_input_set_debounce(bool debounce)
 {
     s_paddle_debounce = debounce;
+}
+
+void paddle_input_set_straight_ring_input(bool enabled)
+{
+    s_straight_ring_input = enabled;
 }
 
 iambic_keyer_mode_t paddle_input_get_mode(void)

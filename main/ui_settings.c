@@ -74,7 +74,10 @@ static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
 static lv_obj_t *s_keymode_tile_value;
+static lv_obj_t *s_swap_tile;
 static lv_obj_t *s_swap_switch;
+static lv_obj_t *s_ring_input_tile;
+static lv_obj_t *s_ring_input_switch;
 static lv_obj_t *s_debounce_tile;
 static lv_obj_t *s_debounce_switch;
 static lv_obj_t *s_tone_tile_value;
@@ -143,6 +146,15 @@ static void set_switch_checked(lv_obj_t *sw, bool checked)
     }
 }
 
+static void set_tile_hidden(lv_obj_t *tile, bool hidden)
+{
+    if (hidden) {
+        lv_obj_add_flag(tile, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_remove_flag(tile, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
 static void refresh_tile_labels(void)
 {
     char text[24];
@@ -151,13 +163,22 @@ static void refresh_tile_labels(void)
     lv_label_set_text(s_wpm_tile_value, text);
 
     lv_label_set_text(s_keymode_tile_value, keymode_text(s_current_settings.keymode));
-    set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
 
     /* Straight Key mode is always debounced regardless of the stored
-     * setting (see paddle_input.c), so show the switch forced on and
-     * disable the tile rather than letting it show/toggle a value that
-     * wouldn't actually apply. */
+     * setting (see paddle_input.c), and Paddle Swap has no effect there
+     * either -- Straight Key only ever reads the dit GPIO, optionally ORed
+     * with dah via Ring Input below. So the Keyer submenu's grid swaps the
+     * Paddle Swap tile out for a Ring Input tile, and forces Paddle
+     * Debounce's switch on and disabled, whenever Key Mode is Straight
+     * Key. */
     bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
+
+    set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
+    set_tile_hidden(s_swap_tile, straight_key);
+
+    set_switch_checked(s_ring_input_switch, s_current_settings.straight_ring_input);
+    set_tile_hidden(s_ring_input_tile, !straight_key);
+
     set_switch_checked(s_debounce_switch, straight_key || s_current_settings.paddle_debounce);
     if (straight_key) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
@@ -589,6 +610,18 @@ static void debounce_toggle_cb(lv_event_t *e)
     refresh_tile_labels();
 }
 
+/* Takes the Paddle Swap tile's place in the Keyer submenu's grid while Key
+ * Mode is Straight Key (see refresh_tile_labels()); also has no popup. */
+static void ring_input_toggle_cb(lv_event_t *e)
+{
+    (void)e;
+    bool enabled = !s_current_settings.straight_ring_input;
+    s_current_settings.straight_ring_input = enabled;
+    paddle_input_set_straight_ring_input(enabled);
+    schedule_settings_save();
+    refresh_tile_labels();
+}
+
 static void calibrate_btn_cb(lv_event_t *e)
 {
     lv_obj_t *calibration_screen = (lv_obj_t *)lv_event_get_user_data(e);
@@ -762,7 +795,12 @@ static lv_obj_t *create_keyer_submenu(void)
 
     create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
     create_tile(scr, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
-    create_toggle_tile(scr, "Paddle Swap", 2, 0, swap_toggle_cb, &s_swap_switch);
+
+    /* Paddle Swap and Ring Input share this grid cell: only one is ever
+     * shown, picked by refresh_tile_labels() based on Key Mode. */
+    s_swap_tile = create_toggle_tile(scr, "Paddle Swap", 2, 0, swap_toggle_cb, &s_swap_switch);
+    s_ring_input_tile = create_toggle_tile(scr, "Ring Input", 2, 0, ring_input_toggle_cb, &s_ring_input_switch);
+
     s_debounce_tile = create_toggle_tile(scr, "Paddle\nDebounce", 0, 1, debounce_toggle_cb, &s_debounce_switch);
 
     lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, keyer_back_btn_cb, NULL, NULL);
@@ -832,16 +870,17 @@ static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
-                              uint16_t initial_tone_hz, uint8_t initial_volume_pct,
-                              uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
-                              bool initial_brightness_auto, bool initial_large_text,
-                              bool initial_ble_hid_enabled)
+                              bool initial_straight_ring_input, uint16_t initial_tone_hz,
+                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
+                              uint8_t initial_brightness_pct, bool initial_brightness_auto,
+                              bool initial_large_text, bool initial_ble_hid_enabled)
 {
     s_current_settings = (settings_t){
         .wpm = initial_wpm,
         .keymode = initial_mode,
         .paddle_swap = initial_swap,
         .paddle_debounce = initial_debounce,
+        .straight_ring_input = initial_straight_ring_input,
         .tone_hz = initial_tone_hz,
         .volume_pct = initial_volume_pct,
         .envelope_ms = initial_envelope_ms,

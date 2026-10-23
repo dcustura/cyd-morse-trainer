@@ -28,6 +28,7 @@ typedef enum {
     KEY_BRIGHTNESS_AUTO,
     KEY_PRACTICE_LARGE_TEXT,
     KEY_BLE_HID_ENABLED,
+    KEY_STRAIGHT_RING_INPUT,
     KEY_COUNT,
 } cli_key_t;
 
@@ -43,6 +44,7 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_BRIGHTNESS_AUTO] = "brightness_auto",
     [KEY_PRACTICE_LARGE_TEXT] = "practice_large_text",
     [KEY_BLE_HID_ENABLED] = "ble_hid_enabled",
+    [KEY_STRAIGHT_RING_INPUT] = "straight_ring_input",
 };
 
 static settings_t s_settings;
@@ -145,6 +147,9 @@ static void print_value(cli_key_t key)
         break;
     case KEY_BLE_HID_ENABLED:
         printf("ble_hid_enabled=%s\n", s_settings.ble_hid_enabled ? "on" : "off");
+        break;
+    case KEY_STRAIGHT_RING_INPUT:
+        printf("straight_ring_input=%s\n", s_settings.straight_ring_input ? "on" : "off");
         break;
     default:
         break;
@@ -286,6 +291,14 @@ static int cmd_set(int argc, char **argv)
         }
         s_settings.ble_hid_enabled = flag;
         printf("note=restart required to apply\n");
+        break;
+    case KEY_STRAIGHT_RING_INPUT:
+        if (!parse_bool(val, &flag)) {
+            printf("ERR unknown value %s\n", val);
+            return 1;
+        }
+        s_settings.straight_ring_input = flag;
+        paddle_input_set_straight_ring_input(flag);
         break;
     default:
         return 1;

@@ -106,7 +106,9 @@ It does not teach receiving/copying code — it is a tool for practicing
    - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles (one
      cell left empty); every tile opens a popup to change its value except
      Paddle Swap and Paddle Debounce, which are themselves on/off toggle
-     switches (see below):
+     switches (see below). Paddle Swap's tile only appears while Key Mode
+     is Iambic Mode A/B or Ultimatic; while Key Mode is Straight Key, a
+     **Ring Input** toggle takes its place in the grid instead (see below):
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
        popup has `-`/`+` buttons (press-and-hold to repeat).
      - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key, or
@@ -125,9 +127,11 @@ It does not teach receiving/copying code — it is a tool for practicing
          completed, even if released before its trailing gap ends — Mode
          A does not. This full-release memory is separate from, and in
          addition to, the squeeze-tap latching above.
-       - Straight Key mode ignores the dah GPIO; the dit GPIO is read
-         directly as raw key-down/key-up with no automatic element
-         timing — the operator controls dit/dah length by hand.
+       - Straight Key mode ignores the dah GPIO by default; the dit GPIO
+         is read directly as raw key-down/key-up with no automatic
+         element timing — the operator controls dit/dah length by hand.
+         The Ring Input toggle (see below) changes this to also read the
+         dah GPIO.
        - Ultimatic mode also uses both paddle GPIOs, but doesn't
          alternate on a live squeeze: whichever paddle was pressed more
          recently keeps repeating for as long as both are held (a
@@ -140,19 +144,33 @@ It does not teach receiving/copying code — it is a tool for practicing
        dit vs dah, for operators who prefer the opposite orientation. Like
        Paddle Debounce below, it has no popup: the tile is itself a toggle
        switch, showing the current on/off state (on = Swapped), and
-       tapping anywhere on the tile flips it immediately.
+       tapping anywhere on the tile flips it immediately. This setting
+       has no effect in Straight Key mode (which always reads the dit/
+       "tip" GPIO unswapped — see Ring Input below for reading the other
+       conductor instead); its tile isn't shown there at all, replaced by
+       Ring Input, but the real stored value is untouched and takes
+       effect again as soon as a different Key Mode is selected.
      - **Paddle debounce**: enables/disables software debounce while in
        Iambic Mode A/B/Ultimatic. The tile is itself a toggle switch,
        showing the current on/off state, and tapping anywhere on the tile
        flips it immediately. This setting has no effect in Straight Key
        mode, which is always debounced (a mechanical straight key bounces;
        a clean paddle contact often does not need the extra latency) —
-       while Key Mode is set to
-       Straight Key, the tile instead shows the switch forced on and greyed
-       out/non-tappable, rather than displaying (or letting the operator
-       change) a setting that wouldn't actually apply; the real stored
-       value is untouched and takes effect again as soon as a different
-       Key Mode is selected.
+       while Key Mode is set to Straight Key, the tile instead shows the
+       switch forced on and greyed out/non-tappable, rather than
+       displaying (or letting the operator change) a setting that
+       wouldn't actually apply; the real stored value is untouched and
+       takes effect again as soon as a different Key Mode is selected.
+     - **Ring Input**: Straight Key mode only — takes the Paddle Swap
+       tile's place in the grid whenever Key Mode is Straight Key (and
+       disappears again, back to Paddle Swap, for every other Key Mode).
+       Like Paddle Swap and Paddle Debounce, it's a toggle switch tile
+       with no popup. Off (the default) matches Straight Key's normal
+       dit-only behavior above. On, the dah GPIO — the "ring" conductor
+       on a standard TRS paddle/key jack (tip = dit, ring = dah, sleeve =
+       ground) — is also read and ORed into the key signal alongside dit
+       ("tip"), so a straight key or cootie key wired across both
+       conductors closes the key from either one.
    - **Sidetone** tile opens a submenu screen with a 2×2 grid of tiles (one
      cell left empty), each opening a popup to change just that value:
      - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while
@@ -284,10 +302,13 @@ It does not teach receiving/copying code — it is a tool for practicing
     output before sending `get`/`set` commands.
 - Keys, matching the Settings screen's Keyer/Sidetone/Display/Bluetooth
   submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
-  `paddle_swap`, `paddle_debounce`, `tone_hz`, `volume_pct`, `envelope_ms`,
-  `brightness_pct`, `brightness_auto`, `practice_large_text`, and
-  `ble_hid_enabled` (all booleans as `on`/`off`). Setting `brightness_pct`
-  while `brightness_auto` is on switches back to manual first, the same as
+  `paddle_swap`, `paddle_debounce`, `straight_ring_input`, `tone_hz`,
+  `volume_pct`, `envelope_ms`, `brightness_pct`, `brightness_auto`,
+  `practice_large_text`, and `ble_hid_enabled` (all booleans as
+  `on`/`off`). `straight_ring_input` can be set regardless of the current
+  `keymode`, but (like the Settings screen's Ring Input tile) only takes
+  effect while `keymode` is `straight`. Setting `brightness_pct` while
+  `brightness_auto` is on switches back to manual first, the same as
   stepping `-`/`+` on the Brightness popup.
 
 ## Behavior details
@@ -309,19 +330,19 @@ It does not teach receiving/copying code — it is a tool for practicing
   so mechanical contact bounce does not corrupt timing or produce spurious
   short elements. Straight Key mode is always debounced; Iambic Mode
   A/B/Ultimatic debouncing is controlled by the Paddle Debounce setting.
-- **Persistence**: WPM, key mode, paddle swap, paddle debounce, sidetone
-  frequency, sidetone volume, sidetone envelope, screen brightness,
-  brightness auto/manual mode, Practice text size, and touch calibration
-  survive power loss. On boot, the last-saved values are loaded and applied
-  before the operator can key anything (or interact with the touchscreen, in
-  the case of calibration). Settings writes to NVS are debounced by a couple
-  of seconds after the last edit, rather than on every tap/step, to reduce
-  flash wear.
+- **Persistence**: WPM, key mode, paddle swap, paddle debounce, ring
+  input, sidetone frequency, sidetone volume, sidetone envelope, screen
+  brightness, brightness auto/manual mode, Practice text size, and touch
+  calibration survive power loss. On boot, the last-saved values are
+  loaded and applied before the operator can key anything (or interact
+  with the touchscreen, in the case of calibration). Settings writes to
+  NVS are debounced by a couple of seconds after the last edit, rather
+  than on every tap/step, to reduce flash wear.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
-  paddle swap, paddle debounce on, 600 Hz sidetone, 50% sidetone volume,
-  10 ms sidetone envelope, 100% brightness, brightness auto mode off, Small
-  Practice text size. No default touch calibration exists — it must be
-  created via the first-boot calibration flow.
+  paddle swap, paddle debounce on, ring input off, 600 Hz sidetone, 50%
+  sidetone volume, 10 ms sidetone envelope, 100% brightness, brightness
+  auto mode off, Small Practice text size. No default touch calibration
+  exists — it must be created via the first-boot calibration flow.
 - **Factory reset**: erases saved keyer settings and touch calibration
   together and restarts the device, so it comes back up exactly as an
   unconfigured device would.

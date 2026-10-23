@@ -78,4 +78,5 @@ void settings_set_defaults(settings_t *out)
     out->brightness_auto = SETTINGS_DEFAULT_BRIGHTNESS_AUTO;
     out->practice_large_text = SETTINGS_DEFAULT_PRACTICE_LARGE_TEXT;
     out->ble_hid_enabled = SETTINGS_DEFAULT_BLE_HID_ENABLED;
+    out->straight_ring_input = SETTINGS_DEFAULT_STRAIGHT_RING_INPUT;
 }

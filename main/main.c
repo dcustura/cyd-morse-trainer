@@ -58,8 +58,8 @@ void app_main(void)
     ui_practice_set_help_screen(help_screen);
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
-                                                    settings.paddle_debounce, settings.tone_hz,
-                                                    settings.volume_pct, settings.envelope_ms,
+                                                    settings.paddle_debounce, settings.straight_ring_input,
+                                                    settings.tone_hz, settings.volume_pct, settings.envelope_ms,
                                                     settings.brightness_pct, settings.brightness_auto,
                                                     settings.practice_large_text, settings.ble_hid_enabled);
     ui_practice_set_keyer_settings_screen(ui_settings_get_keyer_submenu());
@@ -76,7 +76,8 @@ void app_main(void)
      * itself) if the BT stack can't get the RAM it wants -- so audio must
      * claim its small, guaranteed share first. */
     paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm, settings.paddle_swap,
-                        settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms);
+                        settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms,
+                        settings.straight_ring_input);
 
     ble_hid_output_init(settings.ble_hid_enabled);
 

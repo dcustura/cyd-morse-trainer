@@ -13,7 +13,9 @@ extern "C" {
  * Display, Bluetooth, Reset to Factory Defaults, and a final "< Back"
  * tile), filling the whole display with no scrolling and no separate title
  * bar. "Keyer" navigates to a submenu (created internally) with a 2x2 grid
- * of WPM, Key Mode, Paddle Swap, and Paddle Debounce tiles; "Sidetone"
+ * of WPM, Key Mode, Paddle Swap, and Paddle Debounce tiles -- except while
+ * Key Mode is Straight Key, when a "Ring Input" toggle tile takes the
+ * Paddle Swap tile's place in the grid instead (see below); "Sidetone"
  * navigates to a submenu with Pitch, Volume, and Smoothing tiles; "Display"
  * navigates to a submenu with Brightness, Touchscreen, and Large Text tiles;
  * "Bluetooth" navigates to a submenu with a single "BLE Keyboard" on/off
@@ -42,7 +44,14 @@ extern "C" {
  * and makes LVGL ignore taps on it) rather than displaying or allowing a
  * change to a setting that wouldn't apply, though the real stored value is
  * unaffected and takes effect again as soon as a different Key Mode is
- * selected. Large Text is the same kind of toggle tile (on = Large) and
+ * selected. While Key Mode is Straight Key, the Paddle Swap tile's grid
+ * cell instead holds a "Ring Input" toggle tile -- the same kind of switch
+ * tile, swapped in by refresh_tile_labels() (see ui_settings.c) whenever
+ * Key Mode changes to or from Straight Key: on, the paddle DAH GPIO (the
+ * "ring" conductor on a TRS paddle/key jack, tip=dit/dah=ring) is ORed into
+ * the key signal alongside the dit/"tip" GPIO, for a key wired across both
+ * conductors; off (the default) matches the dit-only behavior every other
+ * key mode always uses. Large Text is the same kind of toggle tile (on = Large) and
  * switches the Practice screen's decoded-text font immediately between a
  * small fixed-width font and a larger, anti-aliased monospace font (see
  * main/fonts.h), live, even while Practice isn't the screen currently
@@ -60,10 +69,10 @@ extern "C" {
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
-                              uint16_t initial_tone_hz, uint8_t initial_volume_pct,
-                              uint16_t initial_envelope_ms, uint8_t initial_brightness_pct,
-                              bool initial_brightness_auto, bool initial_large_text,
-                              bool initial_ble_hid_enabled);
+                              bool initial_straight_ring_input, uint16_t initial_tone_hz,
+                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
+                              uint8_t initial_brightness_pct, bool initial_brightness_auto,
+                              bool initial_large_text, bool initial_ble_hid_enabled);
 
 /**
  * Update the Settings screen's cached values and visible tile labels to

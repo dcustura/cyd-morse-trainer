@@ -17,6 +17,7 @@
 #define NVS_KEY_BRIGHTNESS_AUTO "brightness_auto"
 #define NVS_KEY_PRACTICE_LARGE_TEXT "large_text"
 #define NVS_KEY_BLE_HID_ENABLED "ble_hid_en"
+#define NVS_KEY_STRAIGHT_RING_INPUT "ring_input"
 
 static const char *TAG = "settings_store";
 
@@ -88,6 +89,11 @@ static esp_err_t load_from_nvs(settings_t *out)
         out->ble_hid_enabled = (raw_ble_hid_enabled != 0);
     }
 
+    uint8_t raw_straight_ring_input;
+    if (nvs_get_u8(handle, NVS_KEY_STRAIGHT_RING_INPUT, &raw_straight_ring_input) == ESP_OK) {
+        out->straight_ring_input = (raw_straight_ring_input != 0);
+    }
+
     nvs_close(handle);
     return ESP_OK;
 }
@@ -125,6 +131,7 @@ esp_err_t settings_store_save(const settings_t *in)
     nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_AUTO, in->brightness_auto ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_PRACTICE_LARGE_TEXT, in->practice_large_text ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_BLE_HID_ENABLED, in->ble_hid_enabled ? 1 : 0);
+    nvs_set_u8(handle, NVS_KEY_STRAIGHT_RING_INPUT, in->straight_ring_input ? 1 : 0);
 
     err = nvs_commit(handle);
     nvs_close(handle);

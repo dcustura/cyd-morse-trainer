@@ -24,9 +24,15 @@
  * | Touch IRQ                          | -1 (polled; see above) |
  * | Speaker (onboard amp)              | 26   | GPIO / DAC (DAC_CHAN_1) |
  * | Paddle DIT (also straight-key in)  | 22   | GPIO, input, pull-up |
- * | Paddle DAH                         | 27   | GPIO, input, pull-up |
+ * | Paddle DAH (also "ring input" in Straight Key mode) | 27 | GPIO, input, pull-up |
  * | CW key output (default: RGB LED Blue pad) | 17 | GPIO, output, active-low |
  * | Onboard LDR (ambient light)        | 34   | ADC1_CH6, input only |
+ *
+ * Paddle DIT/DAH match the standard TRS (tip-ring-sleeve) convention for a
+ * 2-conductor paddle/key jack: tip = dit, ring = dah, sleeve = ground. In
+ * Straight Key mode this board normally reads only the dit/"tip" GPIO (see
+ * paddle_input.c); the Settings screen's Ring Input toggle (Keyer submenu)
+ * opts into also reading dah/"ring", for a key wired across both.
  */
 
 #define BOARD_TFT_MOSI_GPIO   CONFIG_MORSE_TFT_MOSI_GPIO

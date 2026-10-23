@@ -19,7 +19,7 @@ extern "C" {
  */
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
                          bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
-                         uint16_t envelope_ms);
+                         uint16_t envelope_ms, bool straight_ring_input);
 
 /* Live-apply setting changes (called from the Settings screen). */
 void paddle_input_set_mode(iambic_keyer_mode_t mode);
@@ -29,6 +29,14 @@ void paddle_input_set_swap(bool swap);
 /* Enables/disables debounce while in paddle (Mode A/B) keying; Straight Key
  * mode is always debounced regardless of this setting. */
 void paddle_input_set_debounce(bool debounce);
+
+/**
+ * Straight Key mode only: also read the paddle DAH GPIO (the "ring"
+ * conductor on a TRS paddle/key jack) as part of the key signal, ORed with
+ * the dit/"tip" GPIO -- for a key wired across both conductors. No effect
+ * in any other key mode.
+ */
+void paddle_input_set_straight_ring_input(bool enabled);
 
 /* Current keyer settings, kept live-updated by the setters above (used by
  * the Practice screen to refresh its status label after a Settings save). */
