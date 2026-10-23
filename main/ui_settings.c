@@ -547,7 +547,7 @@ static void swap_toggle_cb(lv_event_t *e)
     refresh_tile_labels();
 }
 
-/* Like Paddle Debounce, Text Size has no popup: the tile itself is a
+/* Like Paddle Debounce, Large Text has no popup: the tile itself is a
  * toggle, flipped immediately between Small (off) and Large (on). */
 static void text_size_toggle_cb(lv_event_t *e)
 {
@@ -787,7 +787,7 @@ static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *cal
     ui_touch_test_set_back_target(s_touch_submenu_screen);
     create_tile(scr, "Touchscreen", 1, 0, touch_tile_cb, NULL, NULL);
 
-    create_toggle_tile(scr, "Text Size", 0, 1, text_size_toggle_cb, &s_text_size_switch);
+    create_toggle_tile(scr, "Large Text", 0, 1, text_size_toggle_cb, &s_text_size_switch);
 
     lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
     display_style_button_dismiss(back_tile);

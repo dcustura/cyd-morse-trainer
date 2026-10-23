@@ -15,7 +15,7 @@ extern "C" {
  * bar. "Keyer" navigates to a submenu (created internally) with a 2x2 grid
  * of WPM, Key Mode, Paddle Swap, and Paddle Debounce tiles; "Sidetone"
  * navigates to a submenu with Pitch, Volume, and Smoothing tiles; "Display"
- * navigates to a submenu with Brightness, Touchscreen, and Text Size tiles;
+ * navigates to a submenu with Brightness, Touchscreen, and Large Text tiles;
  * "Bluetooth" navigates to a submenu with a single "BLE Keyboard" on/off
  * tile, which sends decoded Morse characters to a paired phone/PC as
  * keystrokes -- like every other toggle, "On"/"Off" is applied to
@@ -42,7 +42,7 @@ extern "C" {
  * and makes LVGL ignore taps on it) rather than displaying or allowing a
  * change to a setting that wouldn't apply, though the real stored value is
  * unaffected and takes effect again as soon as a different Key Mode is
- * selected. Text Size is the same kind of toggle tile (on = Large) and
+ * selected. Large Text is the same kind of toggle tile (on = Large) and
  * switches the Practice screen's decoded-text font immediately between a
  * small fixed-width font and a larger, anti-aliased monospace font (see
  * main/fonts.h), live, even while Practice isn't the screen currently

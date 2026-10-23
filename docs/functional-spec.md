@@ -34,7 +34,7 @@ It does not teach receiving/copying code — it is a tool for practicing
    "Practice" and "Settings".
 2. **Practice screen** — reachable from the Main Menu.
    - Shows a scrolling text area of decoded characters, updated live as the
-     operator keys, in one of two sizes set by the Text Size setting
+     operator keys, in one of two sizes set by the Large Text setting
      (Settings' Display submenu): Small (the compact bitmap font, ~26
      characters per visible line at the default width) or Large (a smoother,
      anti-aliased custom monospace font sized for easier reading at a
@@ -179,11 +179,11 @@ It does not teach receiving/copying code — it is a tool for practicing
        - "Verify Calibration" opens the Verify Calibration screen to check
          the current calibration visually (its swipe-Back also returns to
          this submenu).
-     - **Text Size**: Small or Large decoded-text font on the Practice
-       screen (see the Practice screen's description above). Like Paddle
-       Swap and Paddle Debounce on the Keyer submenu, it has no popup: the
-       tile is itself a toggle switch (on = Large), flipped immediately by
-       tapping anywhere on the tile.
+     - **Large Text**: switches between the Small and Large decoded-text
+       fonts on the Practice screen (see the Practice screen's description
+       above). Like Paddle Swap and Paddle Debounce on the Keyer submenu,
+       it has no popup: the tile is itself a toggle switch (on = Large),
+       flipped immediately by tapping anywhere on the tile.
    - **Bluetooth** tile opens a submenu screen with a single **BLE
      Keyboard** on/off tile (one cell left empty, plus Back): when on, the
      device advertises itself as a BLE HID keyboard and, once a phone or PC
