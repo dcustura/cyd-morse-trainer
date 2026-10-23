@@ -104,7 +104,8 @@ It does not teach receiving/copying code — it is a tool for practicing
      sized N×M with N = M or N = M + 1 so tiles stay wide rather than tall
      and narrow.
    - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles (one
-     cell left empty), each opening a popup to change just that value:
+     cell left empty); every tile opens a popup to change its value except
+     Paddle Debounce, which is itself an on/off toggle switch (see below):
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
        popup has `-`/`+` buttons (press-and-hold to repeat).
      - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key, or
@@ -139,11 +140,17 @@ It does not teach receiving/copying code — it is a tool for practicing
        popup offers "Normal"/"Swapped" buttons; tapping one selects it
        immediately.
      - **Paddle debounce**: enables/disables software debounce while in
-       Iambic Mode A/B/Ultimatic. Its popup offers "On"/"Off" buttons;
-       tapping one selects it immediately. This setting has no effect in
-       Straight Key mode, which is always debounced (a mechanical
-       straight key bounces; a clean paddle contact often does not need
-       the extra latency).
+       Iambic Mode A/B/Ultimatic. Unlike every other Keyer tile, it has no
+       popup: the tile is itself a toggle switch, showing the current
+       on/off state, and tapping anywhere on the tile flips it immediately.
+       This setting has no effect in Straight Key mode, which is always
+       debounced (a mechanical straight key bounces; a clean paddle contact
+       often does not need the extra latency) — while Key Mode is set to
+       Straight Key, the tile instead shows the switch forced on and greyed
+       out/non-tappable, rather than displaying (or letting the operator
+       change) a setting that wouldn't actually apply; the real stored
+       value is untouched and takes effect again as soon as a different
+       Key Mode is selected.
    - **Sidetone** tile opens a submenu screen with a 2×2 grid of tiles (one
      cell left empty), each opening a popup to change just that value:
      - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while

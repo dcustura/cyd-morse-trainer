@@ -75,7 +75,8 @@ static settings_t s_current_settings;
 static lv_obj_t *s_wpm_tile_value;
 static lv_obj_t *s_keymode_tile_value;
 static lv_obj_t *s_swap_tile_value;
-static lv_obj_t *s_debounce_tile_value;
+static lv_obj_t *s_debounce_tile;
+static lv_obj_t *s_debounce_switch;
 static lv_obj_t *s_tone_tile_value;
 static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
@@ -142,7 +143,22 @@ static void refresh_tile_labels(void)
 
     lv_label_set_text(s_keymode_tile_value, keymode_text(s_current_settings.keymode));
     lv_label_set_text(s_swap_tile_value, s_current_settings.paddle_swap ? "Swapped" : "Normal");
-    lv_label_set_text(s_debounce_tile_value, s_current_settings.paddle_debounce ? "On" : "Off");
+
+    /* Straight Key mode is always debounced regardless of the stored
+     * setting (see paddle_input.c), so show the switch forced on and
+     * disable the tile rather than letting it show/toggle a value that
+     * wouldn't actually apply. */
+    bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
+    if (straight_key || s_current_settings.paddle_debounce) {
+        lv_obj_add_state(s_debounce_switch, LV_STATE_CHECKED);
+    } else {
+        lv_obj_remove_state(s_debounce_switch, LV_STATE_CHECKED);
+    }
+    if (straight_key) {
+        lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
+    } else {
+        lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);
+    }
 
     snprintf(text, sizeof(text), s_field_info[FIELD_TONE_HZ].unit_fmt, (int)s_current_settings.tone_hz);
     lv_label_set_text(s_tone_tile_value, text);
@@ -563,21 +579,17 @@ static void ble_hid_tile_cb(lv_event_t *e)
                        options, ble_hid_select_cb);
 }
 
-static void debounce_select_cb(lv_event_t *e)
+/* Unlike every other Keyer submenu tile, Paddle Debounce has no popup: the
+ * tile itself is a toggle, flipped immediately by tapping anywhere on it
+ * (the switch is purely a visual indicator -- see create_toggle_tile()). */
+static void debounce_toggle_cb(lv_event_t *e)
 {
-    bool debounce = (bool)(intptr_t)lv_event_get_user_data(e);
+    (void)e;
+    bool debounce = !s_current_settings.paddle_debounce;
     s_current_settings.paddle_debounce = debounce;
     paddle_input_set_debounce(debounce);
     schedule_settings_save();
     refresh_tile_labels();
-}
-
-static void debounce_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    static const binary_option_t options[2] = {{"On", true}, {"Off", false}};
-    open_binary_popup("Paddle Debounce", "Straight Key mode is always debounced regardless of this setting.",
-                       options, debounce_select_cb);
 }
 
 static void calibrate_btn_cb(lv_event_t *e)
@@ -659,8 +671,11 @@ static void reset_btn_cb(lv_event_t *e)
     create_action_button(actions_row, LV_SYMBOL_CLOSE " Cancel", reset_confirm_btn_cb, mbox, true);
 }
 
-static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
-                              void *user_data, lv_obj_t **value_label_out)
+/* Shared by create_tile() and create_toggle_tile(): a grid-cell button
+ * styled as a tile, with a centered name label. Callers add their own
+ * content (a value label, a switch, ...) afterward. */
+static lv_obj_t *create_tile_shell(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
+                                    void *user_data)
 {
     lv_obj_t *tile = lv_button_create(grid);
     display_style_tile(tile);
@@ -673,6 +688,14 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
     lv_label_set_text(name_label, name);
     lv_obj_set_style_text_color(name_label, display_compensate_color(lv_color_white()), 0);
 
+    return tile;
+}
+
+static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
+                              void *user_data, lv_obj_t **value_label_out)
+{
+    lv_obj_t *tile = create_tile_shell(grid, name, col, row, cb, user_data);
+
     if (value_label_out != NULL) {
         lv_obj_t *value_label = lv_label_create(tile);
         lv_obj_set_style_text_font(value_label, &lv_font_montserrat_12, 0);
@@ -680,6 +703,37 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
         *value_label_out = value_label;
     }
 
+    return tile;
+}
+
+/* Like create_tile(), but for an on/off setting with no popup: an lv_switch
+ * shows the current state, and tapping anywhere on the tile flips it
+ * immediately via cb. The switch is made non-clickable so the tap is
+ * handled once, by the tile itself, rather than also being intercepted by
+ * the switch's own default click-to-toggle behavior (which would animate it
+ * independently of the setting actually being applied). cb is responsible
+ * for updating the switch's checked/tile's disabled state (via
+ * refresh_tile_labels()); *switch_out is set to the switch so the caller
+ * can do so.
+ */
+static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
+                                     lv_obj_t **switch_out)
+{
+    lv_obj_t *tile = create_tile_shell(grid, name, col, row, cb, NULL);
+    lv_obj_set_style_pad_row(tile, 6, 0);
+
+    lv_obj_t *sw = lv_switch_create(tile);
+    lv_obj_remove_flag(sw, LV_OBJ_FLAG_CLICKABLE);
+    /* Explicit colors, compensated like every other widget's (see
+     * display_compensate_color()'s doc comment) rather than left at the
+     * default theme's uncompensated primary color, which would render as
+     * the wrong hue on this panel. */
+    lv_obj_set_style_bg_color(sw, display_compensate_color(lv_palette_darken(LV_PALETTE_GREY, 2)), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(sw, display_compensate_color(lv_palette_main(LV_PALETTE_TEAL)),
+                               LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(sw, display_compensate_color(lv_color_white()), LV_PART_KNOB);
+
+    *switch_out = sw;
     return tile;
 }
 
@@ -712,7 +766,7 @@ static lv_obj_t *create_keyer_submenu(void)
     create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
     create_tile(scr, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
     create_tile(scr, "Paddle Swap", 2, 0, swap_tile_cb, NULL, &s_swap_tile_value);
-    create_tile(scr, "Paddle\nDebounce", 0, 1, debounce_tile_cb, NULL, &s_debounce_tile_value);
+    s_debounce_tile = create_toggle_tile(scr, "Paddle\nDebounce", 0, 1, debounce_toggle_cb, &s_debounce_switch);
 
     lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, keyer_back_btn_cb, NULL, NULL);
     display_style_button_dismiss(back_tile);
