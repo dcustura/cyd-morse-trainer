@@ -5,7 +5,8 @@ Yellow Display"): the operator keys Morse on a physical iambic paddle or
 straight key wired to the board, and the device decodes the keying in real
 time into readable text on the touchscreen, with an audible sidetone while
 the key is down. See `docs/functional-spec.md` for the full behavior spec
-(screens, key modes, settings, persistence).
+(screens, key modes, settings, persistence), and `docs/architecture.md` for
+a code-level mental model to start contributing.
 
 - Target chip: **ESP32** (`sdkconfig.defaults`, `CONFIG_IDF_TARGET`).
 - Built with ESP-IDF **v6.1**, managed via the ESP-IDF Installation Manager
