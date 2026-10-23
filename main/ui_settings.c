@@ -74,14 +74,14 @@ static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
 static lv_obj_t *s_keymode_tile_value;
-static lv_obj_t *s_swap_tile_value;
+static lv_obj_t *s_swap_switch;
 static lv_obj_t *s_debounce_tile;
 static lv_obj_t *s_debounce_switch;
 static lv_obj_t *s_tone_tile_value;
 static lv_obj_t *s_volume_tile_value;
 static lv_obj_t *s_envelope_tile_value;
 static lv_obj_t *s_brightness_tile_value;
-static lv_obj_t *s_text_size_tile_value;
+static lv_obj_t *s_text_size_switch;
 static lv_obj_t *s_ble_hid_tile_value;
 
 /* Only one popup can be open at a time; these track the one currently shown.
@@ -134,6 +134,15 @@ static const char *keymode_text(iambic_keyer_mode_t mode)
     }
 }
 
+static void set_switch_checked(lv_obj_t *sw, bool checked)
+{
+    if (checked) {
+        lv_obj_add_state(sw, LV_STATE_CHECKED);
+    } else {
+        lv_obj_remove_state(sw, LV_STATE_CHECKED);
+    }
+}
+
 static void refresh_tile_labels(void)
 {
     char text[24];
@@ -142,18 +151,14 @@ static void refresh_tile_labels(void)
     lv_label_set_text(s_wpm_tile_value, text);
 
     lv_label_set_text(s_keymode_tile_value, keymode_text(s_current_settings.keymode));
-    lv_label_set_text(s_swap_tile_value, s_current_settings.paddle_swap ? "Swapped" : "Normal");
+    set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
 
     /* Straight Key mode is always debounced regardless of the stored
      * setting (see paddle_input.c), so show the switch forced on and
      * disable the tile rather than letting it show/toggle a value that
      * wouldn't actually apply. */
     bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
-    if (straight_key || s_current_settings.paddle_debounce) {
-        lv_obj_add_state(s_debounce_switch, LV_STATE_CHECKED);
-    } else {
-        lv_obj_remove_state(s_debounce_switch, LV_STATE_CHECKED);
-    }
+    set_switch_checked(s_debounce_switch, straight_key || s_current_settings.paddle_debounce);
     if (straight_key) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
     } else {
@@ -176,7 +181,7 @@ static void refresh_tile_labels(void)
         lv_label_set_text(s_brightness_tile_value, text);
     }
 
-    lv_label_set_text(s_text_size_tile_value, s_current_settings.practice_large_text ? "Large" : "Small");
+    set_switch_checked(s_text_size_switch, s_current_settings.practice_large_text);
 
     lv_label_set_text(s_ble_hid_tile_value, s_current_settings.ble_hid_enabled ? "On" : "Off");
 }
@@ -530,36 +535,28 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_obj_center(close_label);
 }
 
-static void swap_select_cb(lv_event_t *e)
+/* Like Paddle Debounce, Paddle Swap has no popup: the tile itself is a
+ * toggle, flipped immediately by tapping anywhere on it. */
+static void swap_toggle_cb(lv_event_t *e)
 {
-    bool swap = (bool)(intptr_t)lv_event_get_user_data(e);
+    (void)e;
+    bool swap = !s_current_settings.paddle_swap;
     s_current_settings.paddle_swap = swap;
     paddle_input_set_swap(swap);
     schedule_settings_save();
     refresh_tile_labels();
 }
 
-static void swap_tile_cb(lv_event_t *e)
+/* Like Paddle Debounce, Text Size has no popup: the tile itself is a
+ * toggle, flipped immediately between Small (off) and Large (on). */
+static void text_size_toggle_cb(lv_event_t *e)
 {
     (void)e;
-    static const binary_option_t options[2] = {{"Normal", false}, {"Swapped", true}};
-    open_binary_popup("Paddle Swap", NULL, options, swap_select_cb);
-}
-
-static void text_size_select_cb(lv_event_t *e)
-{
-    bool large = (bool)(intptr_t)lv_event_get_user_data(e);
+    bool large = !s_current_settings.practice_large_text;
     s_current_settings.practice_large_text = large;
     ui_practice_set_text_size(large);
     schedule_settings_save();
     refresh_tile_labels();
-}
-
-static void text_size_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    static const binary_option_t options[2] = {{"Small", false}, {"Large", true}};
-    open_binary_popup("Practice Text Size", NULL, options, text_size_select_cb);
 }
 
 static void ble_hid_select_cb(lv_event_t *e)
@@ -765,7 +762,7 @@ static lv_obj_t *create_keyer_submenu(void)
 
     create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
     create_tile(scr, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
-    create_tile(scr, "Paddle Swap", 2, 0, swap_tile_cb, NULL, &s_swap_tile_value);
+    create_toggle_tile(scr, "Paddle Swap", 2, 0, swap_toggle_cb, &s_swap_switch);
     s_debounce_tile = create_toggle_tile(scr, "Paddle\nDebounce", 0, 1, debounce_toggle_cb, &s_debounce_switch);
 
     lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, keyer_back_btn_cb, NULL, NULL);
@@ -790,7 +787,7 @@ static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *cal
     ui_touch_test_set_back_target(s_touch_submenu_screen);
     create_tile(scr, "Touchscreen", 1, 0, touch_tile_cb, NULL, NULL);
 
-    create_tile(scr, "Text Size", 0, 1, text_size_tile_cb, NULL, &s_text_size_tile_value);
+    create_toggle_tile(scr, "Text Size", 0, 1, text_size_toggle_cb, &s_text_size_switch);
 
     lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
     display_style_button_dismiss(back_tile);

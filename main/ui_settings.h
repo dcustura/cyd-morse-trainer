@@ -32,24 +32,23 @@ extern "C" {
  * pressing +/- always switches back to Manual immediately. Tapping Key Mode
  * opens a popup listing its four options ("Mode A"/"Mode B"/"Straight"/
  * "Ultimatic") as a 3-column x 2-row grid of finger-sized buttons, with
- * "Close" filling the last cell. Tapping Paddle Swap opens a popup listing
- * its two options ("Normal"/"Swapped") as a row of equal-width,
- * finger-sized buttons. Paddle Debounce has no popup: the tile itself is an
- * on/off toggle switch (lv_switch, non-interactive -- the tap is handled by
- * the tile), flipped immediately by tapping anywhere on the tile; this only
- * affects Mode A/B/Ultimatic, since Straight Key mode is always debounced.
- * While Key Mode is Straight Key, the tile instead shows its switch forced
- * on and disabled (LV_STATE_DISABLED, which both dims it and makes LVGL
- * ignore taps on it) rather than displaying or allowing a change to a
- * setting that wouldn't apply; the real stored value is unaffected and
- * takes effect again as soon as a different Key Mode is selected. Tapping
- * Text Size opens a similar popup
- * ("Small"/"Large") that switches the Practice screen's decoded-text font
- * immediately between a small fixed-width font and a larger, anti-aliased
- * monospace font (see main/fonts.h), live, even while Practice isn't the
- * screen currently shown. Every change is applied to the running trainer
- * and persisted to NVS immediately when made; there is no OK/Cancel or
- * discard-on-cancel step. "Touchscreen" navigates to a submenu screen
+ * "Close" filling the last cell. Paddle Swap and Paddle Debounce have no
+ * popup: each tile is itself an on/off toggle switch (lv_switch,
+ * non-interactive -- the tap is handled by the tile), flipped immediately
+ * by tapping anywhere on the tile (Paddle Swap: on = Swapped). Paddle
+ * Debounce only affects Mode A/B/Ultimatic, since Straight Key mode is
+ * always debounced; while Key Mode is Straight Key, its tile instead shows
+ * the switch forced on and disabled (LV_STATE_DISABLED, which both dims it
+ * and makes LVGL ignore taps on it) rather than displaying or allowing a
+ * change to a setting that wouldn't apply, though the real stored value is
+ * unaffected and takes effect again as soon as a different Key Mode is
+ * selected. Text Size is the same kind of toggle tile (on = Large) and
+ * switches the Practice screen's decoded-text font immediately between a
+ * small fixed-width font and a larger, anti-aliased monospace font (see
+ * main/fonts.h), live, even while Practice isn't the screen currently
+ * shown. Every change is applied to the running trainer and persisted to
+ * NVS immediately when made; there is no OK/Cancel or discard-on-cancel
+ * step. "Touchscreen" navigates to a submenu screen
  * (created internally) with two tiles: "Calibrate" (navigates to
  * calibration_screen, with its Back button enabled, returning to the
  * Display submenu) and "Verify Calibration" (navigates to touch_test_screen,

@@ -105,7 +105,8 @@ It does not teach receiving/copying code — it is a tool for practicing
      and narrow.
    - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles (one
      cell left empty); every tile opens a popup to change its value except
-     Paddle Debounce, which is itself an on/off toggle switch (see below):
+     Paddle Swap and Paddle Debounce, which are themselves on/off toggle
+     switches (see below):
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
        popup has `-`/`+` buttons (press-and-hold to repeat).
      - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key, or
@@ -136,16 +137,17 @@ It does not teach receiving/copying code — it is a tool for practicing
          Iambic — but unlike Mode B, nothing is remembered once both
          paddles are released; there is no full-release memory.
      - **Paddle swap**: swaps which physical paddle lever is treated as
-       dit vs dah, for operators who prefer the opposite orientation. Its
-       popup offers "Normal"/"Swapped" buttons; tapping one selects it
-       immediately.
+       dit vs dah, for operators who prefer the opposite orientation. Like
+       Paddle Debounce below, it has no popup: the tile is itself a toggle
+       switch, showing the current on/off state (on = Swapped), and
+       tapping anywhere on the tile flips it immediately.
      - **Paddle debounce**: enables/disables software debounce while in
-       Iambic Mode A/B/Ultimatic. Unlike every other Keyer tile, it has no
-       popup: the tile is itself a toggle switch, showing the current
-       on/off state, and tapping anywhere on the tile flips it immediately.
-       This setting has no effect in Straight Key mode, which is always
-       debounced (a mechanical straight key bounces; a clean paddle contact
-       often does not need the extra latency) — while Key Mode is set to
+       Iambic Mode A/B/Ultimatic. The tile is itself a toggle switch,
+       showing the current on/off state, and tapping anywhere on the tile
+       flips it immediately. This setting has no effect in Straight Key
+       mode, which is always debounced (a mechanical straight key bounces;
+       a clean paddle contact often does not need the extra latency) —
+       while Key Mode is set to
        Straight Key, the tile instead shows the switch forced on and greyed
        out/non-tappable, rather than displaying (or letting the operator
        change) a setting that wouldn't actually apply; the real stored
@@ -178,8 +180,10 @@ It does not teach receiving/copying code — it is a tool for practicing
          the current calibration visually (its swipe-Back also returns to
          this submenu).
      - **Text Size**: Small or Large decoded-text font on the Practice
-       screen (see the Practice screen's description above). Its popup
-       offers "Small"/"Large" buttons; tapping one selects it immediately.
+       screen (see the Practice screen's description above). Like Paddle
+       Swap and Paddle Debounce on the Keyer submenu, it has no popup: the
+       tile is itself a toggle switch (on = Large), flipped immediately by
+       tapping anywhere on the tile.
    - **Bluetooth** tile opens a submenu screen with a single **BLE
      Keyboard** on/off tile (one cell left empty, plus Back): when on, the
      device advertises itself as a BLE HID keyboard and, once a phone or PC
