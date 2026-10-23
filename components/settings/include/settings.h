@@ -18,11 +18,14 @@ extern "C" {
 #define SETTINGS_ENVELOPE_MS_MAX 100
 #define SETTINGS_BRIGHTNESS_PCT_MIN 10
 #define SETTINGS_BRIGHTNESS_PCT_MAX 100
+#define SETTINGS_AUTO_SPACE_PCT_MIN 50
+#define SETTINGS_AUTO_SPACE_PCT_MAX 100
 
 #define SETTINGS_DEFAULT_WPM 15
 #define SETTINGS_DEFAULT_KEYMODE IAMBIC_KEYER_MODE_B
 #define SETTINGS_DEFAULT_PADDLE_SWAP false
 #define SETTINGS_DEFAULT_PADDLE_DEBOUNCE true
+#define SETTINGS_DEFAULT_AUTO_SPACE_PCT 70
 #define SETTINGS_DEFAULT_TONE_HZ 600
 #define SETTINGS_DEFAULT_VOLUME_PCT 50
 #define SETTINGS_DEFAULT_ENVELOPE_MS 10
@@ -37,6 +40,12 @@ typedef struct {
     iambic_keyer_mode_t keymode;
     bool paddle_swap;
     bool paddle_debounce;
+    /* "Auto Space": in Iambic Mode A/B and Ultimatic, withholds starting a
+     * new element after too short a pause so the generated signal is
+     * correctly spaced to the standard PARIS-timing character-gap/word-gap
+     * (3/7 units); 100 = disabled. No effect in Straight Key mode. See
+     * components/iambic_keyer's iambic_keyer_set_auto_space_pct(). */
+    uint8_t auto_space_pct;
     uint16_t tone_hz;
     uint8_t volume_pct;
     uint16_t envelope_ms;
@@ -65,6 +74,9 @@ uint16_t settings_clamp_envelope_ms(uint16_t ms);
 
 /** Clamp a screen brightness percentage to [SETTINGS_BRIGHTNESS_PCT_MIN, SETTINGS_BRIGHTNESS_PCT_MAX]. */
 uint8_t settings_clamp_brightness_pct(uint8_t pct);
+
+/** Clamp an Auto Space percentage to [SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX]. */
+uint8_t settings_clamp_auto_space_pct(uint8_t pct);
 
 /** Validate a raw stored key-mode byte, falling back to the default key mode on an out-of-range value. */
 iambic_keyer_mode_t settings_validate_keymode(uint8_t raw);

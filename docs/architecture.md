@@ -44,7 +44,7 @@ to," it belongs in `main/`.
 | Component | Responsibility |
 |---|---|
 | `debouncer` | Generic consecutive-sample debounce filter (used for paddle/key contacts). |
-| `iambic_keyer` | Paddle-to-element state machine: Iambic Mode A/B, Ultimatic, and straight-key passthrough. Given raw dit/dah contact state and a timestamp, decides when dits/dahs start and stop. |
+| `iambic_keyer` | Paddle-to-element state machine: Iambic Mode A/B, Ultimatic, and straight-key passthrough. Given raw dit/dah contact state and a timestamp, decides when dits/dahs start and stop. Also owns Auto Space: in Iambic/Ultimatic, `iambic_keyer_set_auto_space_pct()` makes it withhold starting a new element after too short a pause, so the signal it generates is itself correctly spaced rather than relying on lenient decoding. |
 | `morse_codec` | Timing classifier + decode tree: given key-down/key-up transitions and timestamps, classifies dit vs. dah and gap vs. character-gap vs. word-gap, and turns finished element sequences into characters or prosigns. |
 | `settings` | The `settings_t` struct, its field bounds/defaults, and pure clamp/validate helpers — no I/O. |
 | `touch_calibration` | 5-point touch calibration math (compute from raw taps, apply to map a raw sample to a screen coordinate) — no I/O, no display driver calls. |

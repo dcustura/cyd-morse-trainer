@@ -12,10 +12,11 @@ extern "C" {
  * Create the Settings screen: a 3x2 grid of tappable tiles (Keyer, Sidetone,
  * Display, Bluetooth, Reset to Factory Defaults, and a final "< Back"
  * tile), filling the whole display with no scrolling and no separate title
- * bar. "Keyer" navigates to a submenu (created internally) with a 2x2 grid
- * of WPM, Key Mode, Paddle Swap, and Paddle Debounce tiles -- except while
- * Key Mode is Straight Key, when a "Ring Input" toggle tile takes the
- * Paddle Swap tile's place in the grid instead (see below); "Sidetone"
+ * bar. "Keyer" navigates to a submenu (created internally) with a 3x2 grid
+ * of WPM, Key Mode, Paddle Swap, Paddle Debounce, and Auto Space tiles --
+ * except while Key Mode is Straight Key, when a "Ring Input" toggle tile
+ * takes the Paddle Swap tile's place in the grid instead (see below);
+ * "Sidetone"
  * navigates to a submenu with Pitch, Volume, and Smoothing tiles; "Display"
  * navigates to a submenu with Brightness, Touchscreen, and Large Text tiles;
  * "Bluetooth" navigates to a submenu with a single "BLE Keyboard" on/off
@@ -44,7 +45,17 @@ extern "C" {
  * and makes LVGL ignore taps on it) rather than displaying or allowing a
  * change to a setting that wouldn't apply, though the real stored value is
  * unaffected and takes effect again as soon as a different Key Mode is
- * selected. While Key Mode is Straight Key, the Paddle Swap tile's grid
+ * selected. Auto Space (a numeric tile like WPM, popup-based, 50-100%)
+ * controls how readily the iambic keyer withholds starting a new element
+ * after too short a pause, so the actual generated signal (sidetone,
+ * external key line, and whatever decodes it) is spaced to the standard
+ * character-gap/word-gap even if the operator paused less than that: 100%
+ * disables withholding entirely, lower percentages withhold on a
+ * correspondingly shorter pause. It's an Iambic Mode A/B/Ultimatic
+ * feature with nothing to hook into in Straight Key's direct passthrough,
+ * so -- like Paddle Debounce -- its tile is forced disabled while Key
+ * Mode is Straight Key, with the real stored value unaffected. While Key
+ * Mode is Straight Key, the Paddle Swap tile's grid
  * cell instead holds a "Ring Input" toggle tile -- the same kind of switch
  * tile, swapped in by refresh_tile_labels() (see ui_settings.c) whenever
  * Key Mode changes to or from Straight Key: on, the paddle DAH GPIO (the
@@ -69,7 +80,8 @@ extern "C" {
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
-                              bool initial_straight_ring_input, uint16_t initial_tone_hz,
+                              bool initial_straight_ring_input, uint8_t initial_auto_space_pct,
+                              uint16_t initial_tone_hz,
                               uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
                               uint8_t initial_brightness_pct, bool initial_brightness_auto,
                               bool initial_large_text, bool initial_ble_hid_enabled);

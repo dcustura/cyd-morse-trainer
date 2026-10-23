@@ -103,12 +103,12 @@ It does not teach receiving/copying code — it is a tool for practicing
      bar, and Back (left-chevron icon) is just the last tile in the grid,
      sized N×M with N = M or N = M + 1 so tiles stay wide rather than tall
      and narrow.
-   - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles (one
-     cell left empty); every tile opens a popup to change its value except
-     Paddle Swap and Paddle Debounce, which are themselves on/off toggle
-     switches (see below). Paddle Swap's tile only appears while Key Mode
-     is Iambic Mode A/B or Ultimatic; while Key Mode is Straight Key, a
-     **Ring Input** toggle takes its place in the grid instead (see below):
+   - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles; every
+     tile opens a popup to change its value except Paddle Swap and Paddle
+     Debounce, which are themselves on/off toggle switches (see below).
+     Paddle Swap's tile only appears while Key Mode is Iambic Mode A/B or
+     Ultimatic; while Key Mode is Straight Key, a **Ring Input** toggle
+     takes its place in the grid instead (see below):
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
        popup has `-`/`+` buttons (press-and-hold to repeat).
      - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key, or
@@ -171,6 +171,32 @@ It does not teach receiving/copying code — it is a tool for practicing
        ground) — is also read and ORed into the key signal alongside dit
        ("tip"), so a straight key or cootie key wired across both
        conductors closes the key from either one.
+     - **Auto Space** (50–100%): automatic space insertion, an Iambic Mode
+       A/B/Ultimatic keying feature (see below for why it has no effect in
+       Straight Key mode). Standard PARIS timing requires a 3-unit pause
+       to end a character and a 7-unit pause to end a word; if the
+       operator touches a paddle again after a *shorter* pause — but
+       still at or past this percentage of the standard gap — the keyer
+       withholds actually starting the next element until enough real
+       silence has accumulated to reach that standard gap, correcting an
+       operator who sends without leaving full standard spacing. 100%
+       disables this (an element always starts the instant a paddle is
+       touched, however short the preceding pause); lower percentages
+       withhold starting on a correspondingly shorter pause. A paddle
+       touched during the withhold is remembered and started the moment
+       the gap target is reached, even if released before then. Its popup
+       has `-`/`+` buttons, stepping by 5 points. This is independent of,
+       and not the same as, Farnsworth spacing (see Explicit non-goals
+       below) — it only pads out real silence the operator already
+       started to a standard length, it never slows down an element the
+       operator is actively sending. Like Paddle Debounce, it has no
+       effect in Straight Key mode (which has no automatic element timing
+       for it to act on — see above); while Key Mode is Straight Key, its
+       tile instead shows greyed out/non-tappable (`LV_STATE_DISABLED`)
+       rather than displaying or letting the operator change a setting
+       that wouldn't actually apply, though the real stored value is
+       untouched and takes effect again as soon as a different Key Mode
+       is selected.
    - **Sidetone** tile opens a submenu screen with a 2×2 grid of tiles (one
      cell left empty), each opening a popup to change just that value:
      - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while
@@ -302,14 +328,15 @@ It does not teach receiving/copying code — it is a tool for practicing
     output before sending `get`/`set` commands.
 - Keys, matching the Settings screen's Keyer/Sidetone/Display/Bluetooth
   submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
-  `paddle_swap`, `paddle_debounce`, `straight_ring_input`, `tone_hz`,
-  `volume_pct`, `envelope_ms`, `brightness_pct`, `brightness_auto`,
-  `practice_large_text`, and `ble_hid_enabled` (all booleans as
-  `on`/`off`). `straight_ring_input` can be set regardless of the current
-  `keymode`, but (like the Settings screen's Ring Input tile) only takes
-  effect while `keymode` is `straight`. Setting `brightness_pct` while
-  `brightness_auto` is on switches back to manual first, the same as
-  stepping `-`/`+` on the Brightness popup.
+  `paddle_swap`, `paddle_debounce`, `straight_ring_input`,
+  `auto_space_pct` (50–100), `tone_hz`, `volume_pct`, `envelope_ms`,
+  `brightness_pct`, `brightness_auto`, `practice_large_text`, and
+  `ble_hid_enabled` (all booleans as `on`/`off`). `straight_ring_input` can
+  be set regardless of the current `keymode`, but (like the Settings
+  screen's Ring Input tile) only takes effect while `keymode` is
+  `straight`. Setting `brightness_pct` while `brightness_auto` is on
+  switches back to manual first, the same as stepping `-`/`+` on the
+  Brightness popup.
 
 ## Behavior details
 
@@ -330,18 +357,43 @@ It does not teach receiving/copying code — it is a tool for practicing
   so mechanical contact bounce does not corrupt timing or produce spurious
   short elements. Straight Key mode is always debounced; Iambic Mode
   A/B/Ultimatic debouncing is controlled by the Paddle Debounce setting.
+- **Auto Space**: an Iambic Mode A/B/Ultimatic keying feature (the keyer
+  that turns paddle contacts into dit/dah/gap timing, not the decoder
+  that reads it back). After an element's standard 1-unit trailing gap,
+  if the operator touches a paddle again before a full 3-unit pause
+  (character) or 7-unit pause (word) — but at or past this setting's
+  percentage of that standard gap — the keyer withholds actually
+  starting the new element until enough real silence has accumulated to
+  reach the standard gap, rather than starting it the instant it's
+  touched. This shapes the *actual* generated signal (sidetone, external
+  key line, and whatever decodes it) to standard spacing even when the
+  operator's own pause fell short, rather than just reading sloppy timing
+  leniently. A touch that comes during the withhold is remembered and
+  started the moment the gap target is reached, even if the paddle was
+  released again before then. 100% disables this outright (an element
+  always starts the instant a paddle is touched, however short the
+  preceding pause); the default 70% withholds whenever the pause is at
+  least 2 units (character) or 5 units (word). A pause already below the
+  threshold, or already at or past the standard gap on its own, is left
+  alone — nothing is ever slowed down while the operator is actively
+  sending. The character-gap threshold is never allowed below 2 units
+  regardless of the setting, so it can't be confused with the normal
+  1-unit gap between elements of the same character. Straight Key mode
+  has no automatic element timing for this to act on (the operator's own
+  dit/dah/gap timing is read directly, unmodified), so Auto Space has no
+  effect there.
 - **Persistence**: WPM, key mode, paddle swap, paddle debounce, ring
-  input, sidetone frequency, sidetone volume, sidetone envelope, screen
-  brightness, brightness auto/manual mode, Practice text size, and touch
-  calibration survive power loss. On boot, the last-saved values are
+  input, Auto Space percentage, sidetone frequency, sidetone volume,
+  sidetone envelope, screen brightness, brightness auto/manual mode,
+  Practice text size, and touch calibration survive power loss. On boot, the last-saved values are
   loaded and applied before the operator can key anything (or interact
   with the touchscreen, in the case of calibration). Settings writes to
   NVS are debounced by a couple of seconds after the last edit, rather
   than on every tap/step, to reduce flash wear.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
-  paddle swap, paddle debounce on, ring input off, 600 Hz sidetone, 50%
-  sidetone volume, 10 ms sidetone envelope, 100% brightness, brightness
-  auto mode off, Small Practice text size. No default touch calibration
+  paddle swap, paddle debounce on, ring input off, 70% Auto Space, 600 Hz
+  sidetone, 50% sidetone volume, 10 ms sidetone envelope, 100% brightness,
+  brightness auto mode off, Small Practice text size. No default touch calibration
   exists — it must be created via the first-boot calibration flow.
 - **Factory reset**: erases saved keyer settings and touch calibration
   together and restarts the device, so it comes back up exactly as an

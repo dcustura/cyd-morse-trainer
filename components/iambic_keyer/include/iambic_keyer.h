@@ -48,11 +48,51 @@ typedef struct {
     bool ultimatic_last_dit;   /* Ultimatic only: which paddle has priority during a live squeeze */
     bool prev_dit_contact;     /* Ultimatic only: previous-tick raw dit level, for rising-edge detection */
     bool prev_dah_contact;     /* Ultimatic only: previous-tick raw dah level, for rising-edge detection */
+
+    /* Auto Space (automatic character/word space insertion) -- see
+     * iambic_keyer_set_auto_space_pct(). idle_start_ms/idle_has_reference
+     * track the key-up edge that ended the last fully-finished character,
+     * measured from IAMBIC_KEYER_STATE_IDLE (not Straight Key, which has no
+     * element state machine to hook this into). auto_space_waiting/
+     * auto_space_*_latched implement the withhold-and-latch: once a touch
+     * during the forced gap is seen, it's remembered and started the
+     * moment the gap target is reached, rather than requiring the paddle
+     * to still be down at that exact tick. */
+    bool idle_has_reference;
+    uint32_t idle_start_ms;
+    bool auto_space_waiting;
+    uint32_t auto_space_wait_until_ms;
+    bool auto_space_dit_latched;
+    bool auto_space_dah_latched;
+    uint8_t auto_space_char_threshold_units;
+    uint8_t auto_space_word_threshold_units;
 } iambic_keyer_t;
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm);
 void iambic_keyer_set_mode(iambic_keyer_t *k, iambic_keyer_mode_t mode);
 void iambic_keyer_set_wpm(iambic_keyer_t *k, uint16_t wpm);
+
+/**
+ * Auto Space (automatic character/word space insertion), Iambic Mode A/B
+ * and Ultimatic only (no effect -- and no state to hook it into -- in
+ * Straight Key mode, which has no element state machine). After an
+ * element's standard trailing gap, if the paddle is touched again after a
+ * pause that's shorter than the standard PARIS-timing character gap (3
+ * units) or word gap (7 units) but still at or past this percentage of
+ * it, the keyer withholds starting the new element until enough real
+ * silence has accumulated to reach that standard gap -- so the actual
+ * generated signal (sidetone, external key line, and whatever decodes it)
+ * sees correctly spaced timing even though the operator paused less than
+ * that. A pause shorter than the percentage-scaled threshold, or already
+ * at or past the standard gap, is left alone. 100 disables this entirely
+ * (the pre-Auto-Space behavior: an element always starts the instant a
+ * paddle is touched from idle, however short the preceding pause).
+ * Clamped internally to a safe range (the character threshold is never
+ * low enough to withhold on the normal 1-unit gap between elements of the
+ * same character). Defaults to 100 (disabled) at iambic_keyer_init().
+ * Persists across iambic_keyer_set_mode()/a mode's own reset.
+ */
+void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct);
 
 /**
  * Advance the state machine by one tick (call at a fixed rate, 1ms

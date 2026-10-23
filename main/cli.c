@@ -21,6 +21,7 @@ typedef enum {
     KEY_KEYMODE,
     KEY_PADDLE_SWAP,
     KEY_PADDLE_DEBOUNCE,
+    KEY_AUTO_SPACE_PCT,
     KEY_TONE_HZ,
     KEY_VOLUME_PCT,
     KEY_ENVELOPE_MS,
@@ -37,6 +38,7 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_KEYMODE] = "keymode",
     [KEY_PADDLE_SWAP] = "paddle_swap",
     [KEY_PADDLE_DEBOUNCE] = "paddle_debounce",
+    [KEY_AUTO_SPACE_PCT] = "auto_space_pct",
     [KEY_TONE_HZ] = "tone_hz",
     [KEY_VOLUME_PCT] = "volume_pct",
     [KEY_ENVELOPE_MS] = "envelope_ms",
@@ -126,6 +128,9 @@ static void print_value(cli_key_t key)
         break;
     case KEY_PADDLE_DEBOUNCE:
         printf("paddle_debounce=%s\n", s_settings.paddle_debounce ? "on" : "off");
+        break;
+    case KEY_AUTO_SPACE_PCT:
+        printf("auto_space_pct=%u\n", s_settings.auto_space_pct);
         break;
     case KEY_TONE_HZ:
         printf("tone_hz=%u\n", s_settings.tone_hz);
@@ -225,6 +230,14 @@ static int cmd_set(int argc, char **argv)
         }
         s_settings.paddle_debounce = flag;
         paddle_input_set_debounce(flag);
+        break;
+    case KEY_AUTO_SPACE_PCT:
+        if (!parse_long(val, &num)) {
+            printf("ERR invalid value %s\n", val);
+            return 1;
+        }
+        s_settings.auto_space_pct = settings_clamp_auto_space_pct((uint8_t)num);
+        paddle_input_set_auto_space_pct(s_settings.auto_space_pct);
         break;
     case KEY_TONE_HZ:
         if (!parse_long(val, &num)) {

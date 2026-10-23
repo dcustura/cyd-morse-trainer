@@ -59,6 +59,7 @@ void app_main(void)
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
                                                     settings.keymode, settings.wpm, settings.paddle_swap,
                                                     settings.paddle_debounce, settings.straight_ring_input,
+                                                    settings.auto_space_pct,
                                                     settings.tone_hz, settings.volume_pct, settings.envelope_ms,
                                                     settings.brightness_pct, settings.brightness_auto,
                                                     settings.practice_large_text, settings.ble_hid_enabled);
@@ -77,7 +78,7 @@ void app_main(void)
      * claim its small, guaranteed share first. */
     paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm, settings.paddle_swap,
                         settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms,
-                        settings.straight_ring_input);
+                        settings.straight_ring_input, settings.auto_space_pct);
 
     ble_hid_output_init(settings.ble_hid_enabled);
 

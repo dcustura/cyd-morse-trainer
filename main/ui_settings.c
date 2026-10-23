@@ -26,6 +26,8 @@
 #define ENVELOPE_MS_MAX SETTINGS_ENVELOPE_MS_MAX
 #define BRIGHTNESS_PCT_MIN SETTINGS_BRIGHTNESS_PCT_MIN
 #define BRIGHTNESS_PCT_MAX SETTINGS_BRIGHTNESS_PCT_MAX
+#define AUTO_SPACE_PCT_MIN SETTINGS_AUTO_SPACE_PCT_MIN
+#define AUTO_SPACE_PCT_MAX SETTINGS_AUTO_SPACE_PCT_MAX
 #define TEST_TONE_DURATION_MS 300
 /* Settings changes are batched and flushed to NVS this long after the last
  * edit, rather than on every step/tap, to keep flash wear down when the
@@ -39,6 +41,7 @@
 
 typedef enum {
     FIELD_WPM,
+    FIELD_AUTO_SPACE,
     FIELD_TONE_HZ,
     FIELD_VOLUME,
     FIELD_ENVELOPE,
@@ -57,6 +60,7 @@ typedef struct {
 
 static const numeric_field_info_t s_field_info[FIELD_COUNT] = {
     [FIELD_WPM] = {"WPM", WPM_MIN, WPM_MAX, 1, "%d", false},
+    [FIELD_AUTO_SPACE] = {"Auto Space", AUTO_SPACE_PCT_MIN, AUTO_SPACE_PCT_MAX, 5, "%d%%", false},
     [FIELD_TONE_HZ] = {"Pitch", TONE_HZ_MIN, TONE_HZ_MAX, 10, "%d Hz", true},
     [FIELD_VOLUME] = {"Volume", VOLUME_PCT_MIN, VOLUME_PCT_MAX, 5, "%d%%", true},
     [FIELD_ENVELOPE] = {"Smoothing", ENVELOPE_MS_MIN, ENVELOPE_MS_MAX, 2, "%d ms", true},
@@ -73,6 +77,8 @@ static lv_obj_t *s_bluetooth_submenu_screen;
 static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
+static lv_obj_t *s_auto_space_tile;
+static lv_obj_t *s_auto_space_tile_value;
 static lv_obj_t *s_keymode_tile_value;
 static lv_obj_t *s_swap_tile;
 static lv_obj_t *s_swap_switch;
@@ -162,6 +168,9 @@ static void refresh_tile_labels(void)
     snprintf(text, sizeof(text), s_field_info[FIELD_WPM].unit_fmt, (int)s_current_settings.wpm);
     lv_label_set_text(s_wpm_tile_value, text);
 
+    snprintf(text, sizeof(text), s_field_info[FIELD_AUTO_SPACE].unit_fmt, (int)s_current_settings.auto_space_pct);
+    lv_label_set_text(s_auto_space_tile_value, text);
+
     lv_label_set_text(s_keymode_tile_value, keymode_text(s_current_settings.keymode));
 
     /* Straight Key mode is always debounced regardless of the stored
@@ -170,7 +179,10 @@ static void refresh_tile_labels(void)
      * with dah via Ring Input below. So the Keyer submenu's grid swaps the
      * Paddle Swap tile out for a Ring Input tile, and forces Paddle
      * Debounce's switch on and disabled, whenever Key Mode is Straight
-     * Key. */
+     * Key. Auto Space is an iambic_keyer encoder feature with nothing to
+     * hook into in Straight Key's direct passthrough, so its tile is
+     * disabled there too (its stored value is untouched and takes effect
+     * again as soon as a different Key Mode is selected). */
     bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
 
     set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
@@ -182,8 +194,10 @@ static void refresh_tile_labels(void)
     set_switch_checked(s_debounce_switch, straight_key || s_current_settings.paddle_debounce);
     if (straight_key) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
+        lv_obj_add_state(s_auto_space_tile, LV_STATE_DISABLED);
     } else {
         lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);
+        lv_obj_remove_state(s_auto_space_tile, LV_STATE_DISABLED);
     }
 
     snprintf(text, sizeof(text), s_field_info[FIELD_TONE_HZ].unit_fmt, (int)s_current_settings.tone_hz);
@@ -212,6 +226,8 @@ static int32_t field_get_value(numeric_field_t field)
     switch (field) {
     case FIELD_WPM:
         return s_current_settings.wpm;
+    case FIELD_AUTO_SPACE:
+        return s_current_settings.auto_space_pct;
     case FIELD_TONE_HZ:
         return s_current_settings.tone_hz;
     case FIELD_VOLUME:
@@ -231,6 +247,10 @@ static void field_set_value(numeric_field_t field, int32_t value)
     case FIELD_WPM:
         s_current_settings.wpm = (uint16_t)value;
         paddle_input_set_wpm(s_current_settings.wpm);
+        break;
+    case FIELD_AUTO_SPACE:
+        s_current_settings.auto_space_pct = (uint8_t)value;
+        paddle_input_set_auto_space_pct(s_current_settings.auto_space_pct);
         break;
     case FIELD_TONE_HZ:
         s_current_settings.tone_hz = (uint16_t)value;
@@ -803,6 +823,9 @@ static lv_obj_t *create_keyer_submenu(void)
 
     s_debounce_tile = create_toggle_tile(scr, "Paddle\nDebounce", 0, 1, debounce_toggle_cb, &s_debounce_switch);
 
+    s_auto_space_tile = create_tile(scr, "Auto\nSpace", 1, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_AUTO_SPACE,
+                                     &s_auto_space_tile_value);
+
     lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, keyer_back_btn_cb, NULL, NULL);
     display_style_button_dismiss(back_tile);
 
@@ -870,7 +893,8 @@ static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
                               uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
-                              bool initial_straight_ring_input, uint16_t initial_tone_hz,
+                              bool initial_straight_ring_input, uint8_t initial_auto_space_pct,
+                              uint16_t initial_tone_hz,
                               uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
                               uint8_t initial_brightness_pct, bool initial_brightness_auto,
                               bool initial_large_text, bool initial_ble_hid_enabled)
@@ -881,6 +905,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
         .paddle_swap = initial_swap,
         .paddle_debounce = initial_debounce,
         .straight_ring_input = initial_straight_ring_input,
+        .auto_space_pct = initial_auto_space_pct,
         .tone_hz = initial_tone_hz,
         .volume_pct = initial_volume_pct,
         .envelope_ms = initial_envelope_ms,

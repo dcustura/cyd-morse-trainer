@@ -161,9 +161,10 @@ static void paddle_task(void *arg)
 
 void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
                          bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
-                         uint16_t envelope_ms, bool straight_ring_input)
+                         uint16_t envelope_ms, bool straight_ring_input, uint8_t auto_space_pct)
 {
     iambic_keyer_init(&s_keyer, mode, wpm);
+    iambic_keyer_set_auto_space_pct(&s_keyer, auto_space_pct);
     morse_codec_init(&s_codec, wpm);
     s_paddle_swap = paddle_swap;
     s_paddle_debounce = paddle_debounce;
@@ -212,6 +213,11 @@ void paddle_input_set_debounce(bool debounce)
 void paddle_input_set_straight_ring_input(bool enabled)
 {
     s_straight_ring_input = enabled;
+}
+
+void paddle_input_set_auto_space_pct(uint8_t pct)
+{
+    iambic_keyer_set_auto_space_pct(&s_keyer, pct);
 }
 
 iambic_keyer_mode_t paddle_input_get_mode(void)

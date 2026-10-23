@@ -52,6 +52,17 @@ uint8_t settings_clamp_brightness_pct(uint8_t pct)
     return pct;
 }
 
+uint8_t settings_clamp_auto_space_pct(uint8_t pct)
+{
+    if (pct < SETTINGS_AUTO_SPACE_PCT_MIN) {
+        return SETTINGS_AUTO_SPACE_PCT_MIN;
+    }
+    if (pct > SETTINGS_AUTO_SPACE_PCT_MAX) {
+        return SETTINGS_AUTO_SPACE_PCT_MAX;
+    }
+    return pct;
+}
+
 iambic_keyer_mode_t settings_validate_keymode(uint8_t raw)
 {
     switch (raw) {
@@ -71,6 +82,7 @@ void settings_set_defaults(settings_t *out)
     out->keymode = SETTINGS_DEFAULT_KEYMODE;
     out->paddle_swap = SETTINGS_DEFAULT_PADDLE_SWAP;
     out->paddle_debounce = SETTINGS_DEFAULT_PADDLE_DEBOUNCE;
+    out->auto_space_pct = SETTINGS_DEFAULT_AUTO_SPACE_PCT;
     out->tone_hz = SETTINGS_DEFAULT_TONE_HZ;
     out->volume_pct = SETTINGS_DEFAULT_VOLUME_PCT;
     out->envelope_ms = SETTINGS_DEFAULT_ENVELOPE_MS;
