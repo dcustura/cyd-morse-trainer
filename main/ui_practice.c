@@ -273,7 +273,7 @@ static const char *mode_name(iambic_keyer_mode_t mode)
     case IAMBIC_KEYER_MODE_B:
         return "Iambic B";
     case IAMBIC_KEYER_MODE_STRAIGHT:
-        return "Straight Key";
+        return "Straight";
     case IAMBIC_KEYER_MODE_ULTIMATIC:
         return "Ultimatic";
     default:
@@ -422,6 +422,12 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_t *btn_row = lv_obj_create(scr);
     lv_obj_set_style_border_width(btn_row, 0, 0);
     lv_obj_set_style_pad_all(btn_row, 4, 0);
+    /* This toolbar row must never scroll or show a scrollbar, however wide
+     * its children (e.g. a long Key Mode name in status_col) happen to get -
+     * clipping an overflow here is far less jarring than a horizontal
+     * scrollbar appearing on a screen that's otherwise never scrolled
+     * sideways. */
+    lv_obj_clear_flag(btn_row, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_flex_flow(btn_row, LV_FLEX_FLOW_ROW);
     /* SPACE_BETWEEN, with status_col/right_group as real flex children
      * (below) rather than absolutely-positioned overlays: the flex engine
