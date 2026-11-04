@@ -76,12 +76,19 @@ static void set_highlight(lv_obj_t *matrix, uint32_t id)
     s_highlighted_id = id;
 }
 
+/* Hand the sidetone back to the key, so ending playback early never mutes
+ * an element that a message (e.g. a CLI `mem play`) is keying. */
+static void release_sidetone(void)
+{
+    sidetone_key(paddle_input_is_keying());
+}
+
 static void stop_playback(void)
 {
     if (s_play_timer != NULL && esp_timer_is_active(s_play_timer)) {
         esp_timer_stop(s_play_timer);
+        release_sidetone();
     }
-    sidetone_key(false);
 }
 
 static void play_step_cb(void *arg);
@@ -106,6 +113,12 @@ static void schedule_step(uint32_t delay_ms)
 static void play_step_cb(void *arg)
 {
     (void)arg;
+
+    /* A message started since playback began: it owns the sidetone now. */
+    if (paddle_input_message_is_active()) {
+        release_sidetone();
+        return;
+    }
 
     if (s_play_tone_phase) {
         /* An element (dit or dah) just finished sounding. */

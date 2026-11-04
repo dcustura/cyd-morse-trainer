@@ -534,7 +534,10 @@ implemented.
     message already playing or queued isn't queued again. Once something
     is queued, a repeating message ends after its current send (or at
     once, during a pause), and the next message follows after a word gap.
-  - Morse Reference playback is ignored while a message plays.
+  - Morse Reference playback and the Sidetone "Test" button are ignored
+    while a message plays. A message started during either one (e.g. by
+    `mem play`) ends it once the reference element or 300 ms test beep in
+    progress finishes, and then has the sidetone to itself.
 - **Factory reset**: erases saved keyer settings, touch calibration and
   message memories together and restarts the device, so it comes back up exactly as an
   unconfigured device would.
