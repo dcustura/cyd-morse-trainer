@@ -59,6 +59,13 @@ when stale artifacts are a demonstrated problem.
   - Keep the backlog curated: add newly agreed ideas, and update or drop
     entries when plans change or a constraint is discovered.
 
+## Hardware Tests
+
+- `docs/hardware-tests.md` lists checks that need a person at the board
+  (touchscreen, paddle, scope on the key output) and haven't been done.
+  When a change can't be fully verified over serial, add its checks there
+  in the same change. Delete an item once the user confirms it passed.
+
 ## Documentation
 
 - Prefer the Espressif Documentation MCP server for ESP-IDF API and guide

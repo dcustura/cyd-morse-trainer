@@ -53,6 +53,7 @@ one built into the QRP Labs QMX, while keeping the trainer.
 ├── docs/
 │   ├── functional-spec.md   # screens, settings, and behavior spec (implemented behavior)
 │   ├── backlog.md           # planned features, removed from the list once implemented
+│   ├── hardware-tests.md    # pending on-board checks not yet done by hand
 │   └── architecture.md      # code-level mental model
 ├── main/                    # app entry point, LVGL UI screens, display/touch/paddle glue
 └── components/

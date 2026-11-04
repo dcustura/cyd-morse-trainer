@@ -1,0 +1,84 @@
+# Pending Hardware Tests
+
+Checks that need a person at the board (touchscreen, paddle, or a scope/LED
+on the key output) and haven't been done yet. Serial-CLI checks that could be
+run remotely are already done and aren't listed.
+
+How this file works:
+
+- Add an item when a change lands that can't be fully verified over serial.
+- When an item passes on the board, **delete it** (don't tick it). If it
+  fails, replace it with a note of what went wrong, or fix it and delete it.
+- When a section is empty, delete the section.
+- Before serial testing, run `set volume_pct 0` so the board stays silent.
+
+## Message memories panel (`f36b0e8`, `a6f4be1`)
+
+- [ ] Tap a tile: its memory plays; the tile turns amber with `▶`.
+- [ ] Tap another tile while one plays: it queues, showing its queue
+      position (`1`, `2`, …) in the corner. Tapping the playing or a queued
+      tile does nothing.
+- [ ] Tile 6 is assigned to memory 06, which is empty: it shows
+      `#06 (empty)` and a tap does nothing.
+- [ ] Long-press a tile: the memory picker opens (None row, 32 memories,
+      current one highlighted, Cancel). Picking a row reassigns the tile and
+      survives a reboot. Long-press is ignored on the playing/queued tile.
+- [ ] Repeat tile: greyed until a tile has played; tap toggles
+      `Repeat: ON/OFF` for the current tile with the behavior in the spec.
+- [ ] Repeat tile long-press: popup with Count (0 = "No limit") and Pause
+      `-`/`+`, hold to repeat, "Memory defaults", Close; changes apply at
+      once to the playing message.
+- [ ] Shorten the Pause in the popup while a repeat pause is running past
+      its new end: the next send starts at once and is actually keyed.
+- [ ] Stop tile stops playback and clears the queue.
+- [ ] Sending strip: text scrolls with the current character highlighted
+      amber; progress `2/5`, loop icon for count 0, seconds countdown during
+      a pause; empty when idle.
+- [ ] `Queue full` notice: fill the queue from the CLI (`mem play` six
+      other memories while one plays), then tap a tile: the strip shows
+      `Queue full` for 2 s.
+- [ ] Back returns to the Send screen with playback continuing; the sent
+      text appears decoded there.
+- [ ] Touching a paddle or the key during playback cancels it at once, the
+      touch isn't keyed, and input resumes once both paddles are released.
+- [ ] Tap a tile right after keying something (paddles released): the
+      message starts after a clean word gap, not merged with your last
+      element or character.
+
+## Sidetone sharing (`91c1ad8`, `d4bda65`)
+
+- [ ] While a message plays, the Settings > Sidetone "Test" button and
+      the Morse Reference characters do nothing.
+- [ ] Morse Reference playing a character when a message starts (CLI
+      `mem play`): no stuck tone, and the message is heard cleanly from its
+      next element.
+- [ ] Help's Back while a message plays doesn't cut the message's tone.
+
+## On-air / off-air (`7ac7e25`, `beb599a`)
+
+- [ ] Send screen bottom row fits on screen with the new TX button and the
+      icon-only Clear (trash) button; Clear still empties the text.
+- [ ] TX toggles and turns red while on-air.
+- [ ] Main Menu has three buttons that fit; the third reads `Off Air` /
+      `On Air` and turns red while on-air.
+- [ ] Settings > On Air switch shows the live state (also after using TX
+      or the Main Menu button).
+- [ ] Red frame shows on every screen while on-air, including Memories,
+      Settings, Help and the Reset to Defaults popup; taps right at the
+      screen edge still reach the buttons under it.
+- [ ] A TX / Main Menu toggle is lost on reboot; a Settings > On Air change
+      is kept.
+- [ ] Scope or LED on the key output (GPIO17): off-air it never keys
+      (paddle, straight key, message playback). Going on-air while holding a
+      dah doesn't key the rest of it; the next element keys normally.
+
+## Quick speed change (`2421fe0`)
+
+- [ ] Long-press the WPM/mode label: the speed bar appears, and releasing
+      does *not* open the Keyer submenu.
+- [ ] A short tap on the label still opens the Keyer submenu.
+- [ ] Holding `+`/`-` steps steadily, with no extra step on release; the
+      label underneath updates.
+- [ ] The bar hides after 5 s idle, on ✕, and when leaving the screen; it
+      doesn't cover anything important.
+- [ ] A WPM changed here survives a reboot.
