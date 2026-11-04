@@ -193,7 +193,7 @@ void message_player_set_repeat(message_player_t *p, bool repeat)
     }
 }
 
-void message_player_set_repeat_params(message_player_t *p, uint8_t count, uint8_t pause_s)
+void message_player_set_repeat_params(message_player_t *p, uint8_t count, uint8_t pause_s, uint32_t now_ms)
 {
     if (p->phase == MESSAGE_PLAYER_PHASE_IDLE) {
         return;
@@ -205,6 +205,12 @@ void message_player_set_repeat_params(message_player_t *p, uint8_t count, uint8_
             go_idle(p);
         } else {
             p->phase_end_ms = p->phase_start_ms + (uint32_t)p->current.pause_s * 1000u;
+            /* A shorter pause that has already run out ends now, not in the
+             * past: service() would otherwise catch up through a whole
+             * transmission without keying it. */
+            if (time_reached(now_ms, p->phase_end_ms)) {
+                p->phase_end_ms = now_ms;
+            }
         }
     }
 }

@@ -114,10 +114,11 @@ void message_player_set_repeat(message_player_t *p, bool repeat);
 
 /**
  * Change the current message's repeat count and pause (clamped). During a
- * pause, the new pause counts from the pause's start, and a count already
- * reached stops at once. No-op while idle.
+ * pause, the new pause counts from the pause's start (ending at now_ms if
+ * that time has already passed), and a count already reached stops at once.
+ * No-op while idle.
  */
-void message_player_set_repeat_params(message_player_t *p, uint8_t count, uint8_t pause_s);
+void message_player_set_repeat_params(message_player_t *p, uint8_t count, uint8_t pause_s, uint32_t now_ms);
 
 /** Advance to now_ms and return whether the key is down. Call every ~1 ms. */
 bool message_player_service(message_player_t *p, uint32_t now_ms);

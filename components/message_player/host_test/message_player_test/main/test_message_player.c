@@ -202,7 +202,7 @@ TEST(message_player, enqueue_ignores_duplicates_full_queue_and_empty_text)
 TEST(message_player, repeat_on_during_a_single_send_makes_it_repeat)
 {
     enqueue_ok(msg("E", 1), 0, MESSAGE_PLAYER_STARTED);
-    message_player_set_repeat_params(&s_p, 2, 1);
+    message_player_set_repeat_params(&s_p, 2, 1, 0);
     message_player_set_repeat(&s_p, true);
     run(0, 5000);
     const uint32_t expected[] = { 0, U, U + 1000, 2 * U + 1000 };
@@ -232,15 +232,27 @@ TEST(message_player, repeat_params_during_a_pause_apply_from_the_pause_start)
 {
     enqueue_ok(repeating("E", 1, 0, 5), 0, MESSAGE_PLAYER_STARTED);
     run(0, 1000);
-    message_player_set_repeat_params(&s_p, 0, 2); /* pause now ends at 60 + 2000 */
+    message_player_set_repeat_params(&s_p, 0, 2, 1000); /* pause now ends at 60 + 2000 */
     run(1000, 2200);
     const uint32_t expected[] = { 0, U, U + 2000, 2 * U + 2000 };
     assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 
     /* Two sends done; lowering the count to 2 during the next pause stops. */
     run(2200, 2500);
-    message_player_set_repeat_params(&s_p, 2, 2);
+    message_player_set_repeat_params(&s_p, 2, 2, 2500);
     TEST_ASSERT_FALSE(message_player_is_active(&s_p));
+}
+
+TEST(message_player, shortening_a_pause_that_already_ran_out_sends_next_at_once)
+{
+    enqueue_ok(repeating("E", 1, 0, 30), 0, MESSAGE_PLAYER_STARTED);
+    run(0, 10000);
+    /* 5 s from the pause start (60) is already past at 10000: the next
+     * send starts now and is actually keyed, not skipped. */
+    message_player_set_repeat_params(&s_p, 0, 5, 10000);
+    run(10000, 10200);
+    const uint32_t expected[] = { 0, U, 10000, 10000 + U };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 }
 
 TEST(message_player, enqueue_clamps_count_and_pause)
@@ -318,6 +330,7 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, repeat_off_during_a_send_lets_it_finish);
     RUN_TEST_CASE(message_player, repeat_off_during_a_pause_stops_at_once);
     RUN_TEST_CASE(message_player, repeat_params_during_a_pause_apply_from_the_pause_start);
+    RUN_TEST_CASE(message_player, shortening_a_pause_that_already_ran_out_sends_next_at_once);
     RUN_TEST_CASE(message_player, enqueue_clamps_count_and_pause);
     RUN_TEST_CASE(message_player, status_reports_progress_for_the_sending_strip);
     RUN_TEST_CASE(message_player, late_service_calls_do_not_shift_later_elements);

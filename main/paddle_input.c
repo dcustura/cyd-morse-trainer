@@ -274,7 +274,7 @@ void paddle_input_message_set_repeat(bool repeat)
 void paddle_input_message_set_repeat_params(uint8_t count, uint8_t pause_s)
 {
     player_lock();
-    message_player_set_repeat_params(&s_player, count, pause_s);
+    message_player_set_repeat_params(&s_player, count, pause_s, now_ms());
     player_unlock();
 }
 

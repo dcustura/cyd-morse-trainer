@@ -364,7 +364,9 @@ implemented.
        shown as "No limit", to 99) and **Pause** (1–99 s) with `-`/`+`
        buttons (hold to repeat), for this visit only, plus a "Memory
        defaults" button that restores the memory's own values and Close.
-       Changes apply at once to the message playing on that tile.
+       Changes apply at once to the message playing on that tile. A
+       pause changed while it runs counts from the pause's start; if that
+       shorter pause has already run out, the next send starts at once.
    - **Stop** tile: stops playback at once and clears the queue, the same
      as a paddle cancel.
    - **Sending strip**: while a message plays, shows its text, scrolled so
