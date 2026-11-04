@@ -16,7 +16,10 @@
 #define NVS_KEY_ENVELOPE_MS "envelope_ms"
 #define NVS_KEY_BRIGHTNESS_PCT "brightness_pct"
 #define NVS_KEY_BRIGHTNESS_AUTO "brightness_auto"
-#define NVS_KEY_PRACTICE_LARGE_TEXT "large_text"
+/* Keep this string as-is even though the setting is now named
+ * send_large_text: changing it would reset the saved value on every
+ * existing device. */
+#define NVS_KEY_SEND_LARGE_TEXT "large_text"
 #define NVS_KEY_STRAIGHT_RING_INPUT "ring_input"
 
 static const char *TAG = "settings_store";
@@ -85,8 +88,8 @@ static esp_err_t load_from_nvs(settings_t *out)
     }
 
     uint8_t raw_large_text;
-    if (nvs_get_u8(handle, NVS_KEY_PRACTICE_LARGE_TEXT, &raw_large_text) == ESP_OK) {
-        out->practice_large_text = (raw_large_text != 0);
+    if (nvs_get_u8(handle, NVS_KEY_SEND_LARGE_TEXT, &raw_large_text) == ESP_OK) {
+        out->send_large_text = (raw_large_text != 0);
     }
 
     uint8_t raw_straight_ring_input;
@@ -130,7 +133,7 @@ esp_err_t settings_store_save(const settings_t *in)
     nvs_set_u16(handle, NVS_KEY_ENVELOPE_MS, in->envelope_ms);
     nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_PCT, in->brightness_pct);
     nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_AUTO, in->brightness_auto ? 1 : 0);
-    nvs_set_u8(handle, NVS_KEY_PRACTICE_LARGE_TEXT, in->practice_large_text ? 1 : 0);
+    nvs_set_u8(handle, NVS_KEY_SEND_LARGE_TEXT, in->send_large_text ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_STRAIGHT_RING_INPUT, in->straight_ring_input ? 1 : 0);
 
     err = nvs_commit(handle);

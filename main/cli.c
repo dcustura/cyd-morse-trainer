@@ -5,7 +5,7 @@
 #include "paddle_input.h"
 #include "settings_store.h"
 #include "sidetone.h"
-#include "ui_practice.h"
+#include "ui_send.h"
 #include "ui_settings.h"
 
 #include "esp_console.h"
@@ -27,7 +27,7 @@ typedef enum {
     KEY_ENVELOPE_MS,
     KEY_BRIGHTNESS_PCT,
     KEY_BRIGHTNESS_AUTO,
-    KEY_PRACTICE_LARGE_TEXT,
+    KEY_SEND_LARGE_TEXT,
     KEY_STRAIGHT_RING_INPUT,
     KEY_COUNT,
 } cli_key_t;
@@ -43,7 +43,7 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_ENVELOPE_MS] = "envelope_ms",
     [KEY_BRIGHTNESS_PCT] = "brightness_pct",
     [KEY_BRIGHTNESS_AUTO] = "brightness_auto",
-    [KEY_PRACTICE_LARGE_TEXT] = "practice_large_text",
+    [KEY_SEND_LARGE_TEXT] = "send_large_text",
     [KEY_STRAIGHT_RING_INPUT] = "straight_ring_input",
 };
 
@@ -143,8 +143,8 @@ static void print_value(const settings_t *s, cli_key_t key)
     case KEY_BRIGHTNESS_AUTO:
         printf("brightness_auto=%s\n", s->brightness_auto ? "on" : "off");
         break;
-    case KEY_PRACTICE_LARGE_TEXT:
-        printf("practice_large_text=%s\n", s->practice_large_text ? "on" : "off");
+    case KEY_SEND_LARGE_TEXT:
+        printf("send_large_text=%s\n", s->send_large_text ? "on" : "off");
         break;
     case KEY_STRAIGHT_RING_INPUT:
         printf("straight_ring_input=%s\n", s->straight_ring_input ? "on" : "off");
@@ -277,9 +277,9 @@ static int apply_setting(settings_t *s, cli_key_t key, const char *val)
             display_set_brightness(s->brightness_pct);
         }
         break;
-    case KEY_PRACTICE_LARGE_TEXT:
-        s->practice_large_text = flag;
-        ui_practice_set_text_size(flag);
+    case KEY_SEND_LARGE_TEXT:
+        s->send_large_text = flag;
+        ui_send_set_text_size(flag);
         break;
     case KEY_STRAIGHT_RING_INPUT:
         s->straight_ring_input = flag;

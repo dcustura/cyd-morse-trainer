@@ -60,6 +60,6 @@ void settings_set_defaults(settings_t *out)
     out->envelope_ms = SETTINGS_DEFAULT_ENVELOPE_MS;
     out->brightness_pct = SETTINGS_DEFAULT_BRIGHTNESS_PCT;
     out->brightness_auto = SETTINGS_DEFAULT_BRIGHTNESS_AUTO;
-    out->practice_large_text = SETTINGS_DEFAULT_PRACTICE_LARGE_TEXT;
+    out->send_large_text = SETTINGS_DEFAULT_SEND_LARGE_TEXT;
     out->straight_ring_input = SETTINGS_DEFAULT_STRAIGHT_RING_INPUT;
 }

@@ -69,7 +69,7 @@ GPIO (dit/dah, active-low)
         morse_codec_key_event()    [components/morse_codec]    -> classifies the just-finished element/gap
    -> every 30ms while idle: morse_codec_tick()    [components/morse_codec] -> flushes a trailing char/word gap
    -> on a decode event (char / space / unknown):
-        xQueueSend(decoded_char_queue, ...)        -> drained by an lv_timer in ui_practice.c, appended to the text area
+        xQueueSend(decoded_char_queue, ...)        -> drained by an lv_timer in ui_send.c, appended to the text area
         ESP_LOGI(...)                              -> serial log
 ```
 
@@ -90,7 +90,7 @@ coupled:
 - **LVGL's own task** (via `esp_lvgl_port`): owns all screen objects. Any code
   touching LVGL objects from another context must hold the LVGL lock
   (`lvgl_port_lock(0)` / `lvgl_port_unlock()`), as `main.c` does while
-  building the initial screen tree. The `ui_practice.c` decode-queue drain
+  building the initial screen tree. The `ui_send.c` decode-queue drain
   runs as an `lv_timer`, so it's already on the LVGL task and needs no
   separate locking.
 - **Sidetone's audio task** (`main/sidetone.c`): feeds the DAC continuous-mode
@@ -136,8 +136,8 @@ is a rare, one-shot action rather than something tapped repeatedly.
 Built on LVGL 9, with each screen a standalone `.c`/`.h` pair created once at
 boot in `main.c` and switched between via `lv_scr_load()`:
 
-- `ui_menu.c` — Main Menu (two buttons, Practice/Settings).
-- `ui_practice.c` — Practice screen: drains `decoded_char_queue`, owns the
+- `ui_menu.c` — Main Menu (two buttons, Send/Settings).
+- `ui_send.c` — Send screen: drains `decoded_char_queue`, owns the
   WPM/Mode status label and the keying indicator dot.
 - `ui_settings.c` (the largest file, ~780 lines) — the entire Settings screen
   and all its submenus/popups (Keyer, Sidetone, Display, Touchscreen,
@@ -149,8 +149,8 @@ boot in `main.c` and switched between via `lv_scr_load()`:
 - `ui_help.c` — the Morse Reference screen (tabbed character/prosign charts).
 
 Cross-screen navigation is wired with plain `lv_obj_t*` pointers passed
-around at creation time (e.g. `ui_practice_create()` takes `menu_screen`, and
-`ui_settings_set_keyer_back_target()` lets the Practice screen's WPM/Mode
+around at creation time (e.g. `ui_send_create()` takes `menu_screen`, and
+`ui_settings_set_keyer_back_target()` lets the Send screen's WPM/Mode
 shortcut retarget the Keyer submenu's Back button at navigation time). There
 is no generic navigation stack — each screen's Back target is either fixed at
 creation or explicitly retargeted right before navigating to it.
@@ -223,7 +223,7 @@ is what makes it testable at all.
 | How dits/dahs decode into characters, prosign handling, timing thresholds | `components/morse_codec/` |
 | Iambic Mode A/B/Ultimatic keying behavior, squeeze/latch logic | `components/iambic_keyer/` |
 | A new setting (field, range, default) | `components/settings/include/settings.h` first, then `main/settings_store.c` (persistence) and `main/ui_settings.c` (UI) and `main/cli.c` (CLI key) |
-| Practice screen appearance/behavior | `main/ui_practice.c` |
+| Send screen appearance/behavior | `main/ui_send.c` |
 | Settings screen tiles/popups/navigation | `main/ui_settings.c` |
 | Touch calibration math | `components/touch_calibration/` |
 | Touch calibration *screens* | `main/ui_calibration.c`, `main/ui_touch_test.c` |

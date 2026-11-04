@@ -7,7 +7,7 @@
 #include "sidetone.h"
 #include "touch_cal_store.h"
 #include "ui_calibration.h"
-#include "ui_practice.h"
+#include "ui_send.h"
 #include "ui_touch_test.h"
 
 #include "esp_app_desc.h"
@@ -191,7 +191,7 @@ static void refresh_tile_labels(void)
         lv_obj_remove_state(s_auto_space_tile, LV_STATE_DISABLED);
     }
 
-    set_switch_checked(s_text_size_switch, s_current_settings.practice_large_text);
+    set_switch_checked(s_text_size_switch, s_current_settings.send_large_text);
 }
 
 static int32_t field_get_value(numeric_field_t field)
@@ -503,7 +503,7 @@ static const toggle_t s_swap_toggle = {&s_current_settings.paddle_swap, paddle_i
 static const toggle_t s_ring_input_toggle = {&s_current_settings.straight_ring_input,
                                               paddle_input_set_straight_ring_input};
 static const toggle_t s_debounce_toggle = {&s_current_settings.paddle_debounce, paddle_input_set_debounce};
-static const toggle_t s_large_text_toggle = {&s_current_settings.practice_large_text, ui_practice_set_text_size};
+static const toggle_t s_large_text_toggle = {&s_current_settings.send_large_text, ui_send_set_text_size};
 
 static void toggle_tile_cb(lv_event_t *e)
 {

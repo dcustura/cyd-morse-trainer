@@ -6,7 +6,7 @@
  * Generated with the above lv_font_conv invocation, then hand-edited: every
  * glyph's .adv_w (natural advance ~154, i.e. ~9.6px) was forced to 192
  * (12px, in LVGL's 1/16px units) to give a fixed 12x16 character cell for
- * the Practice screen's "Large" text size -- the widest glyph in this range
+ * the Send screen's "Large" text size -- the widest glyph in this range
  * (0x20-0x7F) only reaches 10px of ink, so this just widens the cell without
  * any clipping/overlap risk. File and symbol renamed to *_16_12 to reflect
  * that 12px-wide/16px-tall cell.

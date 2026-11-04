@@ -16,7 +16,7 @@ extern "C" {
  * and spawn the task that reads them, drives the iambic keyer and Morse
  * decoder, logs decoded characters via ESP_LOGI, and pushes each decoded
  * character (or ' ' for a word gap) into decoded_char_queue for the
- * Practice screen to display.
+ * Send screen to display.
  */
 void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *settings);
 
@@ -49,11 +49,11 @@ void paddle_input_set_auto_space_pct(uint8_t pct);
 void paddle_input_set_straight_ring_input(bool enabled);
 
 /* Current keyer settings, kept live-updated by the setters above (used by
- * the Practice screen to refresh its status label after a Settings save). */
+ * the Send screen to refresh its status label after a Settings save). */
 iambic_keyer_mode_t paddle_input_get_mode(void);
 uint16_t paddle_input_get_wpm(void);
 
-/* Clears in-progress decode state (called from the Practice screen's Clear button). */
+/* Clears in-progress decode state (called from the Send screen's Clear button). */
 void paddle_input_reset_decoder(void);
 
 /**

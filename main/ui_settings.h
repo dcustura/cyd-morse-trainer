@@ -41,7 +41,7 @@ void ui_settings_get(settings_t *out);
 
 /**
  * The Keyer submenu screen created internally by ui_settings_create(), for
- * navigating to it directly from outside this file (e.g. from the Practice
+ * navigating to it directly from outside this file (e.g. from the Send
  * screen). Must be called after ui_settings_create().
  */
 lv_obj_t *ui_settings_get_keyer_submenu(void);
@@ -49,7 +49,7 @@ lv_obj_t *ui_settings_get_keyer_submenu(void);
 /**
  * Set where the Keyer submenu's "< Back" tile navigates to on its next load.
  * ui_settings_create()'s own "Keyer" tile resets this to the Settings screen
- * each time it navigates there, so an external caller (e.g. the Practice
+ * each time it navigates there, so an external caller (e.g. the Send
  * screen, navigating here directly) must set it again immediately before
  * each lv_scr_load() to the Keyer submenu for Back to return to the right
  * place.

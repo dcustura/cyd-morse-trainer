@@ -57,8 +57,8 @@ implemented.
 ## Screens and navigation
 
 1. **Main Menu** — entry point on boot (once calibrated). Two buttons:
-   "Practice" and "Settings".
-2. **Practice screen** — reachable from the Main Menu.
+   "Send" and "Settings".
+2. **Send screen** — reachable from the Main Menu.
    - Shows a scrolling text area of decoded characters, updated live as the
      operator keys, in one of two sizes set by the Large Text setting
      (Settings' Display submenu): Small (the compact bitmap font, ~26
@@ -249,7 +249,7 @@ implemented.
          the current calibration visually (its swipe-Back also returns to
          this submenu).
      - **Large Text**: switches between the Small and Large decoded-text
-       fonts on the Practice screen (see the Practice screen's description
+       fonts on the Send screen (see the Send screen's description
        above). Like Paddle Swap and Paddle Debounce on the Keyer submenu,
        it has no popup: the tile is itself a toggle switch (on = Large),
        flipped immediately by tapping anywhere on the tile.
@@ -282,14 +282,14 @@ implemented.
      screen exists to diagnose: swipe down from near the top edge to go
      Back (to the Touchscreen submenu), swipe up from near the bottom edge
      to Clear the drawn dots.
-6. **Morse Reference screen** — reachable from the Practice screen's Help
+6. **Morse Reference screen** — reachable from the Send screen's Help
    button. No header: the whole screen is a row of tabs — "A-Z", "0-9",
    "/?", Prosigns, and "Back" as a same-sized fifth tab-bar slot (tapping
-   it returns to the Practice screen, stopping any tone still sounding,
+   it returns to the Send screen, stopping any tone still sounding,
    rather than switching to a tab) — each showing a grid of large tappable
    buttons filling the rest of the screen.
    - Each tab's grid holds every decodable character in that category (the
-     same character set as the Practice screen: the 26 letters, 10 digits,
+     same character set as the Send screen: the 26 letters, 10 digits,
      standard Morse punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and
      the 8 prosigns SK/HH/VE/CT/BT/AR/KN/AS), with every button on a tab the
      same size (a category whose count doesn't divide evenly into rows gets
@@ -337,7 +337,7 @@ implemented.
 - Keys, matching the Settings screen's Keyer/Sidetone/Display submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
   `paddle_swap`, `paddle_debounce`, `straight_ring_input`,
   `auto_space_pct` (50–100), `tone_hz`, `volume_pct`, `envelope_ms`,
-  `brightness_pct`, `brightness_auto`, and `practice_large_text` (all
+  `brightness_pct`, `brightness_auto`, and `send_large_text` (all
   booleans as `on`/`off`). `straight_ring_input` can
   be set regardless of the current `keymode`, but (like the Settings
   screen's Ring Input tile) only takes effect while `keymode` is
@@ -392,7 +392,7 @@ implemented.
 - **Persistence**: WPM, key mode, paddle swap, paddle debounce, ring
   input, Auto Space percentage, sidetone frequency, sidetone volume,
   sidetone envelope, screen brightness, brightness auto/manual mode,
-  Practice text size, and touch calibration survive power loss. On boot, the last-saved values are
+  Send screen text size, and touch calibration survive power loss. On boot, the last-saved values are
   loaded and applied before the operator can key anything (or interact
   with the touchscreen, in the case of calibration). Settings writes to
   NVS are debounced by a couple of seconds after the last edit, rather
@@ -400,7 +400,7 @@ implemented.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
   paddle swap, paddle debounce on, ring input off, Auto Space off (100%), 600 Hz
   sidetone, 50% sidetone volume, 10 ms sidetone envelope, 100% brightness,
-  brightness auto mode off, Small Practice text size. No default touch calibration
+  brightness auto mode off, Small Send screen text size. No default touch calibration
   exists — it must be created via the first-boot calibration flow.
 - **Factory reset**: erases saved keyer settings and touch calibration
   together and restarts the device, so it comes back up exactly as an

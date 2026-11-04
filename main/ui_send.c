@@ -1,4 +1,4 @@
-#include "ui_practice.h"
+#include "ui_send.h"
 
 #include "display_init.h"
 #include "fonts.h"
@@ -317,7 +317,7 @@ static void scroll_text_to_bottom(void)
     lv_obj_scroll_to_y(s_text_container, LV_COORD_MAX, LV_ANIM_OFF);
 }
 
-void ui_practice_set_text_size(bool large_text)
+void ui_send_set_text_size(bool large_text)
 {
     lv_obj_set_style_text_font(s_text_spans, large_text ? &lv_font_dejavu_mono_16_12 : &lv_font_unscii_8, 0);
     lv_obj_set_style_text_line_space(s_text_spans, large_text ? TEXT_LINE_SPACE_LARGE_PX : TEXT_LINE_SPACE_SMALL_PX,
@@ -325,12 +325,12 @@ void ui_practice_set_text_size(bool large_text)
     scroll_text_to_bottom();
 }
 
-void ui_practice_set_help_screen(lv_obj_t *help_screen)
+void ui_send_set_help_screen(lv_obj_t *help_screen)
 {
     s_help_screen = help_screen;
 }
 
-void ui_practice_set_keyer_settings_screen(lv_obj_t *keyer_settings_screen)
+void ui_send_set_keyer_settings_screen(lv_obj_t *keyer_settings_screen)
 {
     s_keyer_settings_screen = keyer_settings_screen;
 }
@@ -378,14 +378,14 @@ static void help_btn_cb(lv_event_t *e)
 
 static void keyer_settings_btn_cb(lv_event_t *e)
 {
-    lv_obj_t *practice_screen = (lv_obj_t *)lv_event_get_user_data(e);
-    ui_settings_set_keyer_back_target(practice_screen);
+    lv_obj_t *send_screen = (lv_obj_t *)lv_event_get_user_data(e);
+    ui_settings_set_keyer_back_target(send_screen);
     lv_scr_load(s_keyer_settings_screen);
 }
 
-lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen,
-                              iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
-                              bool initial_large_text)
+lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen,
+                         iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
+                         bool initial_large_text)
 {
     s_decoded_char_queue = decoded_char_queue;
 
@@ -408,7 +408,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_spangroup_set_mode(s_text_spans, LV_SPAN_MODE_BREAK);
     lv_spangroup_set_overflow(s_text_spans, LV_SPAN_OVERFLOW_CLIP);
     lv_obj_set_width(s_text_spans, LV_PCT(100));
-    ui_practice_set_text_size(initial_large_text);
+    ui_send_set_text_size(initial_large_text);
 
     /* A plain divider line instead of a bordered pane around the button
      * row, so the text area above keeps as much screen height as possible. */

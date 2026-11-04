@@ -235,12 +235,12 @@ static lv_obj_t *add_matrix_tab(lv_obj_t *tabview, const char *title, const char
 
 static void back_btn_cb(lv_event_t *e)
 {
-    lv_obj_t *practice_screen = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_obj_t *send_screen = (lv_obj_t *)lv_event_get_user_data(e);
     stop_playback();
-    lv_scr_load(practice_screen);
+    lv_scr_load(send_screen);
 }
 
-lv_obj_t *ui_help_create(lv_obj_t *practice_screen)
+lv_obj_t *ui_help_create(lv_obj_t *send_screen)
 {
     const esp_timer_create_args_t play_timer_args = {
         .callback = play_step_cb,
@@ -281,7 +281,7 @@ lv_obj_t *ui_help_create(lv_obj_t *practice_screen)
     lv_obj_set_flex_grow(back_btn, 1);
     lv_obj_set_size(back_btn, LV_PCT(100), LV_PCT(100));
     display_style_button_dismiss(back_btn);
-    lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, practice_screen);
+    lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, send_screen);
     display_add_button_label(back_btn, LV_SYMBOL_LEFT " Back");
 
     return scr;

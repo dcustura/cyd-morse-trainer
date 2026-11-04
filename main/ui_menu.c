@@ -23,7 +23,7 @@ static lv_obj_t *create_menu_button(lv_obj_t *parent, const char *text, lv_obj_t
     return btn;
 }
 
-void ui_menu_populate(lv_obj_t *menu_screen, lv_obj_t *practice_screen, lv_obj_t *settings_screen)
+void ui_menu_populate(lv_obj_t *menu_screen, lv_obj_t *send_screen, lv_obj_t *settings_screen)
 {
     lv_obj_set_flex_flow(menu_screen, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(menu_screen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -32,6 +32,6 @@ void ui_menu_populate(lv_obj_t *menu_screen, lv_obj_t *practice_screen, lv_obj_t
     lv_obj_t *title = lv_label_create(menu_screen);
     lv_label_set_text(title, "Morse Trainer");
 
-    create_menu_button(menu_screen, "Practice", practice_screen);
+    create_menu_button(menu_screen, "Send", send_screen);
     create_menu_button(menu_screen, "Settings", settings_screen);
 }

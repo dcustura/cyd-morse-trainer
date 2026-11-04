@@ -56,7 +56,7 @@ static const char *TAG = "display_init";
  * end-to-end R/B swap plus per-channel invert on anything drawn through
  * LVGL. Confirmed on hardware: a pure-red lv_obj background rendered as
  * pure yellow. Black/white/grey content (the only colors used before the
- * keying dot in ui_practice.c) is a fixed point of that transform, so it
+ * keying dot in ui_send.c) is a fixed point of that transform, so it
  * went unnoticed until the first saturated color was added. Use
  * display_compensate_color() below to get a given logical color to actually
  * appear on screen. Don't "fix" this by flipping these two defines without
