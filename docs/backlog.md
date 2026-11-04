@@ -37,21 +37,6 @@ How this file works:
   backspace, or a different prosign) for fixing a single wrong letter in a
   memory.
 
-### Quick speed change
-
-- Change WPM from the Send screen in one gesture (QMX: one button press,
-  then turn the knob), without going through Settings > Keyer > WPM. For
-  example, long-press the existing WPM/mode label to show `-`/`+` controls
-  over the text area.
-  - Constraint: a tap on that label already opens the Keyer submenu, via an
-    `LV_EVENT_CLICKED` handler in `main/ui_send.c`. LVGL fires CLICKED
-    on release even after a long press, so the existing handler has to move
-    to `LV_EVENT_SHORT_CLICKED`. Otherwise a long press would show the
-    overlay and then jump into Settings on release.
-- Optional hardware add-on, as in K3NG: a speed potentiometer or rotary
-  encoder on a free header pin. GPIO35 (input-only, analog-capable) is a
-  candidate, but confirm it on the board first.
-
 ## Tier 2: keyer timing for experienced operators
 
 ### Weight (dit/dah ratio)
@@ -156,3 +141,11 @@ How this file works:
   purpose. A dedicated button is clearer on a touchscreen.
 - Never active off-air (see On-air / off-air in `docs/functional-spec.md`):
   gate it through the same `key_gate` path as normal keying.
+
+### Speed knob
+
+- Optional hardware add-on, as in K3NG: a speed potentiometer or rotary
+  encoder on a free header pin, for changing WPM without the touchscreen
+  (the on-screen quick speed bar is in `docs/functional-spec.md`). GPIO35
+  (input-only, analog-capable) is a candidate, but confirm it on the board
+  first.

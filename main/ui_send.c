@@ -15,6 +15,9 @@
 #define TEXT_SPANS_HEIGHT_SLACK_PX 8
 #define TEXT_LINE_SPACE_SMALL_PX 8
 #define TEXT_LINE_SPACE_LARGE_PX 4
+#define SPEED_STEP_BTN_SIZE 44
+#define SPEED_VALUE_WIDTH 76
+#define SPEED_HIDE_AFTER_MS 5000 /* idle time before the speed bar hides itself */
 
 static lv_obj_t *s_wpm_label;
 static lv_obj_t *s_mode_label;
@@ -24,6 +27,9 @@ static lv_obj_t *s_keying_dot;
 static lv_obj_t *s_help_screen;
 static lv_obj_t *s_memories_screen;
 static lv_obj_t *s_keyer_settings_screen;
+static lv_obj_t *s_speed_bar;
+static lv_obj_t *s_speed_value_label;
+static lv_timer_t *s_speed_hide_timer;
 static QueueHandle_t s_decoded_char_queue;
 
 /* A unit HH can erase: either a run of plain (letter/digit/punctuation/
@@ -295,6 +301,103 @@ static void screen_loaded_cb(lv_event_t *e)
     update_status_label();
 }
 
+/* ---- Quick speed bar: long-press the WPM/Mode label ---- */
+
+static void hide_speed_bar(void)
+{
+    lv_obj_add_flag(s_speed_bar, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_pause(s_speed_hide_timer);
+}
+
+static void show_speed_bar(void)
+{
+    lv_label_set_text_fmt(s_speed_value_label, "%u WPM", (unsigned)paddle_input_get_wpm());
+    lv_obj_remove_flag(s_speed_bar, LV_OBJ_FLAG_HIDDEN);
+    lv_timer_reset(s_speed_hide_timer);
+    lv_timer_resume(s_speed_hide_timer);
+}
+
+static void speed_hide_timer_cb(lv_timer_t *timer)
+{
+    (void)timer;
+    hide_speed_bar();
+}
+
+static void speed_step_cb(lv_event_t *e)
+{
+    int32_t delta = (int32_t)(intptr_t)lv_event_get_user_data(e);
+    int32_t wpm = (int32_t)paddle_input_get_wpm() + delta;
+    if (wpm < 0) {
+        wpm = 0; /* clamped up to the minimum by ui_settings_set_wpm() */
+    }
+    ui_settings_set_wpm((uint16_t)wpm);
+    update_status_label();
+    show_speed_bar(); /* refresh the value and restart the hide countdown */
+}
+
+static void speed_close_cb(lv_event_t *e)
+{
+    (void)e;
+    hide_speed_bar();
+}
+
+static void status_long_pressed_cb(lv_event_t *e)
+{
+    (void)e;
+    show_speed_bar();
+}
+
+static void screen_unloaded_cb(lv_event_t *e)
+{
+    (void)e;
+    hide_speed_bar();
+}
+
+static lv_obj_t *create_speed_step_btn(lv_obj_t *parent, const char *symbol, int32_t delta)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    display_style_tile(btn);
+    lv_obj_set_size(btn, SPEED_STEP_BTN_SIZE, SPEED_STEP_BTN_SIZE);
+    /* SHORT_CLICKED, not CLICKED: CLICKED also fires on release after a
+     * hold, which would add one step too many after the repeats. */
+    lv_obj_add_event_cb(btn, speed_step_cb, LV_EVENT_SHORT_CLICKED, (void *)(intptr_t)delta);
+    lv_obj_add_event_cb(btn, speed_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)delta);
+    display_add_button_label(btn, symbol);
+    return btn;
+}
+
+/* A floating bar over the top of the text area: - / value / + / close.
+ * Hidden until the WPM/Mode label is long-pressed. */
+static void create_speed_bar(lv_obj_t *scr)
+{
+    s_speed_bar = lv_obj_create(scr);
+    lv_obj_add_flag(s_speed_bar, LV_OBJ_FLAG_FLOATING);
+    lv_obj_clear_flag(s_speed_bar, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(s_speed_bar, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_pad_all(s_speed_bar, 6, 0);
+    lv_obj_set_style_pad_column(s_speed_bar, 8, 0);
+    lv_obj_set_flex_flow(s_speed_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(s_speed_bar, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_align(s_speed_bar, LV_ALIGN_TOP_MID, 0, 8);
+
+    create_speed_step_btn(s_speed_bar, LV_SYMBOL_MINUS, -1);
+
+    s_speed_value_label = lv_label_create(s_speed_bar);
+    lv_obj_set_width(s_speed_value_label, SPEED_VALUE_WIDTH);
+    lv_obj_set_style_text_align(s_speed_value_label, LV_TEXT_ALIGN_CENTER, 0);
+
+    create_speed_step_btn(s_speed_bar, LV_SYMBOL_PLUS, 1);
+
+    lv_obj_t *close_btn = lv_button_create(s_speed_bar);
+    display_style_button_dismiss(close_btn);
+    lv_obj_set_size(close_btn, SPEED_STEP_BTN_SIZE, SPEED_STEP_BTN_SIZE);
+    lv_obj_add_event_cb(close_btn, speed_close_cb, LV_EVENT_CLICKED, NULL);
+    display_add_button_label(close_btn, LV_SYMBOL_CLOSE);
+
+    s_speed_hide_timer = lv_timer_create(speed_hide_timer_cb, SPEED_HIDE_AFTER_MS, NULL);
+    hide_speed_bar();
+}
+
 /* s_text_container has a fixed, flex-allocated height and scrolls;
  * s_text_spans is sized to its text content. Scrolling to the bottom after
  * new text is appended keeps the most recently decoded characters in view
@@ -404,6 +507,7 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
 
     lv_obj_t *scr = lv_obj_create(NULL);
     lv_obj_add_event_cb(scr, screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
+    lv_obj_add_event_cb(scr, screen_unloaded_cb, LV_EVENT_SCREEN_UNLOADED, NULL);
     lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
 
     /* s_text_container has a fixed, flex-allocated height and scrolls;
@@ -457,7 +561,8 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     /* Icon-only, to leave room in this row for the TX toggle. */
     display_add_button_label(clear_btn, LV_SYMBOL_TRASH);
 
-    /* status_col (WPM/Mode) is tappable - it opens the Keyer settings - but
+    /* status_col (WPM/Mode) is tappable - a tap opens the Keyer settings, a
+     * long press the quick speed bar - but
      * stays a plain layout wrapper around the two labels otherwise (no
      * button styling), so it doesn't visually compete with Clear/Help/Back.
      * lv_obj_create() objects default to clickable, so remove_style_all()
@@ -468,7 +573,11 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_t *status_col = lv_obj_create(btn_row);
     lv_obj_remove_style_all(status_col);
     lv_obj_set_style_pad_all(status_col, 10, 0);
-    lv_obj_add_event_cb(status_col, keyer_settings_btn_cb, LV_EVENT_CLICKED, scr);
+    /* SHORT_CLICKED, not CLICKED: CLICKED also fires on release after a
+     * long press, which would open the Keyer submenu right after the
+     * long press showed the speed bar. */
+    lv_obj_add_event_cb(status_col, keyer_settings_btn_cb, LV_EVENT_SHORT_CLICKED, scr);
+    lv_obj_add_event_cb(status_col, status_long_pressed_cb, LV_EVENT_LONG_PRESSED, NULL);
     lv_obj_set_flex_flow(status_col, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_size(status_col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
@@ -525,6 +634,8 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     display_style_button_dismiss(back_btn);
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
     display_add_button_label(back_btn, "Back");
+
+    create_speed_bar(scr);
 
     lv_timer_create(drain_queue_timer_cb, QUEUE_DRAIN_PERIOD_MS, NULL);
 

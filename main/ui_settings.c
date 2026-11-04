@@ -797,6 +797,13 @@ void ui_settings_get(settings_t *out)
     *out = s_current_settings;
 }
 
+uint16_t ui_settings_set_wpm(uint16_t wpm)
+{
+    field_set_value(FIELD_WPM, settings_clamp_wpm(wpm));
+    refresh_tile_labels();
+    return s_current_settings.wpm;
+}
+
 lv_obj_t *ui_settings_get_keyer_submenu(void)
 {
     return s_keyer_submenu_screen;

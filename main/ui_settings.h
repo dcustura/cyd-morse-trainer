@@ -40,6 +40,14 @@ void ui_settings_sync(const settings_t *settings);
 void ui_settings_get(settings_t *out);
 
 /**
+ * Change WPM (clamped to the settings range) the same way the Keyer
+ * submenu's WPM popup does: applied live and saved after the usual short
+ * debounce. Returns the value applied. Must be called while holding the
+ * LVGL lock (lvgl_port_lock).
+ */
+uint16_t ui_settings_set_wpm(uint16_t wpm);
+
+/**
  * The Keyer submenu screen created internally by ui_settings_create(), for
  * navigating to it directly from outside this file (e.g. from the Send
  * screen). Must be called after ui_settings_create().

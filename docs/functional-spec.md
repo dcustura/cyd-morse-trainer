@@ -74,6 +74,12 @@ implemented.
      it is a shortcut straight into the Settings screen's Keyer submenu (see
      below); that submenu's own Back tile returns here instead of to the
      Settings screen when entered this way.
+   - **Quick speed change**: long-pressing the WPM/mode label shows a small
+     bar over the top of the text area: `-`, the current WPM, `+`, and a
+     close (✕) button. `-`/`+` step WPM by 1 within 5–40 (hold to repeat),
+     applying at once and saving it like the Keyer submenu's WPM popup.
+     The bar hides after 5 s without a tap, on ✕, or when leaving the
+     screen. Releasing the long press doesn't open the Keyer submenu.
    - A small red indicator dot (bottom-right of the screen, vertically
      centered on the Clear/Back buttons) lights up whenever the key/paddle
      is down and the sidetone is sounding, and goes dark when it releases.
