@@ -314,6 +314,11 @@ lv_color_t display_compensate_color(lv_color_t c)
     return lv_color_make(255 - c.blue, 255 - c.green, 255 - c.red);
 }
 
+lv_color_t display_alert_red(void)
+{
+    return display_compensate_color(lv_palette_main(LV_PALETTE_RED));
+}
+
 lv_obj_t *display_add_button_label(lv_obj_t *btn, const char *text)
 {
     lv_obj_t *label = lv_label_create(btn);

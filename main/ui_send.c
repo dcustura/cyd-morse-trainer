@@ -125,7 +125,7 @@ static lv_span_t *add_styled_span(const char *text, lv_color_t color)
 static void append_unknown_marker(void)
 {
     char text[2] = { MORSE_CODEC_UNKNOWN_CHAR, '\0' };
-    lv_span_t *span = add_styled_span(text, display_compensate_color(lv_palette_main(LV_PALETTE_RED)));
+    lv_span_t *span = add_styled_span(text, display_alert_red());
 
     erase_unit_t *unit = push_erase_unit();
     if (unit == NULL) {
@@ -511,7 +511,7 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(s_keying_dot, dot_diameter, dot_diameter);
     lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(s_keying_dot, display_compensate_color(lv_palette_main(LV_PALETTE_RED)), 0);
+    lv_obj_set_style_bg_color(s_keying_dot, display_alert_red(), 0);
     lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_TRANSP, 0);
 
     /* Quick on-air toggle (live state only; see ui_on_air.h): red while

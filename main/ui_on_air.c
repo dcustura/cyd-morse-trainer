@@ -23,11 +23,6 @@ static tracked_t s_tracked[MAX_TRACKED];
 static size_t s_tracked_count;
 static bool s_shown_on_air;
 
-static lv_color_t on_air_red(void)
-{
-    return display_compensate_color(lv_palette_main(LV_PALETTE_RED));
-}
-
 static void apply(bool on_air)
 {
     if (on_air) {
@@ -73,7 +68,7 @@ void ui_on_air_init(void)
     lv_obj_remove_flag(s_frame, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_size(s_frame, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_bg_opa(s_frame, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_color(s_frame, on_air_red(), 0);
+    lv_obj_set_style_border_color(s_frame, display_alert_red(), 0);
     lv_obj_set_style_border_width(s_frame, FRAME_WIDTH_PX, 0);
     lv_obj_set_style_border_opa(s_frame, LV_OPA_COVER, 0);
     lv_obj_add_flag(s_frame, LV_OBJ_FLAG_HIDDEN);
@@ -110,7 +105,7 @@ void ui_on_air_add_toggle(lv_obj_t *btn, lv_obj_t *label, const char *on_text, c
     static bool s_checked_style_inited;
     if (!s_checked_style_inited) {
         lv_style_init(&s_checked_style);
-        lv_style_set_bg_color(&s_checked_style, on_air_red());
+        lv_style_set_bg_color(&s_checked_style, display_alert_red());
         s_checked_style_inited = true;
     }
     lv_obj_add_style(btn, &s_checked_style, LV_STATE_CHECKED);

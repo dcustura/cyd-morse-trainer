@@ -68,6 +68,12 @@ void display_set_brightness(uint8_t pct);
 lv_color_t display_compensate_color(lv_color_t c);
 
 /**
+ * The app's alert red (already compensated): the keying dot, the on-air
+ * frame and TX button, and unknown-character markers, so they all match.
+ */
+lv_color_t display_alert_red(void);
+
+/**
  * Add a centered, white text label to a button (or tile), the way every
  * button in this app is labeled. Returns the label.
  */
