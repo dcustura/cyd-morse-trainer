@@ -52,15 +52,6 @@ How this file works:
   encoder on a free header pin. GPIO35 (input-only, analog-capable) is a
   candidate, but confirm it on the board first.
 
-### Tune
-
-- A Tune button that holds the key output down continuously, for antenna
-  tuning, with a safety timeout (on the order of 10–20 s) and cancel on any
-  touch or paddle press. QMX uses "speed 0 means straight key" for the same
-  purpose. A dedicated button is clearer on a touchscreen.
-- Never active off-air (see On-air / off-air in `docs/functional-spec.md`):
-  gate it through the same `key_gate` path as normal keying.
-
 ## Tier 2: keyer timing for experienced operators
 
 ### Weight (dit/dah ratio)
@@ -154,3 +145,14 @@ How this file works:
   PS/2 and USB keyboards). On this board the realistic routes are the
   serial CLI (covered by `send` above) or a BLE keyboard, with the device
   connecting to the keyboard as a BLE host. Low priority given the screen size.
+
+## Tier 4: low priority
+
+### Tune
+
+- A Tune button that holds the key output down continuously, for antenna
+  tuning, with a safety timeout (on the order of 10–20 s) and cancel on any
+  touch or paddle press. QMX uses "speed 0 means straight key" for the same
+  purpose. A dedicated button is clearer on a touchscreen.
+- Never active off-air (see On-air / off-air in `docs/functional-spec.md`):
+  gate it through the same `key_gate` path as normal keying.
