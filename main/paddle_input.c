@@ -234,7 +234,6 @@ void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *sett
     s_paddle_swap = settings->paddle_swap;
     s_paddle_debounce = settings->paddle_debounce;
     s_straight_ring_input = settings->straight_ring_input;
-    atomic_store(&s_on_air, settings->on_air);
     s_decoded_char_queue = decoded_char_queue;
 
     sidetone_init();

@@ -17,7 +17,9 @@ extern "C" {
  * and spawn the task that reads them, drives the iambic keyer and Morse
  * decoder, logs decoded characters via ESP_LOGI, and pushes each decoded
  * character (or ' ' for a word gap) into decoded_char_queue for the
- * Send screen to display.
+ * Send screen to display. It doesn't touch the on-air state: main.c sets
+ * that from settings->on_air with paddle_input_set_on_air() before the UI
+ * comes up, so a quick toggle tapped before this runs isn't overwritten.
  */
 void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *settings);
 
