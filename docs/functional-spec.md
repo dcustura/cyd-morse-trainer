@@ -539,10 +539,12 @@ implemented.
   - While a message plays it replaces the keyer as the key source, so the
     sidetone, key output, keying indicator dot and decoder all follow it,
     and the sent text appears decoded on the Send screen. A message
-    started while the operator is keying (or less than a word gap after
-    their last key-down) cuts off any element in progress and starts a
-    word gap after that last key-down, so it never joins or runs into the
-    operator's sending.
+    started just after the operator lets go (while the keyer is still
+    finishing an element, or less than a word gap after their last
+    key-down) cuts off any element in progress and starts a word gap
+    after that last key-down, so it never joins or runs into the
+    operator's sending. One started while a paddle or the key is still
+    held is cancelled straight away by that contact (see Cancel).
   - **Cancel**: touching either paddle or the straight key (with or
     without Ring Input) while a message is sending or pausing stops it at
     once: a dit or dah in progress is cut short, remaining repeats and the
