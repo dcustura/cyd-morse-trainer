@@ -12,8 +12,8 @@ one built into the QRP Labs QMX, while keeping the trainer.
 
 - `docs/functional-spec.md`: the full behavior spec of what's implemented
   (screens, key modes, settings, persistence).
-- `docs/backlog.md`: planned keyer features not built yet (message memories,
-  transmit arm, weight, PTT/hang time, contest macros, computer keying, …).
+- `docs/backlog.md`: planned keyer features not built yet (transmit arm,
+  weight, PTT/hang time, contest macros, computer keying, …).
 - `docs/architecture.md`: a code-level mental model for contributors.
 
 - Target chip: **ESP32** (`sdkconfig.defaults`, `CONFIG_IDF_TARGET`).

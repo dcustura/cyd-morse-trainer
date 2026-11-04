@@ -161,6 +161,10 @@ boot in `main.c` and switched between via `lv_scr_load()`:
   `components/touch_calibration`.
 - `ui_touch_test.c` — the Verify Calibration draw-a-dot screen.
 - `ui_help.c` — the Morse Reference screen (tabbed character/prosign charts).
+- `ui_memories.c` — the Memories panel: six memory tiles, Repeat/Stop/Back,
+  the sending strip (polled from `paddle_input_message_get_status()` every
+  100 ms), the per-visit repeat states, the repeat popup, and the memory
+  picker, which is built on open and deleted on close to spare LVGL's heap.
 
 Cross-screen navigation is wired with plain `lv_obj_t*` pointers passed
 around at creation time (e.g. `ui_send_create()` takes `menu_screen`, and
@@ -244,6 +248,8 @@ is what makes it testable at all.
 | Sidetone pitch/envelope/synthesis | `main/sidetone.c` |
 | Serial CLI commands | `main/cli.c` (`mem`: `main/cli_mem.c`) |
 | Message memory storage | `main/memory_store.c` |
+| Memories panel (tiles, picker, sending strip) | `main/ui_memories.c` |
+| Message playback timing, repeat, queue | `components/message_player/` |
 | GPIO pin assignments | `main/Kconfig.projbuild` (+ `main/board_pins.h`) |
 | Boot sequence / subsystem init order | `main/main.c` |
 

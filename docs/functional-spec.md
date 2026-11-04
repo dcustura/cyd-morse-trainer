@@ -18,7 +18,7 @@ The project has two goals:
   as the K1EL WinKeyer.
 
 This spec describes **implemented** behavior only. Planned keyer features
-(message memories, transmit arm/off-air mode, weight, PTT/hang time,
+(transmit arm/off-air mode, weight, PTT/hang time,
 contest macros, computer keying, …) are tracked in
 [`backlog.md`](backlog.md). Each one moves into this spec when it's
 implemented.
@@ -74,6 +74,8 @@ implemented.
    - A small red indicator dot (bottom-right of the screen, vertically
      centered on the Clear/Back buttons) lights up whenever the key/paddle
      is down and the sidetone is sounding, and goes dark when it releases.
+   - An icon-only Memories button (envelope glyph, left of Help) opens the
+     **Memories panel** (see below).
    - An icon-only Help button (list glyph, bottom-right, left of the
      indicator dot and Back) opens the **Morse Reference screen** (see
      below).
@@ -308,6 +310,72 @@ implemented.
      it, and any tap - the same button or a different one - is ignored
      while a tone is still sounding, so plays can never overlap; the next
      tap is only honored once the current character has finished playing.
+7. **Memories panel** — reachable from the Send screen's Memories button.
+   A 3×3 tile grid in the Settings style, with a one-line sending strip
+   below it:
+
+   ```
+   ┌────────┬────────┬────────┐
+   │ CQ    ▶│ 5NN    │ QRZ?  1│   <- "1": queue position badge
+   │ #01    │ #02    │ #05    │
+   ├────────┼────────┼────────┤
+   │ 73     │ TEST   │ (none) │
+   │ #03    │ #04    │        │
+   ├────────┼────────┼────────┤
+   │Repeat: │  Stop  │  Back  │
+   │  ON    │        │        │
+   ├────────┴────────┴────────┤
+   │CQ CQ DE Y[O]8ABC <AR> 2/3 │   <- sending strip
+   └──────────────────────────┘
+   ```
+
+   - **Six memory tiles**, each assigned one library memory (see Behavior
+     details). A tile shows the memory's name in large text, or the start
+     of its text if it has no name, with `#NN` small underneath. A tile
+     with no assignment shows `(none)`; an assigned memory with empty text
+     shows `#NN (empty)`. Tapping either does nothing.
+   - **Tap** a tile: sends its memory, or queues it if a message is already
+     playing. Tapping the tile that's playing, or one already queued, does
+     nothing. Queued tiles show their queue position (`1`, `2`, …) in the
+     top-right corner.
+   - The playing tile is highlighted (amber) with a `▶` in its top-right
+     corner.
+   - **Long-press** a tile: opens the **memory picker**, a full-screen
+     scrollable list laid over the panel: a "None" row, then all 32
+     memories (`#NN`, name, start of the text), with the current
+     assignment highlighted, and a Cancel button. Tapping a row assigns
+     that memory to the tile (saved to NVS) and closes the picker.
+     Long-press is ignored on the tile that's playing or queued.
+   - **Session repeat state**: each tile keeps its own repeat on/off, count
+     and pause for the current visit to the panel. It starts as a copy of
+     its memory's defaults the first time the tile is played in the visit
+     (or, for a message still playing from an earlier visit, from what it's
+     playing with), and is discarded when the panel is opened again. The
+     memory itself is never changed by it.
+   - **Repeat tile**: shows `Repeat: ON` or `Repeat: OFF` for the current
+     tile, the one playing or else the one played most recently in this
+     visit. It's greyed out and inactive until a tile has played in the
+     visit.
+     - Tap toggles repeat for the current tile. Turning it on during a
+       single send makes that send repeat; turning it off during a send
+       lets the send finish, then stops; turning it off during a pause
+       stops at once.
+     - Long-press opens a popup to change the current tile's **Count** (0,
+       shown as "No limit", to 99) and **Pause** (1–99 s) with `-`/`+`
+       buttons (hold to repeat), for this visit only, plus a "Memory
+       defaults" button that restores the memory's own values and Close.
+       Changes apply at once to the message playing on that tile.
+   - **Stop** tile: stops playback at once and clears the queue, the same
+     as a paddle cancel.
+   - **Sending strip**: while a message plays, shows its text, scrolled so
+     the character being sent stays in view and highlighted (amber), and
+     on the right the progress while repeating: `2/5` (send 2 of 5), or `2/`
+     followed by a loop icon with count 0, plus a seconds countdown during
+     a pause (`2/5 6s`). Empty when idle.
+   - **Back** returns to the Send screen. Playback continues, so the sent
+     text can be watched there being decoded, and a paddle touch still
+     cancels it; the playing message keeps the repeat values it started
+     with.
 
 ## Serial CLI
 
@@ -433,9 +501,8 @@ implemented.
   transmissions). Defaults: empty name and text, repeat off, count 0,
   pause 10 s. Six memories panel tile assignments are stored with them,
   defaulting to tiles 1–6 → memories 1–6; the same memory may be on more
-  than one tile. For now memories can only be edited and inspected over
-  the serial CLI (`mem`), and played with `mem play`; the on-screen
-  memories panel is planned (see the backlog).
+  than one tile. Memories are played from the Memories panel or with
+  `mem play`, and edited only over the serial CLI (`mem`).
   - Text is converted to uppercase, runs of spaces become one, and
     leading/trailing spaces are dropped. Allowed: A–Z, 0–9, space, the
     punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and the eight

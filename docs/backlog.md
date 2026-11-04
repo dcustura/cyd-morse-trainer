@@ -22,125 +22,6 @@ How this file works:
 
 ## Tier 1: everyday operating, no new hardware
 
-### Message memories
-
-**Status: detailed spec agreed in discussion, implementation in progress.**
-What's left is the memories panel: tiles, picker, Repeat and Stop tiles,
-and the sending strip.
-Editing on the device is out of scope here (see "Edit memories by keying
-them" below); memories are edited over the serial CLI (`mem`).
-
-#### Memory library
-
-- Implemented: the library, its storage and validation rules, and the
-  `mem` CLI command are described in `docs/functional-spec.md`.
-
-#### Sending
-
-- Implemented (see "Playing memories" in `docs/functional-spec.md`):
-  timing, playback as a second key source, paddle cancel, the queue and
-  repeat engine, and `mem play`/`mem stop`. Left for the panel:
-- The on-screen **Stop** tile does the same as a paddle cancel.
-
-#### Repeat
-
-- Each tile keeps a **session repeat state** for the current visit to the
-  memories panel: repeat on/off, count and pause. It starts as a copy of
-  its memory's defaults the first time the tile is played in that visit,
-  and is discarded when leaving the panel. The memory itself is never
-  changed by this.
-- When repeating, transmission N+1 starts after the pause. The count
-  includes the first transmission, so count 3 sends 3 times in total.
-- The **Repeat tile** shows and controls the session repeat state of the
-  *current tile*: the one playing, or else the one played most recently in
-  this visit. It shows `Repeat: ON` or `Repeat: OFF`, and is greyed out
-  until a tile has been played in this visit.
-  - Tap: toggles repeat on/off for the current tile.
-    - Turning it on during a single send makes that send repeat once it
-      finishes.
-    - Turning it off during a send lets that transmission finish, then
-      stops.
-    - Turning it off during a pause stops at once.
-  - Long-press: opens a popup to override the current tile's **count**
-    (0 = until stopped) and **pause** for this visit only, using `-`/`+`
-    buttons, plus a "Memory defaults" button that restores the memory's own
-    values.
-
-#### Queue
-
-- Tapping a tile while another message is playing (or pausing) **queues**
-  it after the current one. Queued tiles show their queue position as a
-  small badge. Up to 6 entries can be queued; further taps are ignored.
-- When something is queued, a repeating message finishes its current
-  transmission and then ends its repeats. The next queued message follows
-  after a word gap (7 units), with no pause.
-- Tapping the tile that's currently playing, or one already queued, does
-  nothing.
-- Stop and a paddle cancel clear the queue (see Sending).
-
-#### Memories panel (screen)
-
-- Opened from a new icon-only button on the Send screen's bottom row,
-  left of Help and the same size as Help.
-- A full-screen 3×3 tile grid in the Settings style, plus a one-line
-  sending strip at the bottom:
-
-  ```
-  ┌────────┬────────┬────────┐
-  │ CQ  ▶  │ 5NN TU │ NAME   │
-  │ #01    │ #02    │ #07  1 │   <- "1": queue position badge
-  ├────────┼────────┼────────┤
-  │ RIG    │ 73     │ (none) │
-  │ #12    │ #03    │        │
-  ├────────┼────────┼────────┤
-  │Rpt: ON │  Stop  │  Back  │
-  ├────────┴────────┴────────┤
-  │CQ CQ DE Y[O]8ABC K  2/5·6s│   <- sending strip
-  └──────────────────────────┘
-  ```
-
-- **Six memory tiles**, each assigned one library memory. A tile shows the
-  memory's name in large text, or the start of its text if it has no name,
-  with `#NN` small underneath. A tile with no assignment shows `(none)`,
-  and an assigned memory with empty text shows `#NN (empty)`. Tapping
-  either of those does nothing.
-- Tile assignments persist in NVS. Defaults are tiles 1–6 → memories
-  #01–#06. The same memory may be assigned to more than one tile.
-- **Tap** a tile: sends its memory, or queues it if something is already
-  playing (see Queue).
-- **Long-press** a tile: opens the **memory picker**, a full-screen
-  scrollable list of all 32 memories, one row each showing `#NN`, the name
-  and the start of the text, plus a "None" row and Cancel. Tapping a row
-  assigns that memory to the tile and closes the picker. Long-press is
-  ignored on the tile that's playing or queued.
-- The playing tile is highlighted, with a `▶` marker.
-- **Sending strip**: shows the text of the message being sent, scrolled so
-  the current character is visible and highlighted, plus progress: `2/5`
-  while repeating with a count, `2/∞` with count 0, and a seconds countdown
-  during a pause. It's empty when idle.
-
-#### Leaving the panel
-
-- Back returns to the Send screen. Playback **continues**, so you can
-  watch the decoded text, and a paddle touch still cancels it. Session
-  repeat states are discarded, but the message already playing keeps the
-  repeat values it started with.
-
-#### Implementation notes
-
-- `components/morse_codec`: text validation/normalization and a token
-  encoder (`morse_text.h`) are done. They yield each character's dit/dah
-  pattern and whether a word gap precedes it; the player turns that into
-  timing, so a WPM change applies from the next element.
-- `components/message_player` is done: it returns key_down for a given
-  `now_ms`, like `iambic_keyer_service()`, and handles repeat count/pause,
-  the queue, stop, and progress status for the strip. Callers serialize
-  access to it (the UI and `paddle_task` both use it).
-- `main/memory_store.c` (NVS store, with a change counter for the panel
-  to poll), `main/cli_mem.c` and playback in `main/paddle_input.c`
-  (`paddle_input_message_*()`) are done. Left: the panel and picker
-  screens and the Send screen button.
-
 ### Edit memories by keying them
 
 - QMX lets you enter message text by sending it on the paddle, with its
@@ -148,8 +29,8 @@ them" below); memories are edited over the serial CLI (`mem`).
   product. An "edit memory" mode that records decoded text avoids an
   on-screen keyboard on a 320×240 resistive screen.
 - Must cover every field of a memory (name, text, repeat default, count,
-  pause), not just the text. Until then, editing is CLI-only (see Message
-  memories).
+  pause), not just the text. Until then, editing is CLI-only (`mem`, see
+  `docs/functional-spec.md`).
 - Open question: how corrections work. On the Send screen, HH deletes
   the whole last word (or a `*` placeholder), not one character. Either
   reuse that word-level HH, or add a per-character delete (an on-screen
@@ -241,12 +122,13 @@ them" below); memories are edited over the serial CLI (`mem`).
 - A small serial-number display or control on the Send screen, so the
   operator can see and correct the next number to send.
 
-### CLI `send` / `stop`
+### CLI `send`
 
-- `send <text>` queues text for transmission through the memory-playback
-  engine (same prosign marker, same cancel-on-paddle rule). `stop` aborts
-  it. This makes the device scriptable as a keyer from a PC with no extra
-  protocol.
+- `send <text>` queues arbitrary text for transmission through the
+  memory-playback engine (same `<AR>` prosign syntax, same
+  cancel-on-paddle rule), so the device is scriptable as a keyer from a PC
+  with no extra protocol. Stopping already exists (`mem stop`), and
+  stored memories can already be played with `mem play <N>`.
 
 ### WinKeyer protocol emulation
 
@@ -262,8 +144,8 @@ them" below); memories are edited over the serial CLI (`mem`).
 ### Beacon / fox mode
 
 - Repeat one memory forever with a fixed interval, e.g. for a beacon or
-  foxhunt transmitter. This mostly falls out of message memories (repeat
-  count 0). It may only need a dedicated entry point and a clear on-screen
+  foxhunt transmitter. Message memories already do this (repeat on, count
+  0). It may only need a dedicated entry point and a clear on-screen
   "beacon running" indication.
 
 ### Bluetooth
