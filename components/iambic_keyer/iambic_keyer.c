@@ -131,7 +131,8 @@ static bool auto_space_resolve(iambic_keyer_t *k, bool dit_contact, bool dah_con
     if (k->auto_space_waiting) {
         k->auto_space_dit_latched = k->auto_space_dit_latched || dit_contact;
         k->auto_space_dah_latched = k->auto_space_dah_latched || dah_contact;
-        if (now_ms < k->auto_space_wait_until_ms) {
+        /* Wrap-safe: now_ms wraps after ~49.7 days of uptime. */
+        if ((int32_t)(now_ms - k->auto_space_wait_until_ms) < 0) {
             return false;
         }
         *want_dit = k->auto_space_dit_latched;

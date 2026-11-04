@@ -543,6 +543,21 @@ TEST(iambic_keyer, auto_space_reference_survives_a_wpm_change_during_the_trailin
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up_ms + 3u * new_unit));
 }
 
+TEST(iambic_keyer, auto_space_withhold_deadline_is_wrap_safe)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70);
+    /* Key-up 160ms before the 32-bit ms counter wraps: the 3u target
+     * (key_up + 180) lands just past the wrap. */
+    uint32_t key_up = send_one_dit_and_settle(&s_keyer, (uint32_t)(UINT32_MAX - 160u - U));
+    TEST_ASSERT_EQUAL_UINT32(UINT32_MAX - 160u, key_up);
+
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 150u)); /* not yet wrapped */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 155u)); /* still before target */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 179u)); /* wrapped, before target */
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 180u));
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -569,4 +584,5 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, auto_space_has_no_effect_in_straight_key_mode);
     RUN_TEST_CASE(iambic_keyer, auto_space_ultimatic_withholds_like_iambic);
     RUN_TEST_CASE(iambic_keyer, auto_space_reference_survives_a_wpm_change_during_the_trailing_gap);
+    RUN_TEST_CASE(iambic_keyer, auto_space_withhold_deadline_is_wrap_safe);
 }
