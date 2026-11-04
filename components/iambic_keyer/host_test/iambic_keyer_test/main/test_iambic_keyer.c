@@ -558,6 +558,27 @@ TEST(iambic_keyer, auto_space_withhold_deadline_is_wrap_safe)
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 180u));
 }
 
+TEST(iambic_keyer, auto_space_measures_from_the_actual_key_up_tick)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70);
+
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0));
+    /* The tick that ends the dit runs 10ms late: the output actually goes
+     * low at 70, not at the scheduled 60. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, U + 10u));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, 2u * U + 10u)); /* GAP -> IDLE */
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
+    uint32_t key_up = U + 10u;
+    TEST_ASSERT_EQUAL_UINT32(key_up, s_keyer.idle_start_ms);
+
+    /* 170ms of real silence: still short of the 3u standard, so withheld
+     * until the full 180ms is reached. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 170u));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 3u * U - 1u));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 3u * U));
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -585,4 +606,5 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, auto_space_ultimatic_withholds_like_iambic);
     RUN_TEST_CASE(iambic_keyer, auto_space_reference_survives_a_wpm_change_during_the_trailing_gap);
     RUN_TEST_CASE(iambic_keyer, auto_space_withhold_deadline_is_wrap_safe);
+    RUN_TEST_CASE(iambic_keyer, auto_space_measures_from_the_actual_key_up_tick);
 }

@@ -19,6 +19,7 @@ static void reset_state(iambic_keyer_t *k)
     k->ultimatic_last_dit = true; /* tie-break favors dit, matching the IDLE dit-first check */
     k->prev_dit_contact = false;
     k->prev_dah_contact = false;
+    k->last_key_up_ms = 0;
     k->idle_has_reference = false;
     k->idle_start_ms = 0;
     k->auto_space_waiting = false;
@@ -185,15 +186,15 @@ static bool is_sending(const iambic_keyer_t *k)
 
 /* Shared by service_iambic()/service_ultimatic()'s GAP case, on the branch
  * where nothing more is queued and the keyer is really going idle: records
- * the Auto Space reference point. element_end_ms (not gap_end_ms -
- * unit_ms) is used deliberately -- it was set once, in start_element(),
- * and never touched again, so it still holds the exact key-up edge that
- * ended the last element even if the WPM (and so unit_ms) changed at some
- * point during the trailing gap that followed it. */
+ * the Auto Space reference point. last_key_up_ms is the tick the output
+ * actually went low (recorded in advance_sending()), not the scheduled
+ * element_end_ms, so a late tick doesn't overstate the pause; and it's
+ * independent of unit_ms, so a WPM change during the trailing gap doesn't
+ * skew it either. */
 static void enter_idle(iambic_keyer_t *k)
 {
     k->state = IAMBIC_KEYER_STATE_IDLE;
-    k->idle_start_ms = k->element_end_ms;
+    k->idle_start_ms = k->last_key_up_ms;
     k->idle_has_reference = true;
 }
 
@@ -205,6 +206,7 @@ static void advance_sending(iambic_keyer_t *k, bool dit_contact, bool dah_contac
     latch_opposite(k, dit_contact, dah_contact);
     if (now_ms >= k->element_end_ms) {
         k->state = IAMBIC_KEYER_STATE_GAP;
+        k->last_key_up_ms = now_ms;
         k->gap_end_ms = now_ms + k->unit_ms;
     }
 }

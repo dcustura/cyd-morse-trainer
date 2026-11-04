@@ -58,6 +58,7 @@ typedef struct {
      * during the forced gap is seen, it's remembered and started the
      * moment the gap target is reached, rather than requiring the paddle
      * to still be down at that exact tick. */
+    uint32_t last_key_up_ms;   /* tick the output actually last went low (SEND -> GAP) */
     bool idle_has_reference;
     uint32_t idle_start_ms;
     bool auto_space_waiting;
