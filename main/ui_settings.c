@@ -325,10 +325,7 @@ static lv_obj_t *create_action_button(lv_obj_t *parent, const char *text, lv_eve
     lv_obj_t *btn = lv_button_create(parent);
     style_footer_button(btn, dismiss);
     lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, user_data);
-    lv_obj_t *label = lv_label_create(btn);
-    lv_label_set_text(label, text);
-    lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
-    lv_obj_center(label);
+    display_add_button_label(btn, text);
     return btn;
 }
 
@@ -382,10 +379,7 @@ static void open_binary_popup(const char *title, const char *help_text, const bi
         lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
         lv_obj_add_event_cb(btn, select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].value);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text(label, options[i].label);
-        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
-        lv_obj_center(label);
+        display_add_button_label(btn, options[i].label);
     }
 
     create_action_button(content, LV_SYMBOL_CLOSE " Close", msgbox_close_cb, mbox, true);
@@ -473,10 +467,7 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_set_size(minus_btn, STEP_BTN_SIZE, STEP_BTN_SIZE);
     lv_obj_add_event_cb(minus_btn, numeric_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)(-info->step));
     lv_obj_add_event_cb(minus_btn, numeric_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)(-info->step));
-    lv_obj_t *minus_label = lv_label_create(minus_btn);
-    lv_label_set_text(minus_label, LV_SYMBOL_MINUS);
-    lv_obj_set_style_text_color(minus_label, display_compensate_color(lv_color_white()), 0);
-    lv_obj_center(minus_label);
+    display_add_button_label(minus_btn, LV_SYMBOL_MINUS);
 
     s_popup_value_label = lv_label_create(row);
     lv_obj_set_style_text_font(s_popup_value_label, &lv_font_montserrat_12, 0);
@@ -489,10 +480,7 @@ static void open_numeric_popup(numeric_field_t field)
     lv_obj_set_size(plus_btn, STEP_BTN_SIZE, STEP_BTN_SIZE);
     lv_obj_add_event_cb(plus_btn, numeric_step_cb, LV_EVENT_CLICKED, (void *)(intptr_t)(info->step));
     lv_obj_add_event_cb(plus_btn, numeric_step_cb, LV_EVENT_LONG_PRESSED_REPEAT, (void *)(intptr_t)(info->step));
-    lv_obj_t *plus_label = lv_label_create(plus_btn);
-    lv_label_set_text(plus_label, LV_SYMBOL_PLUS);
-    lv_obj_set_style_text_color(plus_label, display_compensate_color(lv_color_white()), 0);
-    lv_obj_center(plus_label);
+    display_add_button_label(plus_btn, LV_SYMBOL_PLUS);
 
     lv_obj_t *actions_row = lv_obj_create(content);
     strip_pane_style(actions_row);
@@ -562,20 +550,14 @@ static void keymode_tile_cb(lv_event_t *e)
                               (int32_t)(i / 3), 1);
         lv_obj_add_event_cb(btn, keymode_select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].mode);
         lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text(label, options[i].label);
-        lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
-        lv_obj_center(label);
+        display_add_button_label(btn, options[i].label);
     }
 
     lv_obj_t *close_btn = lv_button_create(grid);
     display_style_button_dismiss(close_btn);
     lv_obj_set_grid_cell(close_btn, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
     lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
-    lv_obj_t *close_label = lv_label_create(close_btn);
-    lv_label_set_text(close_label, LV_SYMBOL_CLOSE " Close");
-    lv_obj_set_style_text_color(close_label, display_compensate_color(lv_color_white()), 0);
-    lv_obj_center(close_label);
+    display_add_button_label(close_btn, LV_SYMBOL_CLOSE " Close");
 }
 
 /* Like Paddle Debounce, Paddle Swap has no popup: the tile itself is a
@@ -747,9 +729,7 @@ static lv_obj_t *create_tile_shell(lv_obj_t *grid, const char *name, int32_t col
         lv_obj_remove_flag(tile, LV_OBJ_FLAG_CLICKABLE);
     }
 
-    lv_obj_t *name_label = lv_label_create(tile);
-    lv_label_set_text(name_label, name);
-    lv_obj_set_style_text_color(name_label, display_compensate_color(lv_color_white()), 0);
+    display_add_button_label(tile, name);
 
     return tile;
 }

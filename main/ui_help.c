@@ -282,9 +282,7 @@ lv_obj_t *ui_help_create(lv_obj_t *practice_screen)
     lv_obj_set_size(back_btn, LV_PCT(100), LV_PCT(100));
     display_style_button_dismiss(back_btn);
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, practice_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, LV_SYMBOL_LEFT " Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
+    display_add_button_label(back_btn, LV_SYMBOL_LEFT " Back");
 
     return scr;
 }

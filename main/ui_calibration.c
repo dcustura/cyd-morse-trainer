@@ -212,10 +212,7 @@ lv_obj_t *ui_calibration_create(lv_obj_t *next_screen)
     lv_obj_set_size(s_back_btn, BACK_BTN_W, BACK_BTN_H);
     lv_obj_set_pos(s_back_btn, (s_disp_w - BACK_BTN_W) / 2, s_disp_h - BACK_BTN_H - BACK_BTN_MARGIN_BOTTOM);
     lv_obj_add_flag(s_back_btn, LV_OBJ_FLAG_HIDDEN);
-    lv_obj_t *back_label = lv_label_create(s_back_btn);
-    lv_label_set_text(back_label, "Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
-    lv_obj_center(back_label);
+    display_add_button_label(s_back_btn, "Back");
 
     return scr;
 }

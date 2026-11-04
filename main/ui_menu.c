@@ -18,10 +18,7 @@ static lv_obj_t *create_menu_button(lv_obj_t *parent, const char *text, lv_obj_t
     lv_obj_set_size(btn, MENU_BTN_WIDTH, MENU_BTN_HEIGHT);
     lv_obj_add_event_cb(btn, nav_btn_cb, LV_EVENT_CLICKED, target_screen);
 
-    lv_obj_t *label = lv_label_create(btn);
-    lv_label_set_text(label, text);
-    lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
-    lv_obj_center(label);
+    display_add_button_label(btn, text);
 
     return btn;
 }

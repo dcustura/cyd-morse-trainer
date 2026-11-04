@@ -68,6 +68,12 @@ void display_set_brightness(uint8_t pct);
 lv_color_t display_compensate_color(lv_color_t c);
 
 /**
+ * Add a centered, white text label to a button (or tile), the way every
+ * button in this app is labeled. Returns the label.
+ */
+lv_obj_t *display_add_button_label(lv_obj_t *btn, const char *text);
+
+/**
  * Give a button a teal background instead of the default theme's stock
  * blue. Deliberately a local per-object style rather than overriding the
  * shared default theme at runtime - re-initializing that global singleton

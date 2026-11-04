@@ -316,6 +316,15 @@ lv_color_t display_compensate_color(lv_color_t c)
     return lv_color_make(255 - c.blue, 255 - c.green, 255 - c.red);
 }
 
+lv_obj_t *display_add_button_label(lv_obj_t *btn, const char *text)
+{
+    lv_obj_t *label = lv_label_create(btn);
+    lv_label_set_text(label, text);
+    lv_obj_set_style_text_color(label, display_compensate_color(lv_color_white()), 0);
+    lv_obj_center(label);
+    return label;
+}
+
 void display_style_button_teal(lv_obj_t *btn)
 {
     static lv_style_t s_style;

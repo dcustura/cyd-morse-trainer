@@ -441,9 +441,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_t *clear_btn = lv_button_create(btn_row);
     display_style_tile(clear_btn);
     lv_obj_add_event_cb(clear_btn, clear_btn_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *clear_label = lv_label_create(clear_btn);
-    lv_label_set_text(clear_label, "Clear");
-    lv_obj_set_style_text_color(clear_label, display_compensate_color(lv_color_white()), 0);
+    display_add_button_label(clear_btn, "Clear");
 
     /* status_col (WPM/Mode) is tappable - it opens the Keyer settings - but
      * stays a plain layout wrapper around the two labels otherwise (no
@@ -482,9 +480,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_t *help_btn = lv_button_create(right_group);
     display_style_tile(help_btn);
     lv_obj_add_event_cb(help_btn, help_btn_cb, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *help_label = lv_label_create(help_btn);
-    lv_label_set_text(help_label, LV_SYMBOL_LIST);
-    lv_obj_set_style_text_color(help_label, display_compensate_color(lv_color_white()), 0);
+    display_add_button_label(help_btn, LV_SYMBOL_LIST);
 
     /* Layout must run once so clear_btn's height reflects its label/padding. */
     lv_obj_update_layout(btn_row);
@@ -501,9 +497,7 @@ lv_obj_t *ui_practice_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_sc
     lv_obj_t *back_btn = lv_button_create(right_group);
     display_style_button_dismiss(back_btn);
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
-    lv_obj_t *back_label = lv_label_create(back_btn);
-    lv_label_set_text(back_label, "Back");
-    lv_obj_set_style_text_color(back_label, display_compensate_color(lv_color_white()), 0);
+    display_add_button_label(back_btn, "Back");
 
     lv_timer_create(drain_queue_timer_cb, QUEUE_DRAIN_PERIOD_MS, NULL);
 
