@@ -9,73 +9,15 @@ extern "C" {
 #endif
 
 /**
- * Create the Settings screen: a 3x2 grid of tappable tiles (Keyer, Sidetone,
- * Display, Bluetooth, Reset to Factory Defaults, and a final "< Back"
- * tile), filling the whole display with no scrolling and no separate title
- * bar. "Keyer" navigates to a submenu (created internally) with a 3x2 grid
- * of WPM, Key Mode, Paddle Swap, Paddle Debounce, and Auto Space tiles --
- * except while Key Mode is Straight Key, when a "Ring Input" toggle tile
- * takes the Paddle Swap tile's place in the grid instead (see below);
- * "Sidetone"
- * navigates to a submenu with Pitch, Volume, and Smoothing tiles; "Display"
- * navigates to a submenu with Brightness, Touchscreen, and Large Text tiles;
- * "Bluetooth" navigates to a submenu with a single "BLE Keyboard" on/off
- * tile, which sends decoded Morse characters to a paired phone/PC as
- * keystrokes -- like every other toggle, "On"/"Off" is applied to
- * settings_t and persisted immediately, but (unlike the others) doesn't
- * take effect until the device is next restarted, since bringing the BLE
- * radio stack up or down live isn't supported; its popup's help text says
- * so.
- * Tapping a numeric tile (WPM, Pitch/Volume/Smoothing, Brightness) opens a
- * popup with -/+ buttons (supporting press-and-hold repeat) and, for the
- * sidetone fields (Pitch/Volume/Smoothing), a "Test" button that plays the
- * sidetone at its current settings. The Brightness popup additionally has an
- * "Auto"/"Manual" toggle button: in Auto mode the backlight is driven by the
- * onboard ambient-light sensor and the tile shows "Auto" instead of a percentage;
- * pressing +/- always switches back to Manual immediately. Tapping Key Mode
- * opens a popup listing its four options ("Mode A"/"Mode B"/"Straight"/
- * "Ultimatic") as a 3-column x 2-row grid of finger-sized buttons, with
- * "Close" filling the last cell. Paddle Swap and Paddle Debounce have no
- * popup: each tile is itself an on/off toggle switch (lv_switch,
- * non-interactive -- the tap is handled by the tile), flipped immediately
- * by tapping anywhere on the tile (Paddle Swap: on = Swapped). Paddle
- * Debounce only affects Mode A/B/Ultimatic, since Straight Key mode is
- * always debounced; while Key Mode is Straight Key, its tile instead shows
- * the switch forced on and disabled (LV_STATE_DISABLED, which both dims it
- * and makes LVGL ignore taps on it) rather than displaying or allowing a
- * change to a setting that wouldn't apply, though the real stored value is
- * unaffected and takes effect again as soon as a different Key Mode is
- * selected. Auto Space (a numeric tile like WPM, popup-based, 50-100%)
- * controls how readily the iambic keyer withholds starting a new element
- * after too short a pause, so the actual generated signal (sidetone,
- * external key line, and whatever decodes it) is spaced to the standard
- * character-gap/word-gap even if the operator paused less than that: 100%
- * disables withholding entirely, lower percentages withhold on a
- * correspondingly shorter pause. It's an Iambic Mode A/B/Ultimatic
- * feature with nothing to hook into in Straight Key's direct passthrough,
- * so -- like Paddle Debounce -- its tile is forced disabled while Key
- * Mode is Straight Key, with the real stored value unaffected. While Key
- * Mode is Straight Key, the Paddle Swap tile's grid
- * cell instead holds a "Ring Input" toggle tile -- the same kind of switch
- * tile, swapped in by refresh_tile_labels() (see ui_settings.c) whenever
- * Key Mode changes to or from Straight Key: on, the paddle DAH GPIO (the
- * "ring" conductor on a TRS paddle/key jack, tip=dit/dah=ring) is ORed into
- * the key signal alongside the dit/"tip" GPIO, for a key wired across both
- * conductors; off (the default) matches the dit-only behavior every other
- * key mode always uses. Large Text is the same kind of toggle tile (on = Large) and
- * switches the Practice screen's decoded-text font immediately between a
- * small fixed-width font and a larger, anti-aliased monospace font (see
- * main/fonts.h), live, even while Practice isn't the screen currently
- * shown. Every change is applied to the running trainer and persisted to
- * NVS immediately when made; there is no OK/Cancel or discard-on-cancel
- * step. "Touchscreen" navigates to a submenu screen
- * (created internally) with two tiles: "Calibrate" (navigates to
- * calibration_screen, with its Back button enabled, returning to the
- * Display submenu) and "Verify Calibration" (navigates to touch_test_screen,
- * whose swipe-Back also returns to the Display submenu). "Reset to Factory
- * Defaults" shows a confirmation popup before erasing settings and
- * calibration and restarting. The last tile, "< Back", returns to
- * menu_screen. Must be called while holding the LVGL lock (lvgl_port_lock).
+ * Create the Settings screen and all of its submenus, starting from
+ * *initial. The main screen is a 3x2 tile grid (Keyer, Sidetone, Display,
+ * Bluetooth, System, Back to menu_screen); each tile opens a submenu of
+ * further tiles. Every change is applied to the running trainer at once
+ * and saved to NVS (debounced), with no OK/Cancel step. Calibrate (Display >
+ * Touchscreen) opens calibration_screen, and Verify Calibration opens
+ * touch_test_screen; both return to the Touchscreen submenu. See
+ * docs/functional-spec.md ("Settings screen") for each tile's behavior.
+ * Must be called while holding the LVGL lock (lvgl_port_lock).
  */
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
                               lv_obj_t *touch_test_screen, const settings_t *initial);

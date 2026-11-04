@@ -99,9 +99,11 @@ coupled:
 - **NimBLE's host task** (BLE HID, `main/ble_hid_output.c`): standard NimBLE
   host task; this module's own queued sender task decouples HID report
   sending from the paddle task's real-time deadline.
-- **The CLI task** (`main/cli.c`): blocks on UART line input; `set` commands
-  call the same live-apply setters the UI uses (`paddle_input_set_*`,
-  `ui_settings_sync()` to keep tiles from going stale, `settings_store_save`).
+- **The CLI task** (`main/cli.c`): blocks on UART line input. It keeps no
+  settings copy of its own: each command reads the Settings screen's live
+  copy (`ui_settings_get()`, under the LVGL lock), and `set` calls the same
+  live-apply setters the UI uses (`paddle_input_set_*`, ...), then
+  `settings_store_save()` and `ui_settings_sync()`.
 
 Boot order in `main.c` is deliberate and commented in-line: display before
 paddle input (paddle input's sidetone claims a DMA buffer that competes with
@@ -158,7 +160,7 @@ creation or explicitly retargeted right before navigating to it.
 
 `main/display_init.c` owns the SPI/panel/touch bring-up and a handful of
 shared styling helpers (`display_style_tile`, `display_style_button_dismiss`,
-`display_compensate_color`, etc.) used across every `ui_*.c` file so tiles,
+`display_add_button_label`, `display_compensate_color`, etc.) used across every `ui_*.c` file so tiles,
 buttons, and colors stay visually consistent without duplicating LVGL style
 boilerplate per screen. It also documents this board's two hardware
 surprises found during bring-up (ST7789 controller despite ILI9341-labeled
