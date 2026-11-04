@@ -98,7 +98,7 @@ void message_player_set_wpm(message_player_t *p, uint16_t wpm);
 
 /**
  * Send msg now if idle, else queue it. If idle but the operator's own key
- * was down less than a word gap ago (see message_player_note_key_down()),
+ * was down less than a word gap ago (see message_player_note_key()),
  * the message starts a word gap after that instead, so its first element
  * never joins or runs into the operator's last one. While the current message is
  * repeating, queueing makes it end after its current transmission (or at
@@ -108,8 +108,12 @@ void message_player_set_wpm(message_player_t *p, uint16_t wpm);
 message_player_enqueue_result_t message_player_enqueue(message_player_t *p, const message_player_message_t *msg,
                                                        uint32_t now_ms);
 
-/** The operator's own key (not this player's) is down at now_ms. */
-void message_player_note_key_down(message_player_t *p, uint32_t now_ms);
+/**
+ * The operator's own key (not this player's) state at now_ms. Call every
+ * tick while idle: a key-down a word gap old is forgotten, so it can't
+ * look recent again once the millisecond counter wraps (~49.7 days).
+ */
+void message_player_note_key(message_player_t *p, bool key_down, uint32_t now_ms);
 
 /** Stop at once: key up, current message and queue dropped. */
 void message_player_stop(message_player_t *p);

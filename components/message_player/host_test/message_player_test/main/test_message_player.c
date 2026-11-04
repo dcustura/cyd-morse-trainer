@@ -276,7 +276,7 @@ TEST(message_player, start_waits_a_word_gap_after_the_operators_key)
 {
     /* Operator's key down until 1000 (mid-element): the message keys up
      * at once and starts a word gap after the operator's last key-down. */
-    message_player_note_key_down(&s_p, 999);
+    message_player_note_key(&s_p, true, 999);
     enqueue_ok(msg("E", 1), 1000, MESSAGE_PLAYER_STARTED);
     TEST_ASSERT_TRUE(message_player_is_active(&s_p));
     run(1000, 2000);
@@ -287,7 +287,7 @@ TEST(message_player, start_waits_a_word_gap_after_the_operators_key)
 TEST(message_player, start_counts_the_word_gap_from_the_operators_last_key_down)
 {
     /* Released 5 units ago: only the rest of the word gap is waited. */
-    message_player_note_key_down(&s_p, 1000);
+    message_player_note_key(&s_p, true, 1000);
     enqueue_ok(msg("E", 1), 1000 + 5 * U, MESSAGE_PLAYER_STARTED);
     run(1000 + 5 * U, 2000);
     const uint32_t expected[] = { 1000 + 7 * U, 1000 + 8 * U };
@@ -296,10 +296,23 @@ TEST(message_player, start_counts_the_word_gap_from_the_operators_last_key_down)
 
 TEST(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_word_gap)
 {
-    message_player_note_key_down(&s_p, 1000);
+    message_player_note_key(&s_p, true, 1000);
     enqueue_ok(msg("E", 1), 1000 + 7 * U, MESSAGE_PLAYER_STARTED);
     run(1000 + 7 * U, 2000);
     const uint32_t expected[] = { 1000 + 7 * U, 1000 + 8 * U };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
+TEST(message_player, a_key_down_a_word_gap_old_is_forgotten)
+{
+    message_player_note_key(&s_p, true, 1000);
+    message_player_note_key(&s_p, false, 1000 + 7 * U); /* forgotten here */
+    /* 2^32 ms later the counter reads 1000 again: remembered, that key-down
+     * would look 0 ms old and delay the start by a word gap. */
+    uint32_t wrapped = 1000;
+    enqueue_ok(msg("E", 1), wrapped, MESSAGE_PLAYER_STARTED);
+    run(wrapped, wrapped + 2 * U);
+    const uint32_t expected[] = { wrapped, wrapped + U };
     assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 }
 
@@ -383,6 +396,7 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, start_waits_a_word_gap_after_the_operators_key);
     RUN_TEST_CASE(message_player, start_counts_the_word_gap_from_the_operators_last_key_down);
     RUN_TEST_CASE(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_word_gap);
+    RUN_TEST_CASE(message_player, a_key_down_a_word_gap_old_is_forgotten);
     RUN_TEST_CASE(message_player, enqueue_clamps_count_and_pause);
     RUN_TEST_CASE(message_player, status_reports_progress_for_the_sending_strip);
     RUN_TEST_CASE(message_player, late_service_calls_do_not_shift_later_elements);

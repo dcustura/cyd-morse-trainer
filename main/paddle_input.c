@@ -187,9 +187,9 @@ static void paddle_task(void *arg)
         /* Still under the player lock (the keyer service is quick), so the
          * key-down is recorded before any enqueue can see this tick. */
         bool keyer_key_down = iambic_keyer_service(&s_keyer, dit_contact && !playing, dah_contact && !playing, now);
-        if (!playing && keyer_key_down) {
-            /* So a message started now waits a word gap after this. */
-            message_player_note_key_down(&s_player, now);
+        if (!playing) {
+            /* So a message started now waits a word gap after a key-down. */
+            message_player_note_key(&s_player, keyer_key_down, now);
         }
         player_unlock();
 

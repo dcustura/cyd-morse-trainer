@@ -183,10 +183,14 @@ message_player_enqueue_result_t message_player_enqueue(message_player_t *p, cons
     return MESSAGE_PLAYER_QUEUED;
 }
 
-void message_player_note_key_down(message_player_t *p, uint32_t now_ms)
+void message_player_note_key(message_player_t *p, bool key_down, uint32_t now_ms)
 {
-    p->key_down_seen = true;
-    p->key_down_ms = now_ms;
+    if (key_down) {
+        p->key_down_seen = true;
+        p->key_down_ms = now_ms;
+    } else if (p->key_down_seen && now_ms - p->key_down_ms >= WORD_GAP_UNITS * p->unit_ms) {
+        p->key_down_seen = false;
+    }
 }
 
 void message_player_stop(message_player_t *p)
