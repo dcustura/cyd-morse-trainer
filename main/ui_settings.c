@@ -327,9 +327,7 @@ static lv_obj_t *create_submenu_screen(bool three_columns)
 
 static void test_tone_stop_cb(lv_timer_t *timer)
 {
-    /* Hand the sidetone back to the key: if keying (or a message) started
-     * during the test tone, forcing it off would mute that element. */
-    sidetone_key(paddle_input_is_keying());
+    sidetone_set_source(SIDETONE_SOURCE_TEST, false);
     lv_timer_del(timer);
 }
 
@@ -340,7 +338,7 @@ static void test_field_btn_cb(lv_event_t *e)
     if (paddle_input_message_is_active()) {
         return;
     }
-    sidetone_key(true);
+    sidetone_set_source(SIDETONE_SOURCE_TEST, true);
     lv_timer_create(test_tone_stop_cb, TEST_TONE_DURATION_MS, NULL);
 }
 

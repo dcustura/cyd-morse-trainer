@@ -195,7 +195,7 @@ static void paddle_task(void *arg)
         }
 
         if (key_down != prev_key_down) {
-            sidetone_key(key_down);
+            sidetone_set_source(SIDETONE_SOURCE_KEY, key_down);
             atomic_store_explicit(&s_key_down_state, key_down, memory_order_relaxed);
             char out_char = 0;
             morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now, &out_char);

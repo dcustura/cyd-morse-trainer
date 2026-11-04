@@ -76,18 +76,11 @@ static void set_highlight(lv_obj_t *matrix, uint32_t id)
     s_highlighted_id = id;
 }
 
-/* Hand the sidetone back to the key, so ending playback early never mutes
- * an element that a message (e.g. a CLI `mem play`) is keying. */
-static void release_sidetone(void)
-{
-    sidetone_key(paddle_input_is_keying());
-}
-
 static void stop_playback(void)
 {
     if (s_play_timer != NULL && esp_timer_is_active(s_play_timer)) {
         esp_timer_stop(s_play_timer);
-        release_sidetone();
+        sidetone_set_source(SIDETONE_SOURCE_REFERENCE, false);
     }
 }
 
@@ -116,13 +109,13 @@ static void play_step_cb(void *arg)
 
     /* A message started since playback began: it owns the sidetone now. */
     if (paddle_input_message_is_active()) {
-        release_sidetone();
+        sidetone_set_source(SIDETONE_SOURCE_REFERENCE, false);
         return;
     }
 
     if (s_play_tone_phase) {
         /* An element (dit or dah) just finished sounding. */
-        sidetone_key(false);
+        sidetone_set_source(SIDETONE_SOURCE_REFERENCE, false);
         s_play_index++;
         if (s_play_pattern[s_play_index] == '\0') {
             return; /* Pattern finished; leave the highlight as-is. */
@@ -134,7 +127,7 @@ static void play_step_cb(void *arg)
 
     /* The inter-element gap just finished; sound the next element. */
     s_play_tone_phase = true;
-    sidetone_key(true);
+    sidetone_set_source(SIDETONE_SOURCE_REFERENCE, true);
     uint32_t duration_ms = (s_play_pattern[s_play_index] == '-') ? 3u * s_play_unit_ms : s_play_unit_ms;
     schedule_step(duration_ms);
 }
@@ -150,7 +143,7 @@ static void start_playback(const char *pattern)
     s_play_pattern = pattern;
     s_play_index = 0;
     s_play_tone_phase = true;
-    sidetone_key(true);
+    sidetone_set_source(SIDETONE_SOURCE_REFERENCE, true);
     uint32_t duration_ms = (pattern[0] == '-') ? 3u * s_play_unit_ms : s_play_unit_ms;
     schedule_step(duration_ms);
 }

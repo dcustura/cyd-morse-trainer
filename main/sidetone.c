@@ -24,7 +24,7 @@ _Static_assert(BOARD_SPEAKER_GPIO == 26,
 
 /* Sample rate must exceed the ~19.6kHz minimum for DAC_DIGI_CLK_SRC_DEFAULT continuous mode. */
 #define SIDETONE_SAMPLE_RATE_HZ    32000u
-/* ~4ms per chunk: bounds how long a sidetone_key()/sidetone_set_freq() change takes to be heard. */
+/* ~4ms per chunk: bounds how long a sidetone_set_source()/sidetone_set_freq() change takes to be heard. */
 #define SIDETONE_CHUNK_SAMPLES     128u
 
 #define SIDETONE_SINE_TABLE_BITS   8u
@@ -58,7 +58,7 @@ static float s_envelope_ramp[SIDETONE_ENVELOPE_SAMPLES_MAX]; /* monotonic 0 -> 1
 static _Atomic uint32_t s_phase_incr;
 static _Atomic uint32_t s_volume_q16; /* volume fraction in Q16 fixed point, 0..65536 */
 static _Atomic uint32_t s_envelope_len; /* number of valid entries in s_envelope_ramp */
-static _Atomic bool s_key_down;
+static _Atomic unsigned s_sources; /* sidetone_source_t bits requesting the tone */
 static TaskHandle_t s_audio_task_handle;
 
 /* Only ever touched by audio_task(), so it needs no synchronization. */
@@ -105,7 +105,7 @@ static void generate_envelope_ramp(uint32_t len)
 /* Advances the envelope by one sample and returns its current value (0..1). */
 static float next_envelope_value(void)
 {
-    bool key_down = atomic_load_explicit(&s_key_down, memory_order_relaxed);
+    bool key_down = atomic_load_explicit(&s_sources, memory_order_relaxed) != 0;
     /*
      * Captured once per sample so a concurrent sidetone_set_envelope_ms()
      * can't tear mid-calculation; s_envelope_ramp always has at least `len`
@@ -186,7 +186,7 @@ static void audio_task(void *arg)
     uint8_t chunk[SIDETONE_CHUNK_SAMPLES];
 
     while (1) {
-        if (s_env_state == ENV_IDLE && !atomic_load_explicit(&s_key_down, memory_order_relaxed)) {
+        if (s_env_state == ENV_IDLE && atomic_load_explicit(&s_sources, memory_order_relaxed) == 0) {
             /*
              * Idle: the DAC channel stays enabled and keeps outputting the
              * last written sample (the mid-scale "silence" level, 128) with
@@ -194,7 +194,7 @@ static void audio_task(void *arg)
              * tones was tried to cut noise pickup during silence, but the
              * power-up/down transition itself is an audible click, worse
              * than the noise it avoided, so just block until
-             * sidetone_key(true) wakes this back up.
+             * sidetone_set_source(..., true) wakes this back up.
              */
             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
             phase = 0;
@@ -221,7 +221,7 @@ void sidetone_init(void)
 
     atomic_store_explicit(&s_phase_incr, freq_to_phase_incr(SIDETONE_DEFAULT_HZ), memory_order_relaxed);
     atomic_store_explicit(&s_volume_q16, 65536u, memory_order_relaxed); /* full volume until sidetone_set_volume() runs */
-    atomic_store_explicit(&s_key_down, false, memory_order_relaxed);
+    atomic_store_explicit(&s_sources, 0, memory_order_relaxed);
 
     const dac_continuous_config_t cfg = {
         .chan_mask = SIDETONE_DAC_CHANNEL_MASK,
@@ -261,10 +261,14 @@ void sidetone_set_volume(uint8_t percent)
     atomic_store_explicit(&s_volume_q16, (uint32_t)percent * 65536u / 100u, memory_order_relaxed);
 }
 
-void sidetone_key(bool down)
+void sidetone_set_source(sidetone_source_t source, bool on)
 {
-    atomic_store_explicit(&s_key_down, down, memory_order_relaxed);
-    if (down && s_audio_task_handle != NULL) {
+    if (on) {
+        atomic_fetch_or_explicit(&s_sources, (unsigned)source, memory_order_relaxed);
+    } else {
+        atomic_fetch_and_explicit(&s_sources, ~(unsigned)source, memory_order_relaxed);
+    }
+    if (on && s_audio_task_handle != NULL) {
         xTaskNotifyGive(s_audio_task_handle); /* wake audio_task() if it's blocked waiting out silence */
     }
 }

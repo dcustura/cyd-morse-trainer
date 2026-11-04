@@ -68,7 +68,7 @@ GPIO (dit/dah, active-low)
       message_player_service()  [components/message_player] -> key_down, replacing the keyer's
    -> iambic_keyer_service()       [components/iambic_keyer]   -> key_down bool for this tick
    -> on key_down transition:
-        sidetone_key(key_down)                    [main/sidetone.c]     -> audible tone, DAC
+        sidetone_set_source(KEY, key_down)        [main/sidetone.c]     -> audible tone, DAC
         morse_codec_key_event()    [components/morse_codec]    -> classifies the just-finished element/gap
    -> every tick: key_gate_update(key_down, on_air)  [components/key_gate] -> whether the external
       key output may be on (never off-air; on-air waits for a fresh key-down)
@@ -102,7 +102,7 @@ coupled:
   runs as an `lv_timer`, so it's already on the LVGL task and needs no
   separate locking.
 - **Sidetone's audio task** (`main/sidetone.c`): feeds the DAC continuous-mode
-  driver; `sidetone_key()`/`sidetone_set_*()` are just parameter handoffs to
+  driver; `sidetone_set_source()`/`sidetone_set_*()` are just parameter handoffs to
   it.
 - **The CLI task** (`main/cli.c`): blocks on UART line input. It keeps no
   settings copy of its own: each command reads the Settings screen's live
