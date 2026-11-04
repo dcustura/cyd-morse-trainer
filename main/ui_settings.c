@@ -557,7 +557,7 @@ static void reset_btn_cb(lv_event_t *e)
 
     lv_obj_t *mbox = lv_msgbox_create(NULL);
     lv_msgbox_add_title(mbox, "Reset to Factory Defaults?");
-    lv_msgbox_add_text(mbox, "This clears all keyer settings and the touch calibration, then restarts the device.");
+    lv_msgbox_add_text(mbox, "This clears all keyer settings, message memories and the touch calibration, then restarts the device.");
 
     lv_obj_t *content = lv_msgbox_get_content(mbox);
     lv_obj_t *actions_row = lv_obj_create(content);

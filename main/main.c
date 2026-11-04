@@ -10,6 +10,7 @@
 #include "touch_calibration.h"
 #include "ui_calibration.h"
 #include "ui_help.h"
+#include "ui_memories.h"
 #include "ui_menu.h"
 #include "ui_send.h"
 #include "ui_settings.h"
@@ -57,6 +58,7 @@ void app_main(void)
                                            settings.send_large_text);
     lv_obj_t *help_screen = ui_help_create(send_screen);
     ui_send_set_help_screen(help_screen);
+    ui_send_set_memories_screen(ui_memories_create(send_screen));
     lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen, &settings);
     ui_send_set_keyer_settings_screen(ui_settings_get_keyer_submenu());
     ui_menu_populate(menu_screen, send_screen, settings_screen);

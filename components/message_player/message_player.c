@@ -241,6 +241,7 @@ void message_player_get_status(const message_player_t *p, uint32_t now_ms, messa
     out->send_number = p->sends_done + 1;
     out->repeat = p->current.repeat;
     out->count = p->current.count;
+    out->pause_s = p->current.pause_s;
     if (out->paused && !time_reached(now_ms, p->phase_end_ms)) {
         out->pause_remaining_ms = p->phase_end_ms - now_ms;
     }

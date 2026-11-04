@@ -82,6 +82,7 @@ typedef struct {
     uint32_t send_number;  /* 1-based: the transmission in progress, or the next one during a pause */
     bool repeat;
     uint8_t count;         /* 0 = until stopped */
+    uint8_t pause_s;
     uint32_t pause_remaining_ms; /* during a pause */
     uint8_t queue_len;
     int queue_tags[MESSAGE_PLAYER_QUEUE_MAX];

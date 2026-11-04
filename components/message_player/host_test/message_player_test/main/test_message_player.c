@@ -270,6 +270,7 @@ TEST(message_player, status_reports_progress_for_the_sending_strip)
     TEST_ASSERT_EQUAL_UINT32(1, st.send_number);
     TEST_ASSERT_TRUE(st.repeat);
     TEST_ASSERT_EQUAL_UINT8(3, st.count);
+    TEST_ASSERT_EQUAL_UINT8(2, st.pause_s);
 
     /* During the word gap the highlight stays on E; then moves to <AR>. */
     run(0, U + 10);

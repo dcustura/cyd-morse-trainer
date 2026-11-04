@@ -43,6 +43,8 @@ void ui_send_set_help_screen(lv_obj_t *help_screen);
  * screen, then navigates there, so its own Back tile returns here instead of
  * to the Settings screen.
  */
+void ui_send_set_memories_screen(lv_obj_t *memories_screen);
+
 void ui_send_set_keyer_settings_screen(lv_obj_t *keyer_settings_screen);
 
 #ifdef __cplusplus

@@ -21,6 +21,7 @@ static lv_obj_t *s_text_container;
 static lv_obj_t *s_text_spans;
 static lv_obj_t *s_keying_dot;
 static lv_obj_t *s_help_screen;
+static lv_obj_t *s_memories_screen;
 static lv_obj_t *s_keyer_settings_screen;
 static QueueHandle_t s_decoded_char_queue;
 
@@ -330,6 +331,11 @@ void ui_send_set_help_screen(lv_obj_t *help_screen)
     s_help_screen = help_screen;
 }
 
+void ui_send_set_memories_screen(lv_obj_t *memories_screen)
+{
+    s_memories_screen = memories_screen;
+}
+
 void ui_send_set_keyer_settings_screen(lv_obj_t *keyer_settings_screen)
 {
     s_keyer_settings_screen = keyer_settings_screen;
@@ -374,6 +380,12 @@ static void help_btn_cb(lv_event_t *e)
 {
     (void)e;
     lv_scr_load(s_help_screen);
+}
+
+static void memories_btn_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_memories_screen);
 }
 
 static void keyer_settings_btn_cb(lv_event_t *e)
@@ -473,6 +485,12 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_set_flex_align(right_group, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(right_group, 8, 0);
     lv_obj_set_size(right_group, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+
+    /* Icon-only, like Help: opens the message memories panel. */
+    lv_obj_t *memories_btn = lv_button_create(right_group);
+    display_style_tile(memories_btn);
+    lv_obj_add_event_cb(memories_btn, memories_btn_cb, LV_EVENT_CLICKED, NULL);
+    display_add_button_label(memories_btn, LV_SYMBOL_ENVELOPE);
 
     /* Icon-only: no text label, just the LV_SYMBOL_LIST glyph, since no
      * dedicated "help" glyph exists in LVGL's built-in symbol set and a
