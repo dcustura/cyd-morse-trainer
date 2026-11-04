@@ -13,8 +13,9 @@ A Morse code **keyer and send trainer** on an ESP32 ("Cheap Yellow Display" boar
 FreeRTOS task samples a paddle/straight-key GPIO every millisecond and runs it
 through a keyer state machine. The keyer's key-down/key-up output drives the
 sidetone and an external key-output GPIO (for keying a transceiver), and also
-feeds a Morse timing decoder, whose resulting characters are shown live on an LVGL touchscreen UI, logged, optionally typed
-into a paired phone/PC over BLE HID, and readable/settable over a serial CLI.
+feeds a Morse timing decoder, whose resulting characters are shown live on
+an LVGL touchscreen UI and logged. Settings are readable/settable over a
+serial CLI.
 Settings and touch calibration persist to NVS flash.
 
 ## The central design split: `components/` vs `main/`
@@ -31,7 +32,7 @@ This is the single most important thing to understand before touching code.
     timing.
 - **`main/*`** is everything hardware-facing and stateful-at-the-app-level:
   GPIO configuration, the DAC-driven sidetone synthesizer, the LVGL screens,
-  NVS persistence, BLE HID, and the serial CLI. It *drives* the components in
+  NVS persistence, and the serial CLI. It *drives* the components in
   `components/` but contains none of the decoding/keying logic itself.
 
 When deciding where a change belongs: if it's "what does this sequence of
@@ -69,7 +70,6 @@ GPIO (dit/dah, active-low)
    -> every 30ms while idle: morse_codec_tick()    [components/morse_codec] -> flushes a trailing char/word gap
    -> on a decode event (char / space / unknown):
         xQueueSend(decoded_char_queue, ...)        -> drained by an lv_timer in ui_practice.c, appended to the text area
-        ble_hid_output_notify_char()               [main/ble_hid_output.c] -> optional BLE HID keystroke
         ESP_LOGI(...)                              -> serial log
 ```
 
@@ -85,8 +85,7 @@ coupled:
 
 - **`paddle_task`** (`main/paddle_input.c`): the 1ms real-time loop described
   above. Talks to the rest of the system only by writing to
-  `decoded_char_queue`, calling `ble_hid_output_notify_char()` (itself
-  non-blocking — queues to a dedicated BLE task), and an atomic
+  `decoded_char_queue` and an atomic
   `s_key_down_state` flag that the UI polls for the keying indicator dot.
 - **LVGL's own task** (via `esp_lvgl_port`): owns all screen objects. Any code
   touching LVGL objects from another context must hold the LVGL lock
@@ -97,20 +96,17 @@ coupled:
 - **Sidetone's audio task** (`main/sidetone.c`): feeds the DAC continuous-mode
   driver; `sidetone_key()`/`sidetone_set_*()` are just parameter handoffs to
   it.
-- **NimBLE's host task** (BLE HID, `main/ble_hid_output.c`): standard NimBLE
-  host task; this module's own queued sender task decouples HID report
-  sending from the paddle task's real-time deadline.
 - **The CLI task** (`main/cli.c`): blocks on UART line input. It keeps no
   settings copy of its own: each command reads the Settings screen's live
   copy (`ui_settings_get()`, under the LVGL lock), and `set` calls the same
   live-apply setters the UI uses (`paddle_input_set_*`, ...), then
   `settings_store_save()` and `ui_settings_sync()`.
 
-Boot order in `main.c` is deliberate and commented in-line: display before
-paddle input (paddle input's sidetone claims a DMA buffer that competes with
-BLE for scarce internal DMA RAM, so audio must init first), and
-`ble_hid_output_init()` after `paddle_input_start()` for that reason. Read the
-comment in `app_main()` before reordering anything there.
+Boot order in `main.c`: load settings and touch calibration, bring up the
+display, build every screen under the LVGL lock, then start paddle input
+(which also brings up the sidetone's DMA-based DAC audio), and finally the
+CLI. Read the comment at `paddle_input_start()` in `app_main()` before
+reordering anything there.
 
 ## Persistence
 
@@ -118,8 +114,8 @@ Two independent NVS-backed stores, both following the same pattern
 (`*_store_init_and_load` / `*_store_save` / `*_store_reset`, wrapping a
 hardware-independent value type from `components/`):
 
-- **`main/settings_store.c`** persists `settings_t` (keyer/sidetone/display/
-  Bluetooth settings). Missing or out-of-range stored values fall back to
+- **`main/settings_store.c`** persists `settings_t` (keyer/sidetone/display
+  settings). Missing or out-of-range stored values fall back to
   `components/settings`'s compiled-in defaults/clamps field-by-field, so a
   partially-corrupt or older-schema NVS blob degrades gracefully instead of
   failing to boot.
@@ -143,9 +139,9 @@ boot in `main.c` and switched between via `lv_scr_load()`:
 - `ui_menu.c` — Main Menu (two buttons, Practice/Settings).
 - `ui_practice.c` — Practice screen: drains `decoded_char_queue`, owns the
   WPM/Mode status label and the keying indicator dot.
-- `ui_settings.c` (the largest file, ~850 lines) — the entire Settings screen
+- `ui_settings.c` (the largest file, ~780 lines) — the entire Settings screen
   and all its submenus/popups (Keyer, Sidetone, Display, Touchscreen,
-  Bluetooth). One file because the submenus share a lot of popup-building and
+  System). One file because the submenus share a lot of popup-building and
   tile-styling helpers; see its header comment for the full navigation map.
 - `ui_calibration.c` — the 5-point touch calibration flow, driving
   `components/touch_calibration`.
@@ -196,10 +192,13 @@ sync manually if you change them — noted in the Kconfig help text.
 - External dependencies (`main/idf_component.yml`): LVGL 9, `esp_lvgl_port`,
   `esp_lcd_touch`, and the XPT2046 touch driver, pulled from the ESP
   Component Registry — see `dependencies.lock` for pinned resolved versions.
-- BLE stack choice (NimBLE, not Bluedroid) and its trimmed role/connection
-  config are explained inline in `sdkconfig.defaults` — driven by this
-  board's tight flash/SRAM budget and a real measured conflict between BLE's
-  and the sidetone DAC's DMA memory needs.
+- Bluetooth is disabled (`CONFIG_BT_ENABLED` unset). The earlier BLE HID
+  keyboard proof of concept was removed. Lessons from it for any future
+  Bluetooth feature: use NimBLE rather than Bluedroid for this board's tight
+  flash/SRAM budget, trim unused roles and connection counts, init it after
+  the sidetone (see `app_main()`), and expect to need the RAM headroom the
+  LVGL draw buffer leaves (`LVGL_DRAW_BUFF_LINES` in `main/display_init.c`):
+  at /3 lines there was too little left for NimBLE.
 
 ## Testing
 
@@ -229,10 +228,9 @@ is what makes it testable at all.
 | Touch calibration math | `components/touch_calibration/` |
 | Touch calibration *screens* | `main/ui_calibration.c`, `main/ui_touch_test.c` |
 | Sidetone pitch/envelope/synthesis | `main/sidetone.c` |
-| BLE HID keystroke mapping | `main/ble_hid_output.c` |
 | Serial CLI commands | `main/cli.c` |
 | GPIO pin assignments | `main/Kconfig.projbuild` (+ `main/board_pins.h`) |
-| Boot sequence / subsystem init order | `main/main.c` (read its trailing comment before reordering) |
+| Boot sequence / subsystem init order | `main/main.c` |
 
 ## Further reading
 

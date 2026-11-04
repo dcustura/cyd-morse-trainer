@@ -28,13 +28,11 @@ static const char *TAG = "display_init";
 #define BACKLIGHT_LEDC_DUTY_MAX ((1u << BACKLIGHT_LEDC_DUTY_RES) - 1)
 #define BACKLIGHT_LEDC_FREQ_HZ 5000
 
-/* Partial draw buffer sized to fit internal SRAM (no PSRAM assumed). Bumped
- * from /10 to /3 lines to cut the number of flush passes per full-screen
- * redraw; re-check free heap on hardware if this ever needs to grow further.
- * Dropped back to /6 (halving the two draw buffers from 100KB to 50KB
- * combined) to leave enough of this board's internal SRAM free for BLE HID
- * output (main/ble_hid_output.c) to coexist with the display -- measured on
- * real hardware, /3 left too little for NimBLE's steady-state RAM needs. */
+/* Partial draw buffer sized to fit internal SRAM (no PSRAM assumed). /6
+ * lines (two buffers, 50KB combined) leaves RAM headroom for a future
+ * Bluetooth stack; /3 halves the flush passes per full-screen redraw but
+ * left too little RAM for NimBLE when measured. See docs/architecture.md
+ * ("Build system") and re-check free heap on hardware before growing it. */
 #define LVGL_DRAW_BUFF_LINES (LCD_V_RES / 6)
 
 /* Confirmed on real hardware: despite this board being universally marketed

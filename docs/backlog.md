@@ -26,7 +26,7 @@ How this file works:
 
 - Store several messages (QMX has 12 × 50 characters), e.g. a CQ call or a
   name/QTH exchange, and send one at the current keyer speed through the
-  same path as paddle keying (sidetone, key output, decoder, BLE HID).
+  same path as paddle keying (sidetone, key output, decoder).
 - Show memories as large tappable buttons reachable from the Practice
   screen. Tap to send once; a second gesture such as a long press repeats
   the message.
@@ -61,7 +61,7 @@ How this file works:
 
 - A clearly visible on-air vs practice toggle, reachable without opening the
   Settings screen. In practice mode the external key output (and future
-  PTT output) is never driven. Sidetone, decoding and BLE HID still work.
+  PTT output) is never driven. Sidetone and decoding still work.
 - This keeps trainer use safe while the board stays wired to a rig. QMX has
   the same "Practice mode" for the same reason.
 - Open question: whether the toggle persists across reboots, or the device
@@ -167,17 +167,17 @@ How this file works:
   count 0). It may only need a dedicated entry point and a clear on-screen
   "beacon running" indication.
 
-### Rework Bluetooth
+### Bluetooth
 
-- The current BLE HID keyboard output (decoded text typed into a phone/PC)
-  is a proof of concept. Expect to replace or rework it, probably toward
-  the keyer features in this tier (computer keying, typed sending). Don't
-  build new features on its current behavior.
+- Bluetooth is currently off: the earlier BLE HID keyboard proof of
+  concept (decoded text typed into a phone/PC) was removed. What Bluetooth
+  should be used for is still open, likely one of the computer-keying or
+  typed-sending ideas in this tier. See `docs/architecture.md` ("Build
+  system") for what the proof of concept taught about RAM and boot order.
 
 ### Typed sending with a buffer
 
 - Send text typed on a keyboard, with a type-ahead buffer (K3NG supports
   PS/2 and USB keyboards). On this board the realistic routes are the
-  serial CLI (covered by `send` above) or a BLE keyboard, which would mean
-  connecting to the keyboard as a BLE host, the reverse of today's BLE HID
-  role. Low priority given the screen size.
+  serial CLI (covered by `send` above) or a BLE keyboard, with the device
+  connecting to the keyboard as a BLE host. Low priority given the screen size.

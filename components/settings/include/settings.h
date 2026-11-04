@@ -32,7 +32,6 @@ extern "C" {
 #define SETTINGS_DEFAULT_BRIGHTNESS_PCT 100
 #define SETTINGS_DEFAULT_BRIGHTNESS_AUTO false
 #define SETTINGS_DEFAULT_PRACTICE_LARGE_TEXT false
-#define SETTINGS_DEFAULT_BLE_HID_ENABLED false
 #define SETTINGS_DEFAULT_STRAIGHT_RING_INPUT false
 
 typedef struct {
@@ -52,7 +51,6 @@ typedef struct {
     uint8_t brightness_pct;
     bool brightness_auto;
     bool practice_large_text;
-    bool ble_hid_enabled;
     /* Straight Key mode only: also read the paddle DAH GPIO (the "ring"
      * conductor on a TRS paddle/key jack, tip=dit/dah=ring) as part of the
      * key signal, ORed with the dit/"tip" GPIO, for a key wired across both

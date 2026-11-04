@@ -73,7 +73,6 @@ static lv_obj_t *s_ring_input_switch;
 static lv_obj_t *s_debounce_tile;
 static lv_obj_t *s_debounce_switch;
 static lv_obj_t *s_text_size_switch;
-static lv_obj_t *s_ble_hid_tile_value;
 
 /* Only one popup can be open at a time; these track the one currently shown.
  * s_popup_brightness_auto_btn is only set (non-NULL) while the Brightness
@@ -193,8 +192,6 @@ static void refresh_tile_labels(void)
     }
 
     set_switch_checked(s_text_size_switch, s_current_settings.practice_large_text);
-
-    lv_label_set_text(s_ble_hid_tile_value, s_current_settings.ble_hid_enabled ? "On" : "Off");
 }
 
 static int32_t field_get_value(numeric_field_t field)
@@ -324,44 +321,6 @@ static lv_obj_t *create_submenu_screen(bool three_columns)
     lv_obj_set_style_pad_all(scr, 4, 0);
     lv_obj_set_grid_dsc_array(scr, three_columns ? cols3_dsc : cols2_dsc, rows_dsc);
     return scr;
-}
-
-/* Shared by Paddle Swap/Paddle Debounce: a two-button on/off choice with an
- * optional help line and a Close button. */
-typedef struct {
-    const char *label;
-    bool value;
-} binary_option_t;
-
-static void open_binary_popup(const char *title, const char *help_text, const binary_option_t options[2],
-                               lv_event_cb_t select_cb)
-{
-    lv_obj_t *mbox = lv_msgbox_create(NULL);
-    lv_msgbox_add_title(mbox, title);
-    if (help_text != NULL) {
-        lv_msgbox_add_text(mbox, help_text);
-    }
-    lv_obj_t *content = lv_msgbox_get_content(mbox);
-    strip_pane_style(content);
-    lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(content, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-
-    lv_obj_t *options_row = lv_obj_create(content);
-    strip_pane_style(options_row);
-    lv_obj_set_flex_flow(options_row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_size(options_row, LV_PCT(100), LV_SIZE_CONTENT);
-
-    for (size_t i = 0; i < 2; i++) {
-        lv_obj_t *btn = lv_button_create(options_row);
-        display_style_tile(btn);
-        lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, OPTION_BTN_HEIGHT);
-        lv_obj_add_event_cb(btn, select_cb, LV_EVENT_CLICKED, (void *)(intptr_t)options[i].value);
-        lv_obj_add_event_cb(btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
-        display_add_button_label(btn, options[i].label);
-    }
-
-    create_action_button(content, LV_SYMBOL_CLOSE " Close", msgbox_close_cb, mbox, true);
 }
 
 static void test_tone_stop_cb(lv_timer_t *timer)
@@ -531,23 +490,6 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_obj_set_grid_cell(close_btn, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, 1, 1);
     lv_obj_add_event_cb(close_btn, msgbox_close_cb, LV_EVENT_CLICKED, mbox);
     display_add_button_label(close_btn, LV_SYMBOL_CLOSE " Close");
-}
-
-static void ble_hid_select_cb(lv_event_t *e)
-{
-    bool enabled = (bool)(intptr_t)lv_event_get_user_data(e);
-    s_current_settings.ble_hid_enabled = enabled;
-    schedule_settings_save();
-    refresh_tile_labels();
-}
-
-static void ble_hid_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    static const binary_option_t options[2] = {{"On", true}, {"Off", false}};
-    open_binary_popup("BLE Keyboard", "Sends decoded Morse characters to a paired phone or PC as keystrokes. "
-                                       "Restart the device for this change to take effect.",
-                       options, ble_hid_select_cb);
 }
 
 /* An on/off setting shown as a toggle tile (see create_toggle_tile()):
@@ -755,17 +697,6 @@ static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *cal
     return scr;
 }
 
-static lv_obj_t *create_bluetooth_submenu(lv_obj_t *settings_screen)
-{
-    lv_obj_t *scr = create_submenu_screen(false);
-
-    create_tile(scr, "BLE\nKeyboard", 0, 0, ble_hid_tile_cb, NULL, &s_ble_hid_tile_value);
-
-    create_back_tile(scr, 1, 1, nav_btn_cb, settings_screen);
-
-    return scr;
-}
-
 static lv_obj_t *create_system_submenu(lv_obj_t *settings_screen)
 {
     lv_obj_t *scr = create_submenu_screen(false);
@@ -819,8 +750,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     create_tile(scr, "Sidetone", 1, 0, nav_btn_cb, create_sidetone_submenu(scr), NULL);
     create_tile(scr, "Display", 2, 0, nav_btn_cb, create_display_submenu(scr, calibration_screen, touch_test_screen),
                 NULL);
-    create_tile(scr, "Bluetooth", 0, 1, nav_btn_cb, create_bluetooth_submenu(scr), NULL);
-    create_tile(scr, "System", 1, 1, nav_btn_cb, create_system_submenu(scr), NULL);
+    create_tile(scr, "System", 0, 1, nav_btn_cb, create_system_submenu(scr), NULL);
     create_back_tile(scr, 2, 1, nav_btn_cb, menu_screen);
 
     refresh_tile_labels();

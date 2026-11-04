@@ -11,7 +11,7 @@ extern "C" {
 /**
  * Create the Settings screen and all of its submenus, starting from
  * *initial. The main screen is a 3x2 tile grid (Keyer, Sidetone, Display,
- * Bluetooth, System, Back to menu_screen); each tile opens a submenu of
+ * System, an empty cell, Back to menu_screen); each tile opens a submenu of
  * further tiles. Every change is applied to the running trainer at once
  * and saved to NVS (debounced), with no OK/Cancel step. Calibrate (Display >
  * Touchscreen) opens calibration_screen, and Verify Calibration opens

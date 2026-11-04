@@ -28,7 +28,6 @@ typedef enum {
     KEY_BRIGHTNESS_PCT,
     KEY_BRIGHTNESS_AUTO,
     KEY_PRACTICE_LARGE_TEXT,
-    KEY_BLE_HID_ENABLED,
     KEY_STRAIGHT_RING_INPUT,
     KEY_COUNT,
 } cli_key_t;
@@ -45,7 +44,6 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_BRIGHTNESS_PCT] = "brightness_pct",
     [KEY_BRIGHTNESS_AUTO] = "brightness_auto",
     [KEY_PRACTICE_LARGE_TEXT] = "practice_large_text",
-    [KEY_BLE_HID_ENABLED] = "ble_hid_enabled",
     [KEY_STRAIGHT_RING_INPUT] = "straight_ring_input",
 };
 
@@ -147,9 +145,6 @@ static void print_value(const settings_t *s, cli_key_t key)
         break;
     case KEY_PRACTICE_LARGE_TEXT:
         printf("practice_large_text=%s\n", s->practice_large_text ? "on" : "off");
-        break;
-    case KEY_BLE_HID_ENABLED:
-        printf("ble_hid_enabled=%s\n", s->ble_hid_enabled ? "on" : "off");
         break;
     case KEY_STRAIGHT_RING_INPUT:
         printf("straight_ring_input=%s\n", s->straight_ring_input ? "on" : "off");
@@ -285,10 +280,6 @@ static int apply_setting(settings_t *s, cli_key_t key, const char *val)
     case KEY_PRACTICE_LARGE_TEXT:
         s->practice_large_text = flag;
         ui_practice_set_text_size(flag);
-        break;
-    case KEY_BLE_HID_ENABLED:
-        s->ble_hid_enabled = flag;
-        printf("note=restart required to apply\n");
         break;
     case KEY_STRAIGHT_RING_INPUT:
         s->straight_ring_input = flag;

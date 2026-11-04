@@ -116,15 +116,14 @@ implemented.
 3. **Settings screen** — reachable from the Main Menu.
    - A grid of large, tappable tiles (three columns × two rows) filling the
      whole display with no scrolling and no separate title bar: Keyer,
-     Sidetone, and Display fill the top row; the bottom row has Bluetooth,
-     System, and a Back tile (marked with a left-chevron icon).
+     Sidetone, and Display fill the top row; the bottom row has System, an
+     empty cell, and a Back tile (marked with a left-chevron icon).
      There is no slider or dropdown anywhere on this screen or its
      submenus, and no OK/Cancel step — every change is applied to the
      running trainer and persisted to NVS the moment it's made (writes are
      briefly debounced so rapid taps or a held `-`/`+` button don't hit NVS
-     on every step), with one exception noted below (Bluetooth). Back
-     returns to the Main Menu.
-   - Every submenu screen (Keyer/Sidetone/Display/Touchscreen/Bluetooth)
+     on every step). Back returns to the Main Menu.
+   - Every submenu screen (Keyer/Sidetone/Display/Touchscreen/System)
      follows the same pattern as this top-level grid: no separate title
      bar, and Back (left-chevron icon) is just the last tile in the grid,
      sized N×M with N = M or N = M + 1 so tiles stay wide rather than tall
@@ -254,23 +253,6 @@ implemented.
        above). Like Paddle Swap and Paddle Debounce on the Keyer submenu,
        it has no popup: the tile is itself a toggle switch (on = Large),
        flipped immediately by tapping anywhere on the tile.
-   - **Bluetooth** tile opens a submenu screen with a single **BLE
-     Keyboard** on/off tile (one cell left empty, plus Back): when on, the
-     device advertises itself as a BLE HID keyboard and, once a phone or PC
-     pairs and connects, sends every decoded Morse character to it as a
-     keystroke (letters sent with Shift, so they arrive uppercase, matching
-     the Practice screen's own decoded text; the HH prosign sends a
-     Backspace, since "error, keyed over" is conventionally a request to
-     erase; the unknown-sequence marker and every other prosign have no
-     sensible keystroke and are dropped). A decoded word-gap space is only
-     ever sent right after a real, non-Backspace keystroke -- never after
-     something with no keystroke (an unknown sequence or a dropped prosign)
-     and never right after HH's Backspace, so the pause that follows one of
-     those doesn't add a stray space of its own. Its popup offers
-     "On"/"Off" buttons and says a restart is required — unlike every other
-     toggle on this screen, flipping it only updates the persisted setting;
-     the BLE radio stack itself is brought up once at boot according to
-     that setting and isn't started or stopped live.
    - "System" submenu: a read-only "Firmware" tile showing the firmware
      version (the release tag, e.g. `v1.0.1`, for release builds), the
      "Reset to Defaults" tile below, and Back.
@@ -342,10 +324,7 @@ implemented.
     (keeping the Settings screen's tiles in sync so they don't show a stale
     value next time it's opened), persists it to NVS right away, and echoes
     back the value actually applied (which may differ from what was typed,
-    if it was out of range). The one exception is `ble_hid_enabled`, which
-    only updates the persisted setting and prints an extra
-    `note=restart required to apply` line, matching the Settings screen's
-    Bluetooth tile.
+    if it was out of range).
   - `save` — persists the current settings to NVS (normally unnecessary,
     since `set` already saves).
   - `reset` — erases saved settings, the same as the Settings screen's
@@ -355,12 +334,11 @@ implemented.
   - `log <none|error|warn|info|debug|verbose>` — sets the runtime log
     verbosity for every module, so a script can quiet interleaved log
     output before sending `get`/`set` commands.
-- Keys, matching the Settings screen's Keyer/Sidetone/Display/Bluetooth
-  submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
+- Keys, matching the Settings screen's Keyer/Sidetone/Display submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
   `paddle_swap`, `paddle_debounce`, `straight_ring_input`,
   `auto_space_pct` (50–100), `tone_hz`, `volume_pct`, `envelope_ms`,
-  `brightness_pct`, `brightness_auto`, `practice_large_text`, and
-  `ble_hid_enabled` (all booleans as `on`/`off`). `straight_ring_input` can
+  `brightness_pct`, `brightness_auto`, and `practice_large_text` (all
+  booleans as `on`/`off`). `straight_ring_input` can
   be set regardless of the current `keymode`, but (like the Settings
   screen's Ring Input tile) only takes effect while `keymode` is
   `straight`. Setting `brightness_pct` while `brightness_auto` is on
@@ -438,7 +416,8 @@ These are out of scope for both the trainer and the keyer. Anything that
 - No Farnsworth spacing (character-speed vs. word-speed timing split).
 - No statistics, history, or progress tracking.
 - No Wi-Fi or OTA updates. Any other connectivity (serial computer keying,
-  Bluetooth) is decided in the backlog, not here.
+  Bluetooth) is decided in the backlog, not here. Bluetooth isn't built
+  into the firmware at all at the moment.
 - No transceiver functions (receiver, RF output, frequency control/CAT).
   The device is a keyer that drives an external rig's key input; it isn't a
   radio.

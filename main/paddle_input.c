@@ -1,6 +1,5 @@
 #include "paddle_input.h"
 
-#include "ble_hid_output.h"
 #include "board_pins.h"
 #include "sidetone.h"
 #include "debouncer.h"
@@ -78,7 +77,6 @@ static void handle_decode_event(morse_codec_event_t event, char out_char)
     if (s_decoded_char_queue != NULL) {
         xQueueSend(s_decoded_char_queue, &queued_char, 0);
     }
-    ble_hid_output_notify_char(event, queued_char);
 }
 
 static void paddle_task(void *arg)
