@@ -337,14 +337,17 @@ implemented.
    - **Tap** a tile: sends its memory, or queues it if a message is already
      playing. Tapping the tile that's playing, or one already queued, does
      nothing. Queued tiles show their queue position (`1`, `2`, …) in the
-     top-right corner.
+     top-right corner. With the queue full, the tap does nothing and the
+     sending strip shows `Queue full` for 2 s.
    - The playing tile is highlighted (amber) with a `▶` in its top-right
      corner.
    - **Long-press** a tile: opens the **memory picker**, a full-screen
      scrollable list laid over the panel: a "None" row, then all 32
      memories (`#NN`, name, start of the text), with the current
      assignment highlighted, and a Cancel button. Tapping a row assigns
-     that memory to the tile (saved to NVS) and closes the picker.
+     that memory to the tile (saved to NVS) and closes the picker. If the
+     save fails, the tile keeps its old memory and the sending strip shows
+     `Save failed` for 2 s.
      Long-press is ignored on the tile that's playing or queued.
    - **Session repeat state**: each tile keeps its own repeat on/off, count
      and pause for the current visit to the panel. It starts as a copy of

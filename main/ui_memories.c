@@ -16,6 +16,7 @@
 #define STEP_BTN_SIZE 44
 #define VALUE_LABEL_WIDTH 80
 #define FOOTER_BTN_HEIGHT 44
+#define NOTICE_MS 2000 /* how long a strip notice (e.g. "Queue full") shows */
 
 typedef struct {
     lv_obj_t *btn;
@@ -48,6 +49,11 @@ static uint32_t s_shown_generation;
 static bool s_labels_valid;
 static char s_highlight_hex[7];
 
+/* A short notice shown in the sending strip in place of the message text,
+ * for an action that failed. Empty = none. */
+static const char *s_notice = "";
+static uint32_t s_notice_start_ms;
+
 /* Repeat popup: the tile it edits, and its value labels. */
 static int s_popup_tile;
 static lv_obj_t *s_popup_count_label;
@@ -58,6 +64,21 @@ static void set_text_if_changed(lv_obj_t *label, const char *text)
     if (strcmp(lv_label_get_text(label), text) != 0) {
         lv_label_set_text(label, text);
     }
+}
+
+static void show_notice(const char *text)
+{
+    s_notice = text;
+    s_notice_start_ms = lv_tick_get();
+}
+
+/* The notice to show now, or NULL once it has expired. */
+static const char *active_notice(void)
+{
+    if (s_notice[0] != '\0' && lv_tick_elaps(s_notice_start_ms) >= NOTICE_MS) {
+        s_notice = "";
+    }
+    return (s_notice[0] != '\0') ? s_notice : NULL;
 }
 
 static void session_from_memory(int tile, session_repeat_t *out)
@@ -192,14 +213,8 @@ static void refresh_repeat_tile(const message_player_status_t *st)
 
 /* The message text, windowed so the character being sent stays in view,
  * with that character recolored. */
-static void refresh_strip(const message_player_status_t *st)
+static void refresh_strip_text(const message_player_status_t *st)
 {
-    if (!st->active) {
-        set_text_if_changed(s_strip_text, "");
-        set_text_if_changed(s_strip_progress, "");
-        return;
-    }
-
     size_t len = strlen(st->text);
     size_t visible = (size_t)(lv_obj_get_content_width(s_strip_text) / STRIP_GLYPH_WIDTH_PX);
     if (visible == 0) {
@@ -223,9 +238,12 @@ static void refresh_strip(const message_player_status_t *st)
         snprintf(buf, sizeof(buf), "%.*s", (int)(end - start), st->text + start);
     }
     set_text_if_changed(s_strip_text, buf);
+}
 
+static void refresh_strip_progress(const message_player_status_t *st)
+{
     char progress[32] = "";
-    if (st->repeat) {
+    if (st->active && st->repeat) {
         if (st->count == 0) {
             snprintf(progress, sizeof(progress), "%u/" LV_SYMBOL_LOOP, (unsigned)st->send_number);
         } else {
@@ -237,6 +255,19 @@ static void refresh_strip(const message_player_status_t *st)
         }
     }
     set_text_if_changed(s_strip_progress, progress);
+}
+
+static void refresh_strip(const message_player_status_t *st)
+{
+    const char *notice = active_notice();
+    if (notice != NULL) {
+        set_text_if_changed(s_strip_text, notice);
+    } else if (st->active) {
+        refresh_strip_text(st);
+    } else {
+        set_text_if_changed(s_strip_text, "");
+    }
+    refresh_strip_progress(st);
 }
 
 static void refresh(void)
@@ -272,6 +303,7 @@ static void screen_loaded_cb(lv_event_t *e)
     (void)e;
     memset(s_session, 0, sizeof(s_session));
     s_last_played_tile = 0;
+    s_notice = "";
     s_labels_valid = false;
     refresh();
 }
@@ -304,7 +336,12 @@ static void tile_clicked_cb(lv_event_t *e)
         .tag = tile,
     };
     strlcpy(msg.text, m.text, sizeof(msg.text));
-    paddle_input_message_enqueue(&msg);
+    message_player_enqueue_result_t result = paddle_input_message_enqueue(&msg);
+    if (result == MESSAGE_PLAYER_QUEUE_FULL) {
+        show_notice("Queue full");
+    } else if (result == MESSAGE_PLAYER_INVALID) {
+        show_notice("Can't send");
+    }
     refresh();
 }
 
@@ -320,8 +357,11 @@ static void picker_row_cb(lv_event_t *e)
 {
     int tile = (int)(intptr_t)lv_obj_get_user_data(s_picker);
     uint8_t n = (uint8_t)(intptr_t)lv_event_get_user_data(e);
-    memory_store_set_tile((uint8_t)tile, n);
-    s_session[tile - 1].valid = false; /* a different memory now */
+    if (memory_store_set_tile((uint8_t)tile, n) == ESP_OK) {
+        s_session[tile - 1].valid = false; /* a different memory now */
+    } else {
+        show_notice("Save failed");
+    }
     close_picker();
     refresh();
 }
