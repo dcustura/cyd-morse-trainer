@@ -370,10 +370,10 @@ It does not teach receiving/copying code — it is a tool for practicing
   operator's own pause fell short, rather than just reading sloppy timing
   leniently. A touch that comes during the withhold is remembered and
   started the moment the gap target is reached, even if the paddle was
-  released again before then. 100% disables this outright (an element
-  always starts the instant a paddle is touched, however short the
-  preceding pause); the default 70% withholds whenever the pause is at
-  least 2.1 units (character) or 4.9 units (word). A pause already below the
+  released again before then. 100% (the default) disables this outright
+  (an element always starts the instant a paddle is touched, however
+  short the preceding pause); 70%, for example, withholds whenever the
+  pause is at least 2.1 units (character) or 4.9 units (word). A pause already below the
   threshold, or already at or past the standard gap on its own, is left
   alone — nothing is ever slowed down while the operator is actively
   sending. The character-gap threshold is never allowed below 2 units
@@ -391,7 +391,7 @@ It does not teach receiving/copying code — it is a tool for practicing
   NVS are debounced by a couple of seconds after the last edit, rather
   than on every tap/step, to reduce flash wear.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
-  paddle swap, paddle debounce on, ring input off, 70% Auto Space, 600 Hz
+  paddle swap, paddle debounce on, ring input off, Auto Space off (100%), 600 Hz
   sidetone, 50% sidetone volume, 10 ms sidetone envelope, 100% brightness,
   brightness auto mode off, Small Practice text size. No default touch calibration
   exists — it must be created via the first-boot calibration flow.
