@@ -193,91 +193,81 @@ static int cmd_get(int argc, char **argv)
     return 0;
 }
 
+/* Valid range per numeric key; max == 0 marks a non-numeric key. */
+static const struct {
+    long min;
+    long max;
+} s_num_range[KEY_COUNT] = {
+    [KEY_WPM] = {SETTINGS_WPM_MIN, SETTINGS_WPM_MAX},
+    [KEY_AUTO_SPACE_PCT] = {SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX},
+    [KEY_TONE_HZ] = {SETTINGS_TONE_HZ_MIN, SETTINGS_TONE_HZ_MAX},
+    [KEY_VOLUME_PCT] = {SETTINGS_VOLUME_PCT_MIN, SETTINGS_VOLUME_PCT_MAX},
+    [KEY_ENVELOPE_MS] = {SETTINGS_ENVELOPE_MS_MIN, SETTINGS_ENVELOPE_MS_MAX},
+    [KEY_BRIGHTNESS_PCT] = {SETTINGS_BRIGHTNESS_PCT_MIN, SETTINGS_BRIGHTNESS_PCT_MAX},
+};
+
 /* Parses val, stores it in *s, and applies it live. Returns 0 on success,
  * 1 (after printing an ERR line) on a bad value. Called with the LVGL lock
  * held. */
 static int apply_setting(settings_t *s, cli_key_t key, const char *val)
 {
-    long num;
-    bool flag;
+    long num = 0;
+    bool flag = false;
+    iambic_keyer_mode_t mode = s->keymode;
 
-    switch (key) {
-    case KEY_WPM:
+    if (s_num_range[key].max != 0) {
         if (!parse_long(val, &num)) {
             printf("ERR invalid value %s\n", val);
             return 1;
         }
-        s->wpm = settings_clamp_wpm((uint16_t)num);
+        /* Clamp while still a long, before narrowing to the field's type,
+         * so out-of-range input saturates instead of wrapping (e.g.
+         * volume_pct 300 -> 100, not 44). */
+        if (num < s_num_range[key].min) {
+            num = s_num_range[key].min;
+        } else if (num > s_num_range[key].max) {
+            num = s_num_range[key].max;
+        }
+    } else if (key == KEY_KEYMODE ? !keymode_from_str(val, &mode) : !parse_bool(val, &flag)) {
+        printf("ERR unknown value %s\n", val);
+        return 1;
+    }
+
+    switch (key) {
+    case KEY_WPM:
+        s->wpm = (uint16_t)num;
         paddle_input_set_wpm(s->wpm);
         break;
     case KEY_KEYMODE:
-        if (!keymode_from_str(val, &s->keymode)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
-        paddle_input_set_mode(s->keymode);
+        s->keymode = mode;
+        paddle_input_set_mode(mode);
         break;
     case KEY_PADDLE_SWAP:
-        if (!parse_bool(val, &flag)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
         s->paddle_swap = flag;
         paddle_input_set_swap(flag);
         break;
     case KEY_PADDLE_DEBOUNCE:
-        if (!parse_bool(val, &flag)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
         s->paddle_debounce = flag;
         paddle_input_set_debounce(flag);
         break;
     case KEY_AUTO_SPACE_PCT:
-        if (!parse_long(val, &num)) {
-            printf("ERR invalid value %s\n", val);
-            return 1;
-        }
-        /* Saturate to the uint8_t range before narrowing, so e.g. 300
-         * clamps to the max and -1 to the min instead of wrapping. */
-        if (num < 0) {
-            num = 0;
-        } else if (num > UINT8_MAX) {
-            num = UINT8_MAX;
-        }
-        s->auto_space_pct = settings_clamp_auto_space_pct((uint8_t)num);
+        s->auto_space_pct = (uint8_t)num;
         paddle_input_set_auto_space_pct(s->auto_space_pct);
         break;
     case KEY_TONE_HZ:
-        if (!parse_long(val, &num)) {
-            printf("ERR invalid value %s\n", val);
-            return 1;
-        }
-        s->tone_hz = settings_clamp_tone_hz((uint16_t)num);
+        s->tone_hz = (uint16_t)num;
         sidetone_set_freq(s->tone_hz);
         break;
     case KEY_VOLUME_PCT:
-        if (!parse_long(val, &num)) {
-            printf("ERR invalid value %s\n", val);
-            return 1;
-        }
-        s->volume_pct = settings_clamp_volume_pct((uint8_t)num);
+        s->volume_pct = (uint8_t)num;
         sidetone_set_volume(s->volume_pct);
         break;
     case KEY_ENVELOPE_MS:
-        if (!parse_long(val, &num)) {
-            printf("ERR invalid value %s\n", val);
-            return 1;
-        }
-        s->envelope_ms = settings_clamp_envelope_ms((uint16_t)num);
+        s->envelope_ms = (uint16_t)num;
         sidetone_set_envelope_ms(s->envelope_ms);
         break;
     case KEY_BRIGHTNESS_PCT:
-        if (!parse_long(val, &num)) {
-            printf("ERR invalid value %s\n", val);
-            return 1;
-        }
-        s->brightness_pct = settings_clamp_brightness_pct((uint8_t)num);
+        s->brightness_pct = (uint8_t)num;
         if (s->brightness_auto) {
             /* An explicit level always overrides Auto, matching the touchscreen UI. */
             s->brightness_auto = false;
@@ -286,10 +276,6 @@ static int apply_setting(settings_t *s, cli_key_t key, const char *val)
         display_set_brightness(s->brightness_pct);
         break;
     case KEY_BRIGHTNESS_AUTO:
-        if (!parse_bool(val, &flag)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
         s->brightness_auto = flag;
         auto_brightness_set_enabled(flag);
         if (!flag) {
@@ -297,26 +283,14 @@ static int apply_setting(settings_t *s, cli_key_t key, const char *val)
         }
         break;
     case KEY_PRACTICE_LARGE_TEXT:
-        if (!parse_bool(val, &flag)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
         s->practice_large_text = flag;
         ui_practice_set_text_size(flag);
         break;
     case KEY_BLE_HID_ENABLED:
-        if (!parse_bool(val, &flag)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
         s->ble_hid_enabled = flag;
         printf("note=restart required to apply\n");
         break;
     case KEY_STRAIGHT_RING_INPUT:
-        if (!parse_bool(val, &flag)) {
-            printf("ERR unknown value %s\n", val);
-            return 1;
-        }
         s->straight_ring_input = flag;
         paddle_input_set_straight_ring_input(flag);
         break;
