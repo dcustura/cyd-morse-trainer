@@ -159,22 +159,20 @@ static void paddle_task(void *arg)
     }
 }
 
-void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
-                         bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
-                         uint16_t envelope_ms, bool straight_ring_input, uint8_t auto_space_pct)
+void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *settings)
 {
-    iambic_keyer_init(&s_keyer, mode, wpm);
-    iambic_keyer_set_auto_space_pct(&s_keyer, auto_space_pct);
-    morse_codec_init(&s_codec, wpm);
-    s_paddle_swap = paddle_swap;
-    s_paddle_debounce = paddle_debounce;
-    s_straight_ring_input = straight_ring_input;
+    iambic_keyer_init(&s_keyer, settings->keymode, settings->wpm);
+    iambic_keyer_set_auto_space_pct(&s_keyer, settings->auto_space_pct);
+    morse_codec_init(&s_codec, settings->wpm);
+    s_paddle_swap = settings->paddle_swap;
+    s_paddle_debounce = settings->paddle_debounce;
+    s_straight_ring_input = settings->straight_ring_input;
     s_decoded_char_queue = decoded_char_queue;
 
     sidetone_init();
-    sidetone_set_freq(tone_hz);
-    sidetone_set_volume(volume_pct);
-    sidetone_set_envelope_ms(envelope_ms);
+    sidetone_set_freq(settings->tone_hz);
+    sidetone_set_volume(settings->volume_pct);
+    sidetone_set_envelope_ms(settings->envelope_ms);
 
     xTaskCreate(paddle_task, "paddle_input", PADDLE_TASK_STACK, NULL, PADDLE_TASK_PRIO, NULL);
 }

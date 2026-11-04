@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "iambic_keyer.h"
+#include "settings.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,9 +18,7 @@ extern "C" {
  * character (or ' ' for a word gap) into decoded_char_queue for the
  * Practice screen to display.
  */
-void paddle_input_start(QueueHandle_t decoded_char_queue, iambic_keyer_mode_t mode, uint16_t wpm,
-                         bool paddle_swap, bool paddle_debounce, uint16_t tone_hz, uint8_t volume_pct,
-                         uint16_t envelope_ms, bool straight_ring_input, uint8_t auto_space_pct);
+void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *settings);
 
 /* Live-apply setting changes (called from the Settings screen). */
 void paddle_input_set_mode(iambic_keyer_mode_t mode);

@@ -56,13 +56,7 @@ void app_main(void)
                                                     settings.practice_large_text);
     lv_obj_t *help_screen = ui_help_create(practice_screen);
     ui_practice_set_help_screen(help_screen);
-    lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen,
-                                                    settings.keymode, settings.wpm, settings.paddle_swap,
-                                                    settings.paddle_debounce, settings.straight_ring_input,
-                                                    settings.auto_space_pct,
-                                                    settings.tone_hz, settings.volume_pct, settings.envelope_ms,
-                                                    settings.brightness_pct, settings.brightness_auto,
-                                                    settings.practice_large_text, settings.ble_hid_enabled);
+    lv_obj_t *settings_screen = ui_settings_create(menu_screen, calibration_screen, touch_test_screen, &settings);
     ui_practice_set_keyer_settings_screen(ui_settings_get_keyer_submenu());
     ui_menu_populate(menu_screen, practice_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
@@ -76,9 +70,7 @@ void app_main(void)
      * failure, ble_hid_output_init() degrades gracefully (logs and disables
      * itself) if the BT stack can't get the RAM it wants -- so audio must
      * claim its small, guaranteed share first. */
-    paddle_input_start(decoded_char_queue, settings.keymode, settings.wpm, settings.paddle_swap,
-                        settings.paddle_debounce, settings.tone_hz, settings.volume_pct, settings.envelope_ms,
-                        settings.straight_ring_input, settings.auto_space_pct);
+    paddle_input_start(decoded_char_queue, &settings);
 
     ble_hid_output_init(settings.ble_hid_enabled);
 

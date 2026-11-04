@@ -931,29 +931,9 @@ static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 }
 
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
-                              lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
-                              uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
-                              bool initial_straight_ring_input, uint8_t initial_auto_space_pct,
-                              uint16_t initial_tone_hz,
-                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
-                              uint8_t initial_brightness_pct, bool initial_brightness_auto,
-                              bool initial_large_text, bool initial_ble_hid_enabled)
+                              lv_obj_t *touch_test_screen, const settings_t *initial)
 {
-    s_current_settings = (settings_t){
-        .wpm = initial_wpm,
-        .keymode = initial_mode,
-        .paddle_swap = initial_swap,
-        .paddle_debounce = initial_debounce,
-        .straight_ring_input = initial_straight_ring_input,
-        .auto_space_pct = initial_auto_space_pct,
-        .tone_hz = initial_tone_hz,
-        .volume_pct = initial_volume_pct,
-        .envelope_ms = initial_envelope_ms,
-        .brightness_pct = initial_brightness_pct,
-        .brightness_auto = initial_brightness_auto,
-        .practice_large_text = initial_large_text,
-        .ble_hid_enabled = initial_ble_hid_enabled,
-    };
+    s_current_settings = *initial;
 
     lv_obj_t *scr = lv_obj_create(NULL);
     s_settings_screen = scr;

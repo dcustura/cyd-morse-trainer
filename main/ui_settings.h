@@ -78,13 +78,7 @@ extern "C" {
  * menu_screen. Must be called while holding the LVGL lock (lvgl_port_lock).
  */
 lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen,
-                              lv_obj_t *touch_test_screen, iambic_keyer_mode_t initial_mode,
-                              uint16_t initial_wpm, bool initial_swap, bool initial_debounce,
-                              bool initial_straight_ring_input, uint8_t initial_auto_space_pct,
-                              uint16_t initial_tone_hz,
-                              uint8_t initial_volume_pct, uint16_t initial_envelope_ms,
-                              uint8_t initial_brightness_pct, bool initial_brightness_auto,
-                              bool initial_large_text, bool initial_ble_hid_enabled);
+                              lv_obj_t *touch_test_screen, const settings_t *initial);
 
 /**
  * Update the Settings screen's cached values and visible tile labels to
