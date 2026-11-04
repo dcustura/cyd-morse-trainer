@@ -17,18 +17,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define WPM_MIN SETTINGS_WPM_MIN
-#define WPM_MAX SETTINGS_WPM_MAX
-#define TONE_HZ_MIN SETTINGS_TONE_HZ_MIN
-#define TONE_HZ_MAX SETTINGS_TONE_HZ_MAX
-#define VOLUME_PCT_MIN SETTINGS_VOLUME_PCT_MIN
-#define VOLUME_PCT_MAX SETTINGS_VOLUME_PCT_MAX
-#define ENVELOPE_MS_MIN SETTINGS_ENVELOPE_MS_MIN
-#define ENVELOPE_MS_MAX SETTINGS_ENVELOPE_MS_MAX
-#define BRIGHTNESS_PCT_MIN SETTINGS_BRIGHTNESS_PCT_MIN
-#define BRIGHTNESS_PCT_MAX SETTINGS_BRIGHTNESS_PCT_MAX
-#define AUTO_SPACE_PCT_MIN SETTINGS_AUTO_SPACE_PCT_MIN
-#define AUTO_SPACE_PCT_MAX SETTINGS_AUTO_SPACE_PCT_MAX
 #define TEST_TONE_DURATION_MS 300
 /* Settings changes are batched and flushed to NVS this long after the last
  * edit, rather than on every step/tap, to keep flash wear down when the
@@ -60,27 +48,23 @@ typedef struct {
 } numeric_field_info_t;
 
 static const numeric_field_info_t s_field_info[FIELD_COUNT] = {
-    [FIELD_WPM] = {"WPM", WPM_MIN, WPM_MAX, 1, "%d", false},
-    [FIELD_AUTO_SPACE] = {"Auto Space", AUTO_SPACE_PCT_MIN, AUTO_SPACE_PCT_MAX, 5, "%d%%", false},
-    [FIELD_TONE_HZ] = {"Pitch", TONE_HZ_MIN, TONE_HZ_MAX, 10, "%d Hz", true},
-    [FIELD_VOLUME] = {"Volume", VOLUME_PCT_MIN, VOLUME_PCT_MAX, 5, "%d%%", true},
-    [FIELD_ENVELOPE] = {"Smoothing", ENVELOPE_MS_MIN, ENVELOPE_MS_MAX, 2, "%d ms", true},
-    [FIELD_BRIGHTNESS] = {"Brightness", BRIGHTNESS_PCT_MIN, BRIGHTNESS_PCT_MAX, 10, "%d%%", false},
+    [FIELD_WPM] = {"WPM", SETTINGS_WPM_MIN, SETTINGS_WPM_MAX, 1, "%d", false},
+    [FIELD_AUTO_SPACE] = {"Auto Space", SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX, 5, "%d%%", false},
+    [FIELD_TONE_HZ] = {"Pitch", SETTINGS_TONE_HZ_MIN, SETTINGS_TONE_HZ_MAX, 10, "%d Hz", true},
+    [FIELD_VOLUME] = {"Volume", SETTINGS_VOLUME_PCT_MIN, SETTINGS_VOLUME_PCT_MAX, 5, "%d%%", true},
+    [FIELD_ENVELOPE] = {"Smoothing", SETTINGS_ENVELOPE_MS_MIN, SETTINGS_ENVELOPE_MS_MAX, 2, "%d ms", true},
+    [FIELD_BRIGHTNESS] = {"Brightness", SETTINGS_BRIGHTNESS_PCT_MIN, SETTINGS_BRIGHTNESS_PCT_MAX, 10, "%d%%", false},
 };
 
 static lv_obj_t *s_settings_screen;
 static lv_obj_t *s_touch_submenu_screen;
 static lv_obj_t *s_keyer_submenu_screen;
 static lv_obj_t *s_keyer_back_target;
-static lv_obj_t *s_sidetone_submenu_screen;
-static lv_obj_t *s_display_submenu_screen;
-static lv_obj_t *s_bluetooth_submenu_screen;
-static lv_obj_t *s_system_submenu_screen;
 static settings_t s_current_settings;
 
-static lv_obj_t *s_wpm_tile_value;
+/* Value line of each numeric field's tile, indexed by numeric_field_t. */
+static lv_obj_t *s_field_tile_value[FIELD_COUNT];
 static lv_obj_t *s_auto_space_tile;
-static lv_obj_t *s_auto_space_tile_value;
 static lv_obj_t *s_keymode_tile_value;
 static lv_obj_t *s_swap_tile;
 static lv_obj_t *s_swap_switch;
@@ -88,10 +72,6 @@ static lv_obj_t *s_ring_input_tile;
 static lv_obj_t *s_ring_input_switch;
 static lv_obj_t *s_debounce_tile;
 static lv_obj_t *s_debounce_switch;
-static lv_obj_t *s_tone_tile_value;
-static lv_obj_t *s_volume_tile_value;
-static lv_obj_t *s_envelope_tile_value;
-static lv_obj_t *s_brightness_tile_value;
 static lv_obj_t *s_text_size_switch;
 static lv_obj_t *s_ble_hid_tile_value;
 
@@ -163,15 +143,25 @@ static void set_tile_hidden(lv_obj_t *tile, bool hidden)
     }
 }
 
+static int32_t field_get_value(numeric_field_t field);
+
+/* A numeric field's current value as shown on its tile and popup. */
+static void set_field_value_text(lv_obj_t *label, numeric_field_t field)
+{
+    if (field == FIELD_BRIGHTNESS && s_current_settings.brightness_auto) {
+        lv_label_set_text(label, "Auto");
+        return;
+    }
+    char text[24];
+    snprintf(text, sizeof(text), s_field_info[field].unit_fmt, (int)field_get_value(field));
+    lv_label_set_text(label, text);
+}
+
 static void refresh_tile_labels(void)
 {
-    char text[24];
-
-    snprintf(text, sizeof(text), s_field_info[FIELD_WPM].unit_fmt, (int)s_current_settings.wpm);
-    lv_label_set_text(s_wpm_tile_value, text);
-
-    snprintf(text, sizeof(text), s_field_info[FIELD_AUTO_SPACE].unit_fmt, (int)s_current_settings.auto_space_pct);
-    lv_label_set_text(s_auto_space_tile_value, text);
+    for (numeric_field_t field = 0; field < FIELD_COUNT; field++) {
+        set_field_value_text(s_field_tile_value[field], field);
+    }
 
     lv_label_set_text(s_keymode_tile_value, keymode_text(s_current_settings.keymode));
 
@@ -200,22 +190,6 @@ static void refresh_tile_labels(void)
     } else {
         lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);
         lv_obj_remove_state(s_auto_space_tile, LV_STATE_DISABLED);
-    }
-
-    snprintf(text, sizeof(text), s_field_info[FIELD_TONE_HZ].unit_fmt, (int)s_current_settings.tone_hz);
-    lv_label_set_text(s_tone_tile_value, text);
-
-    snprintf(text, sizeof(text), s_field_info[FIELD_VOLUME].unit_fmt, (int)s_current_settings.volume_pct);
-    lv_label_set_text(s_volume_tile_value, text);
-
-    snprintf(text, sizeof(text), s_field_info[FIELD_ENVELOPE].unit_fmt, (int)s_current_settings.envelope_ms);
-    lv_label_set_text(s_envelope_tile_value, text);
-
-    if (s_current_settings.brightness_auto) {
-        lv_label_set_text(s_brightness_tile_value, "Auto");
-    } else {
-        snprintf(text, sizeof(text), s_field_info[FIELD_BRIGHTNESS].unit_fmt, (int)s_current_settings.brightness_pct);
-        lv_label_set_text(s_brightness_tile_value, text);
     }
 
     set_switch_checked(s_text_size_switch, s_current_settings.practice_large_text);
@@ -340,10 +314,15 @@ static void nav_btn_cb(lv_event_t *e)
  * grid tile (see ui_settings_create()'s main grid for the same pattern) --
  * no separate title bar, since the submenu the user just navigated into is
  * self-evident from context. */
-static lv_obj_t *create_submenu_screen(void)
+static lv_obj_t *create_submenu_screen(bool three_columns)
 {
+    static const int32_t cols2_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t cols3_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t rows_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+
     lv_obj_t *scr = lv_obj_create(NULL);
     lv_obj_set_style_pad_all(scr, 4, 0);
+    lv_obj_set_grid_dsc_array(scr, three_columns ? cols3_dsc : cols2_dsc, rows_dsc);
     return scr;
 }
 
@@ -400,13 +379,7 @@ static void test_field_btn_cb(lv_event_t *e)
 
 static void update_popup_value_label(void)
 {
-    if (s_popup_field == FIELD_BRIGHTNESS && s_current_settings.brightness_auto) {
-        lv_label_set_text(s_popup_value_label, "Auto");
-        return;
-    }
-    char text[24];
-    snprintf(text, sizeof(text), s_field_info[s_popup_field].unit_fmt, (int)field_get_value(s_popup_field));
-    lv_label_set_text(s_popup_value_label, text);
+    set_field_value_text(s_popup_value_label, s_popup_field);
 }
 
 static void brightness_auto_toggle_cb(lv_event_t *e)
@@ -560,30 +533,6 @@ static void keymode_tile_cb(lv_event_t *e)
     display_add_button_label(close_btn, LV_SYMBOL_CLOSE " Close");
 }
 
-/* Like Paddle Debounce, Paddle Swap has no popup: the tile itself is a
- * toggle, flipped immediately by tapping anywhere on it. */
-static void swap_toggle_cb(lv_event_t *e)
-{
-    (void)e;
-    bool swap = !s_current_settings.paddle_swap;
-    s_current_settings.paddle_swap = swap;
-    paddle_input_set_swap(swap);
-    schedule_settings_save();
-    refresh_tile_labels();
-}
-
-/* Like Paddle Debounce, Large Text has no popup: the tile itself is a
- * toggle, flipped immediately between Small (off) and Large (on). */
-static void text_size_toggle_cb(lv_event_t *e)
-{
-    (void)e;
-    bool large = !s_current_settings.practice_large_text;
-    s_current_settings.practice_large_text = large;
-    ui_practice_set_text_size(large);
-    schedule_settings_save();
-    refresh_tile_labels();
-}
-
 static void ble_hid_select_cb(lv_event_t *e)
 {
     bool enabled = (bool)(intptr_t)lv_event_get_user_data(e);
@@ -601,27 +550,24 @@ static void ble_hid_tile_cb(lv_event_t *e)
                        options, ble_hid_select_cb);
 }
 
-/* Unlike every other Keyer submenu tile, Paddle Debounce has no popup: the
- * tile itself is a toggle, flipped immediately by tapping anywhere on it
- * (the switch is purely a visual indicator -- see create_toggle_tile()). */
-static void debounce_toggle_cb(lv_event_t *e)
-{
-    (void)e;
-    bool debounce = !s_current_settings.paddle_debounce;
-    s_current_settings.paddle_debounce = debounce;
-    paddle_input_set_debounce(debounce);
-    schedule_settings_save();
-    refresh_tile_labels();
-}
+/* An on/off setting shown as a toggle tile (see create_toggle_tile()):
+ * tapping the tile flips *value and applies it live. */
+typedef struct {
+    bool *value;
+    void (*apply)(bool);
+} toggle_t;
 
-/* Takes the Paddle Swap tile's place in the Keyer submenu's grid while Key
- * Mode is Straight Key (see refresh_tile_labels()); also has no popup. */
-static void ring_input_toggle_cb(lv_event_t *e)
+static const toggle_t s_swap_toggle = {&s_current_settings.paddle_swap, paddle_input_set_swap};
+static const toggle_t s_ring_input_toggle = {&s_current_settings.straight_ring_input,
+                                              paddle_input_set_straight_ring_input};
+static const toggle_t s_debounce_toggle = {&s_current_settings.paddle_debounce, paddle_input_set_debounce};
+static const toggle_t s_large_text_toggle = {&s_current_settings.practice_large_text, ui_practice_set_text_size};
+
+static void toggle_tile_cb(lv_event_t *e)
 {
-    (void)e;
-    bool enabled = !s_current_settings.straight_ring_input;
-    s_current_settings.straight_ring_input = enabled;
-    paddle_input_set_straight_ring_input(enabled);
+    const toggle_t *toggle = (const toggle_t *)lv_event_get_user_data(e);
+    *toggle->value = !*toggle->value;
+    toggle->apply(*toggle->value);
     schedule_settings_save();
     refresh_tile_labels();
 }
@@ -631,12 +577,6 @@ static void calibrate_btn_cb(lv_event_t *e)
     lv_obj_t *calibration_screen = (lv_obj_t *)lv_event_get_user_data(e);
     ui_calibration_set_cancel_target(s_touch_submenu_screen);
     lv_scr_load(calibration_screen);
-}
-
-static void touch_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    lv_scr_load(s_touch_submenu_screen);
 }
 
 static void keyer_tile_cb(lv_event_t *e)
@@ -650,30 +590,6 @@ static void keyer_back_btn_cb(lv_event_t *e)
 {
     (void)e;
     lv_scr_load(s_keyer_back_target);
-}
-
-static void sidetone_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    lv_scr_load(s_sidetone_submenu_screen);
-}
-
-static void display_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    lv_scr_load(s_display_submenu_screen);
-}
-
-static void bluetooth_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    lv_scr_load(s_bluetooth_submenu_screen);
-}
-
-static void system_tile_cb(lv_event_t *e)
-{
-    (void)e;
-    lv_scr_load(s_system_submenu_screen);
 }
 
 static void reset_confirm_btn_cb(lv_event_t *e)
@@ -751,18 +667,16 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
 
 /* Like create_tile(), but for an on/off setting with no popup: an lv_switch
  * shows the current state, and tapping anywhere on the tile flips it
- * immediately via cb. The switch is made non-clickable so the tap is
- * handled once, by the tile itself, rather than also being intercepted by
- * the switch's own default click-to-toggle behavior (which would animate it
- * independently of the setting actually being applied). cb is responsible
- * for updating the switch's checked/tile's disabled state (via
- * refresh_tile_labels()); *switch_out is set to the switch so the caller
- * can do so.
- */
-static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
-                                     lv_obj_t **switch_out)
+ * immediately (toggle_tile_cb()). The switch is made non-clickable so the
+ * tap is handled once, by the tile itself, rather than also being
+ * intercepted by the switch's own default click-to-toggle behavior (which
+ * would animate it independently of the setting actually being applied).
+ * refresh_tile_labels() keeps the switch in step; *switch_out is set to it
+ * for that. */
+static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row,
+                                     const toggle_t *toggle, lv_obj_t **switch_out)
 {
-    lv_obj_t *tile = create_tile_shell(grid, name, col, row, cb, NULL);
+    lv_obj_t *tile = create_tile_shell(grid, name, col, row, toggle_tile_cb, (void *)toggle);
     lv_obj_set_style_pad_row(tile, 6, 0);
 
     lv_obj_t *sw = lv_switch_create(tile);
@@ -780,47 +694,44 @@ static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t co
     return tile;
 }
 
+/* The gray "< Back" tile every Settings grid ends with. */
+static void create_back_tile(lv_obj_t *grid, int32_t col, int32_t row, lv_event_cb_t cb, void *user_data)
+{
+    lv_obj_t *tile = create_tile(grid, LV_SYMBOL_LEFT " Back", col, row, cb, user_data, NULL);
+    display_style_button_dismiss(tile);
+}
+
 static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                        lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = create_submenu_screen();
-
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+    lv_obj_t *scr = create_submenu_screen(false);
 
     create_tile(scr, "Calibrate", 0, 0, calibrate_btn_cb, calibration_screen, NULL);
     create_tile(scr, "Verify\nCalibration", 1, 0, nav_btn_cb, touch_test_screen, NULL);
 
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
-    display_style_button_dismiss(back_tile);
+    create_back_tile(scr, 1, 1, nav_btn_cb, settings_screen);
 
     return scr;
 }
 
 static lv_obj_t *create_keyer_submenu(void)
 {
-    lv_obj_t *scr = create_submenu_screen();
+    lv_obj_t *scr = create_submenu_screen(true);
 
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
-
-    create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_wpm_tile_value);
+    create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_field_tile_value[FIELD_WPM]);
     create_tile(scr, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
 
     /* Paddle Swap and Ring Input share this grid cell: only one is ever
      * shown, picked by refresh_tile_labels() based on Key Mode. */
-    s_swap_tile = create_toggle_tile(scr, "Paddle Swap", 2, 0, swap_toggle_cb, &s_swap_switch);
-    s_ring_input_tile = create_toggle_tile(scr, "Ring Input", 2, 0, ring_input_toggle_cb, &s_ring_input_switch);
+    s_swap_tile = create_toggle_tile(scr, "Paddle Swap", 2, 0, &s_swap_toggle, &s_swap_switch);
+    s_ring_input_tile = create_toggle_tile(scr, "Ring Input", 2, 0, &s_ring_input_toggle, &s_ring_input_switch);
 
-    s_debounce_tile = create_toggle_tile(scr, "Paddle\nDebounce", 0, 1, debounce_toggle_cb, &s_debounce_switch);
+    s_debounce_tile = create_toggle_tile(scr, "Paddle\nDebounce", 0, 1, &s_debounce_toggle, &s_debounce_switch);
 
     s_auto_space_tile = create_tile(scr, "Auto\nSpace", 1, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_AUTO_SPACE,
-                                     &s_auto_space_tile_value);
+                                     &s_field_tile_value[FIELD_AUTO_SPACE]);
 
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 2, 1, keyer_back_btn_cb, NULL, NULL);
-    display_style_button_dismiss(back_tile);
+    create_back_tile(scr, 2, 1, keyer_back_btn_cb, NULL);
 
     return scr;
 }
@@ -828,50 +739,36 @@ static lv_obj_t *create_keyer_submenu(void)
 static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                          lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = create_submenu_screen();
-
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+    lv_obj_t *scr = create_submenu_screen(false);
 
     create_tile(scr, "Brightness", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_BRIGHTNESS,
-                &s_brightness_tile_value);
+                &s_field_tile_value[FIELD_BRIGHTNESS]);
 
     s_touch_submenu_screen = create_touch_submenu(scr, calibration_screen, touch_test_screen);
     ui_touch_test_set_back_target(s_touch_submenu_screen);
-    create_tile(scr, "Touchscreen", 1, 0, touch_tile_cb, NULL, NULL);
+    create_tile(scr, "Touchscreen", 1, 0, nav_btn_cb, s_touch_submenu_screen, NULL);
 
-    create_toggle_tile(scr, "Large Text", 0, 1, text_size_toggle_cb, &s_text_size_switch);
+    create_toggle_tile(scr, "Large Text", 0, 1, &s_large_text_toggle, &s_text_size_switch);
 
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
-    display_style_button_dismiss(back_tile);
+    create_back_tile(scr, 1, 1, nav_btn_cb, settings_screen);
 
     return scr;
 }
 
 static lv_obj_t *create_bluetooth_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen();
-
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+    lv_obj_t *scr = create_submenu_screen(false);
 
     create_tile(scr, "BLE\nKeyboard", 0, 0, ble_hid_tile_cb, NULL, &s_ble_hid_tile_value);
 
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
-    display_style_button_dismiss(back_tile);
+    create_back_tile(scr, 1, 1, nav_btn_cb, settings_screen);
 
     return scr;
 }
 
 static lv_obj_t *create_system_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen();
-
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+    lv_obj_t *scr = create_submenu_screen(false);
 
     /* Read-only: the app version baked into the image (PROJECT_VER -- the
      * release tag for CI builds via version.txt, `git describe` output for
@@ -886,26 +783,23 @@ static lv_obj_t *create_system_submenu(lv_obj_t *settings_screen)
 
     create_tile(scr, "Reset to\nDefaults", 1, 0, reset_btn_cb, NULL, NULL);
 
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
-    display_style_button_dismiss(back_tile);
+    create_back_tile(scr, 1, 1, nav_btn_cb, settings_screen);
 
     return scr;
 }
 
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen();
+    lv_obj_t *scr = create_submenu_screen(false);
 
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+    create_tile(scr, "Pitch", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ,
+                &s_field_tile_value[FIELD_TONE_HZ]);
+    create_tile(scr, "Volume", 1, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME,
+                &s_field_tile_value[FIELD_VOLUME]);
+    create_tile(scr, "Smoothing", 0, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE,
+                &s_field_tile_value[FIELD_ENVELOPE]);
 
-    create_tile(scr, "Pitch", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ, &s_tone_tile_value);
-    create_tile(scr, "Volume", 1, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_VOLUME, &s_volume_tile_value);
-    create_tile(scr, "Smoothing", 0, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_ENVELOPE, &s_envelope_tile_value);
-
-    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
-    display_style_button_dismiss(back_tile);
+    create_back_tile(scr, 1, 1, nav_btn_cb, settings_screen);
 
     return scr;
 }
@@ -915,31 +809,19 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 {
     s_current_settings = *initial;
 
-    lv_obj_t *scr = lv_obj_create(NULL);
+    /* Same grid as the 3-column submenus, just with a refresh on load. */
+    lv_obj_t *scr = create_submenu_screen(true);
     s_settings_screen = scr;
     lv_obj_add_event_cb(scr, settings_screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
-    lv_obj_set_style_pad_all(scr, 4, 0);
-
-    lv_obj_t *grid = scr;
-    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
-
-    create_tile(grid, "Keyer", 0, 0, keyer_tile_cb, NULL, NULL);
-    create_tile(grid, "Sidetone", 1, 0, sidetone_tile_cb, NULL, NULL);
-    create_tile(grid, "Display", 2, 0, display_tile_cb, NULL, NULL);
-    create_tile(grid, "Bluetooth", 0, 1, bluetooth_tile_cb, NULL, NULL);
-
-    create_tile(grid, "System", 1, 1, system_tile_cb, NULL, NULL);
-
-    lv_obj_t *back_tile = create_tile(grid, LV_SYMBOL_LEFT " Back", 2, 1, nav_btn_cb, menu_screen, NULL);
-    display_style_button_dismiss(back_tile);
 
     s_keyer_submenu_screen = create_keyer_submenu();
-    s_sidetone_submenu_screen = create_sidetone_submenu(scr);
-    s_display_submenu_screen = create_display_submenu(scr, calibration_screen, touch_test_screen);
-    s_bluetooth_submenu_screen = create_bluetooth_submenu(scr);
-    s_system_submenu_screen = create_system_submenu(scr);
+    create_tile(scr, "Keyer", 0, 0, keyer_tile_cb, NULL, NULL);
+    create_tile(scr, "Sidetone", 1, 0, nav_btn_cb, create_sidetone_submenu(scr), NULL);
+    create_tile(scr, "Display", 2, 0, nav_btn_cb, create_display_submenu(scr, calibration_screen, touch_test_screen),
+                NULL);
+    create_tile(scr, "Bluetooth", 0, 1, nav_btn_cb, create_bluetooth_submenu(scr), NULL);
+    create_tile(scr, "System", 1, 1, nav_btn_cb, create_system_submenu(scr), NULL);
+    create_back_tile(scr, 2, 1, nav_btn_cb, menu_screen);
 
     refresh_tile_labels();
 
