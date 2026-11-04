@@ -10,10 +10,10 @@ How this file works:
 - When an item passes on the board, **delete it** (don't tick it). If it
   fails, replace it with a note of what went wrong, or fix it and delete it.
 - When a section is empty, delete the section.
-- Remote serial testing runs `set volume_pct 0`, and `set` saves to flash,
-  so the board may be muted. Before the checks below, turn the sidetone
-  back up (Settings > Sidetone > Volume, or `set volume_pct 50`): several
-  of them are about what you hear.
+- Unattended serial testing mutes the sidetone (`set volume_pct 0`) and
+  restores it to 10% when done; `set` saves to flash, so if a session was
+  cut short the board may still be muted. Several checks below are about
+  what you hear, so make sure the volume is up first.
 - Settings changes are saved about 2 s after the last tap. Wait a few
   seconds before rebooting to check that something was kept.
 
