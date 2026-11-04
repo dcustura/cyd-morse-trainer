@@ -9,10 +9,11 @@ implementing that behavior is structured*.
 
 ## What this project is, in one paragraph
 
-A Morse code **send trainer** on an ESP32 ("Cheap Yellow Display" board): a
-FreeRTOS task samples a paddle/straight-key GPIO every millisecond, runs it
-through a keyer state machine and a Morse timing decoder, and the resulting
-characters are shown live on an LVGL touchscreen UI, logged, optionally typed
+A Morse code **keyer and send trainer** on an ESP32 ("Cheap Yellow Display" board): a
+FreeRTOS task samples a paddle/straight-key GPIO every millisecond and runs it
+through a keyer state machine. The keyer's key-down/key-up output drives the
+sidetone and an external key-output GPIO (for keying a transceiver), and also
+feeds a Morse timing decoder, whose resulting characters are shown live on an LVGL touchscreen UI, logged, optionally typed
 into a paired phone/PC over BLE HID, and readable/settable over a serial CLI.
 Settings and touch calibration persist to NVS flash.
 

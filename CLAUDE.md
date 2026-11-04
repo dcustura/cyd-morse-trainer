@@ -41,6 +41,24 @@ Manager (EIM). Follow these baseline rules when working here.
 and build state. Do not run a redundant `fullclean` afterward; use it only
 when stale artifacts are a demonstrated problem.
 
+## Project Goals and Backlog
+
+- This project is a **CW keyer + Morse send trainer**. It started as a pure
+  send trainer and is being extended into a full-featured, easy-to-use
+  keyer for on-air operation. Don't drop or weaken trainer behavior when
+  adding keyer features.
+- `docs/backlog.md` is the curated list of planned features that **aren't
+  implemented yet**. `docs/functional-spec.md` describes only what's
+  implemented.
+  - Check the backlog before proposing or starting new feature work, and
+    follow its priority tiers unless the user says otherwise.
+  - When a backlog feature is implemented, in the same change: describe its
+    final behavior in `docs/functional-spec.md`, and **remove its entry from
+    `docs/backlog.md`** (don't mark it done). If only part of an entry is
+    done, cut the entry down to what's left.
+  - Keep the backlog curated: add newly agreed ideas, and update or drop
+    entries when plans change or a constraint is discovered.
+
 ## Documentation
 
 - Prefer the Espressif Documentation MCP server for ESP-IDF API and guide

@@ -1,12 +1,27 @@
-# Morse Code Trainer — Functional Specification
+# Morse Code Keyer & Send Trainer — Functional Specification
 
 ## Purpose
 
-A standalone Morse code **send trainer**: the operator keys Morse code on a
-physical paddle (iambic) or straight key wired to the board, and the device
-decodes the keying in real time into readable text shown on the touchscreen.
-It does not teach receiving/copying code — it is a tool for practicing
-*sending* clean, correctly-timed Morse.
+A standalone Morse code **keyer and send trainer**: the operator keys Morse
+code on a physical paddle (iambic) or straight key wired to the board, and
+the device decodes the keying in real time into readable text shown on the
+touchscreen.
+
+The project has two goals:
+
+- **Send trainer**: practice *sending* clean, correctly-timed Morse, with
+  live decoding as feedback. It does not teach receiving/copying code.
+- **CW keyer**: an easy-to-use, full-featured electronic keyer for on-air
+  operation, driving a transceiver's key input through the external key
+  output (see Hardware below). The reference point is the keyer built into
+  modern transceivers such as the QRP Labs QMX, plus standalone keyers such
+  as the K1EL WinKeyer.
+
+This spec describes **implemented** behavior only. Planned keyer features
+(message memories, transmit arm/practice mode, weight, PTT/hang time,
+contest macros, computer keying, …) are tracked in
+[`backlog.md`](backlog.md). Each one moves into this spec when it's
+implemented.
 
 ## Hardware
 
@@ -18,6 +33,17 @@ It does not teach receiving/copying code — it is a tool for practicing
 - External input: a two-lever iambic paddle (or a straight key), wired to
   two GPIOs on the board's header (dit and dah). A straight key is wired to
   the same GPIO used as "dit" in paddle mode.
+- External output: a digital key line (3.3 V, active-low, default GPIO17,
+  shared with the onboard RGB LED's blue channel) that is on for exactly
+  the logical key-down periods produced by the paddle or straight key
+  (post-debounce, after the keyer's element timing and Auto Space). It
+  switches instantly at each key edge; the sidetone's envelope ramp doesn't
+  apply to it. It isn't driven by sidetone-only playback: the Sidetone
+  "Test" button and the Morse Reference screen sound the sidetone without
+  keying this line. Wiring requirement: key a transceiver through an
+  isolating stage such as an optocoupler, not by connecting the GPIO
+  directly to the rig's key jack. The default pin hasn't been confirmed on
+  real hardware yet (see `main/Kconfig.projbuild`).
 
 ## Boot flow
 
@@ -404,8 +430,15 @@ It does not teach receiving/copying code — it is a tool for practicing
 
 ## Explicit non-goals (out of scope for this version)
 
+These are out of scope for both the trainer and the keyer. Anything that
+*is* planned lives in [`backlog.md`](backlog.md) instead.
+
 - No receive/copy practice or quizzing (flashing/playing code for the user
   to identify).
 - No Farnsworth spacing (character-speed vs. word-speed timing split).
 - No statistics, history, or progress tracking.
-- No Wi-Fi, OTA updates, or connectivity of any kind.
+- No Wi-Fi or OTA updates. Any other connectivity (serial computer keying,
+  Bluetooth) is decided in the backlog, not here.
+- No transceiver functions (receiver, RF output, frequency control/CAT).
+  The device is a keyer that drives an external rig's key input; it isn't a
+  radio.

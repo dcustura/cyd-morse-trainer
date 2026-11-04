@@ -5,6 +5,8 @@
 - If a change affects functionality (new features, changed behavior, altered
   UI flows, etc.), update `docs/functional-spec.md` to match in the same
   change.
+- Planned features live in `docs/backlog.md`. Follow the rules for it in
+  `CLAUDE.md`'s "Project Goals and Backlog" section.
 
 ## UI Layout
 

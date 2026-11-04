@@ -1,12 +1,20 @@
-# Morse Code Send Trainer
+# Morse Code Keyer & Send Trainer
 
-A standalone Morse code **send trainer** for the ESP32-2432S028R ("Cheap
-Yellow Display"): the operator keys Morse on a physical iambic paddle or
-straight key wired to the board, and the device decodes the keying in real
-time into readable text on the touchscreen, with an audible sidetone while
-the key is down. See `docs/functional-spec.md` for the full behavior spec
-(screens, key modes, settings, persistence), and `docs/architecture.md` for
-a code-level mental model to start contributing.
+A standalone Morse code **keyer and send trainer** for the ESP32-2432S028R
+("Cheap Yellow Display"). The operator keys Morse on a physical iambic
+paddle or straight key wired to the board. The device decodes the keying in
+real time into readable text on the touchscreen, sounds a sidetone while the
+key is down, and drives an external key output that can key a transceiver.
+
+The project started as a send trainer. It is growing into an easy-to-use,
+full-featured CW keyer for on-air operation, modelled on keyers like the
+one built into the QRP Labs QMX, while keeping the trainer.
+
+- `docs/functional-spec.md`: the full behavior spec of what's implemented
+  (screens, key modes, settings, persistence).
+- `docs/backlog.md`: planned keyer features not built yet (message memories,
+  transmit arm, weight, PTT/hang time, contest macros, computer keying, …).
+- `docs/architecture.md`: a code-level mental model for contributors.
 
 - Target chip: **ESP32** (`sdkconfig.defaults`, `CONFIG_IDF_TARGET`).
 - Built with ESP-IDF **v6.1**, managed via the ESP-IDF Installation Manager
@@ -24,6 +32,11 @@ a code-level mental model to start contributing.
 - External input: a two-lever iambic paddle (or a straight key) wired to two
   GPIOs on the board's header — dit and dah. A straight key is wired to the
   same GPIO used for "dit" in paddle mode.
+- External output: an active-low key line (default GPIO17, the RGB LED's
+  blue pad) that follows the key state. To key a transceiver, drive it
+  through an isolating stage such as an optocoupler; don't wire it straight
+  to the rig's key jack. The pin hasn't been confirmed on real hardware
+  yet; see `main/Kconfig.projbuild`.
 - Pinout, and hardware quirks found during bring-up (touch axis swap/IRQ
   unreliability, actual TFT controller ID), are documented in
   `main/board_pins.h`. All pins are Kconfig-configurable
@@ -38,7 +51,9 @@ a code-level mental model to start contributing.
 ├── sdkconfig.defaults       # target chip and app-wide config
 ├── partitions.csv           # custom partition table (LVGL + drivers need more than the default factory app size)
 ├── docs/
-│   └── functional-spec.md   # screens, settings, and behavior spec
+│   ├── functional-spec.md   # screens, settings, and behavior spec (implemented behavior)
+│   ├── backlog.md           # planned features, removed from the list once implemented
+│   └── architecture.md      # code-level mental model
 ├── main/                    # app entry point, LVGL UI screens, display/touch/paddle glue
 └── components/
     ├── morse_codec/         # Morse element sequence -> character decoding
