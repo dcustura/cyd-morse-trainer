@@ -19,12 +19,15 @@ How this file works:
 
 ## Setup
 
-- At least 8 non-empty memories (for the queue check), with tiles 1–6
-  assigned to non-empty ones and memory 1 long enough to keep playing for
-  a while, e.g. from the CLI:
-  `mem set 1 text "VVV VVV VVV VVV VVV VVV VVV VVV VVV VVV"` and
-  `mem set 2 text "TEST"` … `mem set 8 text "TEST"`, then
-  `mem tile 1 1` … `mem tile 6 6`.
+- Use spare memory slots so real memories aren't overwritten, and note the
+  current tile assignments first (`mem tiles`) to restore them afterwards.
+- At least 8 non-empty test memories (for the queue check), with tiles 1–6
+  assigned to them, the first long enough to keep playing for a while,
+  e.g. from the CLI:
+  `mem set 21 text "VVV VVV VVV VVV VVV VVV VVV VVV VVV VVV"`,
+  `mem set 22 text "TEST"` … `mem set 28 text "TEST"`, then
+  `mem tile 1 21` … `mem tile 6 26`. Afterwards, `mem clear 21` …
+  `mem clear 28` and reassign the tiles.
 
 ## Message memories panel (`f36b0e8`, `a6f4be1`)
 
@@ -32,8 +35,8 @@ How this file works:
 - [ ] Tap another tile while one plays: it queues, showing its queue
       position (`1`, `2`, …) in the corner. Tapping the playing or a queued
       tile does nothing.
-- [ ] A tile assigned to an empty memory (e.g. `mem tile 6 9` with
-      memory 9 empty) shows `#09 (empty)` and a tap does nothing.
+- [ ] A tile assigned to an empty memory (e.g. `mem tile 6 30` with
+      memory 30 empty) shows `#30 (empty)` and a tap does nothing.
 - [ ] Long-press a tile: the memory picker opens (None row, 32 memories,
       current one highlighted, Cancel). Picking a row reassigns the tile and
       survives a reboot. Long-press is ignored on the playing/queued tile.
@@ -48,8 +51,8 @@ How this file works:
 - [ ] Sending strip: text scrolls with the current character highlighted
       amber; progress `2/5`, loop icon for count 0, seconds countdown during
       a pause; empty when idle.
-- [ ] `Queue full` notice: with memory 1 playing, queue six others from
-      the CLI (`mem play 3` … `mem play 8`), then tap tile 2: the strip
+- [ ] `Queue full` notice: with memory 21 playing, queue six others from
+      the CLI (`mem play 23` … `mem play 28`), then tap tile 2: the strip
       shows `Queue full` for 2 s. (Tiles alone can't fill the queue: six
       tiles give at most one playing plus five queued.)
 - [ ] Back returns to the Send screen with playback continuing; the sent
