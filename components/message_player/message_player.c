@@ -150,7 +150,16 @@ message_player_enqueue_result_t message_player_enqueue(message_player_t *p, cons
     if (p->phase == MESSAGE_PLAYER_PHASE_IDLE) {
         p->current = copy;
         p->sends_done = 0;
-        start_transmission(p, now_ms);
+        p->lead_in_is_pause = false;
+        uint32_t word_gap_ms = WORD_GAP_UNITS * p->unit_ms;
+        uint32_t since_key_ms = now_ms - p->key_down_ms;
+        if (p->key_down_seen && since_key_ms < word_gap_ms) {
+            /* The operator keyed moments ago: their element is cut off here
+             * (the message now owns the key), then a word gap. */
+            set_phase(p, MESSAGE_PLAYER_PHASE_LEAD_IN, now_ms, word_gap_ms - since_key_ms);
+        } else {
+            start_transmission(p, now_ms);
+        }
         return MESSAGE_PLAYER_STARTED;
     }
     if (copy.tag == p->current.tag) {
@@ -172,6 +181,12 @@ message_player_enqueue_result_t message_player_enqueue(message_player_t *p, cons
         return MESSAGE_PLAYER_STARTED;
     }
     return MESSAGE_PLAYER_QUEUED;
+}
+
+void message_player_note_key_down(message_player_t *p, uint32_t now_ms)
+{
+    p->key_down_seen = true;
+    p->key_down_ms = now_ms;
 }
 
 void message_player_stop(message_player_t *p)

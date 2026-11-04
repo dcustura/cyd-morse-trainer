@@ -272,6 +272,37 @@ TEST(message_player, enqueue_reads_an_unterminated_text_only_up_to_its_limit)
     TEST_ASSERT_EQUAL_size_t(MESSAGE_PLAYER_TEXT_MAX, strlen(st.text));
 }
 
+TEST(message_player, start_waits_a_word_gap_after_the_operators_key)
+{
+    /* Operator's key down until 1000 (mid-element): the message keys up
+     * at once and starts a word gap after the operator's last key-down. */
+    message_player_note_key_down(&s_p, 999);
+    enqueue_ok(msg("E", 1), 1000, MESSAGE_PLAYER_STARTED);
+    TEST_ASSERT_TRUE(message_player_is_active(&s_p));
+    run(1000, 2000);
+    const uint32_t expected[] = { 999 + 7 * U, 999 + 8 * U };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
+TEST(message_player, start_counts_the_word_gap_from_the_operators_last_key_down)
+{
+    /* Released 5 units ago: only the rest of the word gap is waited. */
+    message_player_note_key_down(&s_p, 1000);
+    enqueue_ok(msg("E", 1), 1000 + 5 * U, MESSAGE_PLAYER_STARTED);
+    run(1000 + 5 * U, 2000);
+    const uint32_t expected[] = { 1000 + 7 * U, 1000 + 8 * U };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
+TEST(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_word_gap)
+{
+    message_player_note_key_down(&s_p, 1000);
+    enqueue_ok(msg("E", 1), 1000 + 7 * U, MESSAGE_PLAYER_STARTED);
+    run(1000 + 7 * U, 2000);
+    const uint32_t expected[] = { 1000 + 7 * U, 1000 + 8 * U };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
 TEST(message_player, enqueue_clamps_count_and_pause)
 {
     enqueue_ok(repeating("E", 1, 200, 0), 0, MESSAGE_PLAYER_STARTED);
@@ -349,6 +380,9 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, repeat_params_during_a_pause_apply_from_the_pause_start);
     RUN_TEST_CASE(message_player, shortening_a_pause_that_already_ran_out_sends_next_at_once);
     RUN_TEST_CASE(message_player, enqueue_reads_an_unterminated_text_only_up_to_its_limit);
+    RUN_TEST_CASE(message_player, start_waits_a_word_gap_after_the_operators_key);
+    RUN_TEST_CASE(message_player, start_counts_the_word_gap_from_the_operators_last_key_down);
+    RUN_TEST_CASE(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_word_gap);
     RUN_TEST_CASE(message_player, enqueue_clamps_count_and_pause);
     RUN_TEST_CASE(message_player, status_reports_progress_for_the_sending_strip);
     RUN_TEST_CASE(message_player, late_service_calls_do_not_shift_later_elements);

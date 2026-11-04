@@ -182,6 +182,12 @@ static void paddle_task(void *arg)
 
         bool keyer_key_down = iambic_keyer_service(&s_keyer, dit_contact && !playing, dah_contact && !playing, now);
         bool key_down = playing ? message_key_down : keyer_key_down;
+        if (!playing && keyer_key_down) {
+            /* So a message started now waits a word gap after this. */
+            player_lock();
+            message_player_note_key_down(&s_player, now);
+            player_unlock();
+        }
 
         if (key_down != prev_key_down) {
             sidetone_key(key_down);
