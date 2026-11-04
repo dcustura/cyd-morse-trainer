@@ -402,7 +402,7 @@ implemented.
 - The device exposes a line-based command console on the same UART already
   used for the ESP-IDF log output and `idf.py monitor` (115200 baud) — no
   separate hardware or connection is needed. Prompt: `morse> `.
-- Seven commands, chosen for scripting: every response ends with exactly one
+- Eight commands, chosen for scripting: every response ends with exactly one
   `OK` or `ERR <reason>` line, so a script can tell where a response ends
   even though log lines from elsewhere in the firmware may appear between
   commands.
@@ -442,6 +442,15 @@ implemented.
     - Quote values that contain spaces. Inside quotes, `\"` is a literal
       `"`. `mem list` and `mem get` print name and text the same way, so
       their output can be pasted back into `mem set`.
+  - `send <text>` — keys text once (no repeat), the same way as a
+    message memory: started at once, or queued behind a playing message
+    (see Playing memories under Behavior details), and cancelled by a
+    paddle touch or `mem stop`. Words may be given unquoted
+    (`send CQ CQ DE X <AR>`) or quoted. The text is validated and
+    normalized like a memory's text (up to 80 characters, prosigns in
+    `<..>`). Prints `send=started` or `send=queued`; `ERR` for invalid
+    text, nothing to send, or a full queue. Sending the same text again
+    queues another copy.
   - `tx [on|off]` — shows (`tx=on|off`) or changes the live on-air state,
     like the touchscreen's quick toggles: not saved, so the next boot
     returns to the saved `on_air` setting.

@@ -90,14 +90,6 @@ How this file works:
 - A small serial-number display or control on the Send screen, so the
   operator can see and correct the next number to send.
 
-### CLI `send`
-
-- `send <text>` queues arbitrary text for transmission through the
-  memory-playback engine (same `<AR>` prosign syntax, same
-  cancel-on-paddle rule), so the device is scriptable as a keyer from a PC
-  with no extra protocol. Stopping already exists (`mem stop`), and
-  stored memories can already be played with `mem play <N>`.
-
 ### WinKeyer protocol emulation
 
 - Speak the K1EL WinKeyer serial protocol (as K3NG does) so N1MM, fldigi
@@ -128,7 +120,7 @@ How this file works:
 
 - Send text typed on a keyboard, with a type-ahead buffer (K3NG supports
   PS/2 and USB keyboards). On this board the realistic routes are the
-  serial CLI (covered by `send` above) or a BLE keyboard, with the device
+  serial CLI (already possible line by line with `send`, see `docs/functional-spec.md`) or a BLE keyboard, with the device
   connecting to the keyboard as a BLE host. Low priority given the screen size.
 
 ## Tier 4: low priority

@@ -1,5 +1,6 @@
 #include "cli_mem.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -232,6 +233,60 @@ static int mem_play(uint8_t n)
         printf("ERR memory %u is empty\n", (unsigned)n);
         return 1;
     }
+    printf("OK\n");
+    return 0;
+}
+
+/* `send` messages get tags from here up, each one new, so repeated sends of
+ * the same text all queue. Clear of tile tags (1..6) and CLI memory plays
+ * (-1..-32). */
+#define SEND_TAG_FIRST 1000
+
+int cli_send_cmd(int argc, char **argv)
+{
+    static int s_next_tag = SEND_TAG_FIRST;
+
+    if (argc < 2) {
+        printf("ERR usage: send <text>\n");
+        return 1;
+    }
+    /* Unquoted words arrive as separate arguments: join them with one
+     * space, so `send CQ CQ DE X` works as well as `send "CQ CQ DE X"`. */
+    char joined[256] = "";
+    for (int i = 1; i < argc; ++i) {
+        if (i > 1) {
+            strlcat(joined, " ", sizeof(joined));
+        }
+        if (strlcat(joined, argv[i], sizeof(joined)) >= sizeof(joined)) {
+            printf("ERR text too long (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
+            return 1;
+        }
+    }
+
+    message_player_message_t msg = {.repeat = false};
+    if (!normalize_field("text", joined, true, msg.text, sizeof(msg.text))) {
+        return 1;
+    }
+    msg.tag = s_next_tag;
+
+    switch (paddle_input_message_enqueue(&msg)) {
+    case MESSAGE_PLAYER_STARTED:
+        printf("send=started\n");
+        break;
+    case MESSAGE_PLAYER_QUEUED:
+        printf("send=queued\n");
+        break;
+    case MESSAGE_PLAYER_QUEUE_FULL:
+        printf("ERR queue full\n");
+        return 1;
+    case MESSAGE_PLAYER_INVALID:
+        printf("ERR nothing to send\n");
+        return 1;
+    default: /* a fresh tag is never already playing or queued */
+        printf("ERR not sent\n");
+        return 1;
+    }
+    s_next_tag = (s_next_tag == INT_MAX) ? SEND_TAG_FIRST : s_next_tag + 1;
     printf("OK\n");
     return 0;
 }
