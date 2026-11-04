@@ -91,7 +91,7 @@ It does not teach receiving/copying code — it is a tool for practicing
    - A grid of large, tappable tiles (three columns × two rows) filling the
      whole display with no scrolling and no separate title bar: Keyer,
      Sidetone, and Display fill the top row; the bottom row has Bluetooth,
-     Reset to Defaults, and a Back tile (marked with a left-chevron icon).
+     System, and a Back tile (marked with a left-chevron icon).
      There is no slider or dropdown anywhere on this screen or its
      submenus, and no OK/Cancel step — every change is applied to the
      running trainer and persisted to NVS the moment it's made (writes are
@@ -245,7 +245,10 @@ It does not teach receiving/copying code — it is a tool for practicing
      toggle on this screen, flipping it only updates the persisted setting;
      the BLE radio stack itself is brought up once at boot according to
      that setting and isn't started or stopped live.
-   - "Reset to Defaults" tile, after a Yes/No confirmation, erases both
+   - "System" submenu: a read-only "Firmware" tile showing the firmware
+     version (the release tag, e.g. `v1.0.1`, for release builds), the
+     "Reset to Defaults" tile below, and Back.
+   - "Reset to Defaults" tile (in the System submenu), after a Yes/No confirmation, erases both
      the keyer settings and the touch calibration and restarts the
      device, which then comes up as if never configured (lands on the
      Touch Calibration screen with compiled-in defaults).

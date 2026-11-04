@@ -10,6 +10,7 @@
 #include "ui_practice.h"
 #include "ui_touch_test.h"
 
+#include "esp_app_desc.h"
 #include "esp_system.h"
 
 #include <stddef.h>
@@ -74,6 +75,7 @@ static lv_obj_t *s_keyer_back_target;
 static lv_obj_t *s_sidetone_submenu_screen;
 static lv_obj_t *s_display_submenu_screen;
 static lv_obj_t *s_bluetooth_submenu_screen;
+static lv_obj_t *s_system_submenu_screen;
 static settings_t s_current_settings;
 
 static lv_obj_t *s_wpm_tile_value;
@@ -336,7 +338,7 @@ static void nav_btn_cb(lv_event_t *e)
     lv_scr_load(target_screen);
 }
 
-/* Shared by every submenu screen (Touchscreen/Keyer/Sidetone/Display): a bare
+/* Shared by every submenu screen (Touchscreen/Keyer/Sidetone/Display/...): a bare
  * screen for the caller to lay out as a tile grid, with "Back" as its own
  * grid tile (see ui_settings_create()'s main grid for the same pattern) --
  * no separate title bar, since the submenu the user just navigated into is
@@ -686,6 +688,12 @@ static void bluetooth_tile_cb(lv_event_t *e)
     lv_scr_load(s_bluetooth_submenu_screen);
 }
 
+static void system_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    lv_scr_load(s_system_submenu_screen);
+}
+
 static void reset_confirm_btn_cb(lv_event_t *e)
 {
     lv_obj_t *btn = lv_event_get_target_obj(e);
@@ -723,7 +731,8 @@ static void reset_btn_cb(lv_event_t *e)
 
 /* Shared by create_tile() and create_toggle_tile(): a grid-cell button
  * styled as a tile, with a centered name label. Callers add their own
- * content (a value label, a switch, ...) afterward. */
+ * content (a value label, a switch, ...) afterward. A NULL cb makes a
+ * read-only info tile: not clickable, so it shows no pressed state. */
 static lv_obj_t *create_tile_shell(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
                                     void *user_data)
 {
@@ -732,7 +741,11 @@ static lv_obj_t *create_tile_shell(lv_obj_t *grid, const char *name, int32_t col
     lv_obj_set_grid_cell(tile, LV_GRID_ALIGN_STRETCH, col, 1, LV_GRID_ALIGN_STRETCH, row, 1);
     lv_obj_set_flex_flow(tile, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(tile, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_add_event_cb(tile, cb, LV_EVENT_CLICKED, user_data);
+    if (cb != NULL) {
+        lv_obj_add_event_cb(tile, cb, LV_EVENT_CLICKED, user_data);
+    } else {
+        lv_obj_remove_flag(tile, LV_OBJ_FLAG_CLICKABLE);
+    }
 
     lv_obj_t *name_label = lv_label_create(tile);
     lv_label_set_text(name_label, name);
@@ -872,6 +885,33 @@ static lv_obj_t *create_bluetooth_submenu(lv_obj_t *settings_screen)
     return scr;
 }
 
+static lv_obj_t *create_system_submenu(lv_obj_t *settings_screen)
+{
+    lv_obj_t *scr = create_submenu_screen();
+
+    static const int32_t col_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t row_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_set_grid_dsc_array(scr, col_dsc, row_dsc);
+
+    /* Read-only: the app version baked into the image (PROJECT_VER -- the
+     * release tag for CI builds via version.txt, `git describe` output for
+     * local ones). Wrapped and centered, since a local build's
+     * "<tag>-<n>-g<hash>-dirty" can be wider than the tile. */
+    lv_obj_t *version_label;
+    create_tile(scr, "Firmware", 0, 0, NULL, NULL, &version_label);
+    lv_label_set_text(version_label, esp_app_get_description()->version);
+    lv_label_set_long_mode(version_label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(version_label, LV_PCT(100));
+    lv_obj_set_style_text_align(version_label, LV_TEXT_ALIGN_CENTER, 0);
+
+    create_tile(scr, "Reset to\nDefaults", 1, 0, reset_btn_cb, NULL, NULL);
+
+    lv_obj_t *back_tile = create_tile(scr, LV_SYMBOL_LEFT " Back", 1, 1, nav_btn_cb, settings_screen, NULL);
+    display_style_button_dismiss(back_tile);
+
+    return scr;
+}
+
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
     lv_obj_t *scr = create_submenu_screen();
@@ -930,7 +970,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     create_tile(grid, "Display", 2, 0, display_tile_cb, NULL, NULL);
     create_tile(grid, "Bluetooth", 0, 1, bluetooth_tile_cb, NULL, NULL);
 
-    create_tile(grid, "Reset to\nDefaults", 1, 1, reset_btn_cb, NULL, NULL);
+    create_tile(grid, "System", 1, 1, system_tile_cb, NULL, NULL);
 
     lv_obj_t *back_tile = create_tile(grid, LV_SYMBOL_LEFT " Back", 2, 1, nav_btn_cb, menu_screen, NULL);
     display_style_button_dismiss(back_tile);
@@ -939,6 +979,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     s_sidetone_submenu_screen = create_sidetone_submenu(scr);
     s_display_submenu_screen = create_display_submenu(scr, calibration_screen, touch_test_screen);
     s_bluetooth_submenu_screen = create_bluetooth_submenu(scr);
+    s_system_submenu_screen = create_system_submenu(scr);
 
     refresh_tile_labels();
 

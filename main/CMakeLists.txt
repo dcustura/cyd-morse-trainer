@@ -22,6 +22,7 @@ idf_component_register(SRCS "ble_hid_output.c" "cli.c" "main.c"
                                 console
                                 driver
                                 esp_adc
+                                esp_app_format
                                 esp_hid
                                 esp_driver_dac
                                 esp_driver_ledc
