@@ -188,8 +188,10 @@ them" below). In this step, memories are edited over the serial CLI only.
 
 #### Implementation notes
 
-- `components/morse_codec`: add text validation/normalization and an
-  encoder from text to a timed element sequence, with host tests.
+- `components/morse_codec`: text validation/normalization and a token
+  encoder (`morse_text.h`) are done. They yield each character's dit/dah
+  pattern and whether a word gap precedes it; the player turns that into
+  timing, so a WPM change applies from the next element.
 - New hardware-independent component (e.g. `message_player`): plays a
   message by returning key_down for a given `now_ms`, like
   `iambic_keyer_service()`. It handles repeat count/pause, the queue,
