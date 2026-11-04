@@ -2,6 +2,7 @@
 
 #include "auto_brightness.h"
 #include "display_init.h"
+#include "memory_store.h"
 #include "paddle_input.h"
 #include "settings_store.h"
 #include "sidetone.h"
@@ -543,6 +544,7 @@ static void reset_confirm_btn_cb(lv_event_t *e)
     if (strcmp(lv_label_get_text(btn_label), "Reset") == 0) {
         settings_store_reset();
         touch_cal_store_reset();
+        memory_store_reset();
         esp_restart();
     }
 

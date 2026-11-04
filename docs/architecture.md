@@ -101,9 +101,10 @@ coupled:
   settings copy of its own: each command reads the Settings screen's live
   copy (`ui_settings_get()`, under the LVGL lock), and `set` calls the same
   live-apply setters the UI uses (`paddle_input_set_*`, ...), then
-  `settings_store_save()` and `ui_settings_sync()`.
+  `settings_store_save()` and `ui_settings_sync()`. The `mem` command
+  lives in `main/cli_mem.c` and talks to `memory_store` directly.
 
-Boot order in `main.c`: load settings and touch calibration, bring up the
+Boot order in `main.c`: load settings, message memories and touch calibration, bring up the
 display, build every screen under the LVGL lock, then start paddle input
 (which also brings up the sidetone's DMA-based DAC audio), and finally the
 CLI. Read the comment at `paddle_input_start()` in `app_main()` before
@@ -111,9 +112,10 @@ reordering anything there.
 
 ## Persistence
 
-Two independent NVS-backed stores, both following the same pattern
-(`*_store_init_and_load` / `*_store_save` / `*_store_reset`, wrapping a
-hardware-independent value type from `components/`):
+Three independent NVS-backed stores, each in its own NVS namespace. The
+first two follow the same pattern (`*_store_init_and_load` /
+`*_store_save` / `*_store_reset`, wrapping a hardware-independent value
+type from `components/`):
 
 - **`main/settings_store.c`** persists `settings_t` (keyer/sidetone/display
   settings). Missing or out-of-range stored values fall back to
@@ -124,6 +126,12 @@ hardware-independent value type from `components/`):
   or absence is also the boot-flow branch: no stored calibration means the
   device boots straight into the Touch Calibration screen instead of the Main
   Menu (see `main.c`, `touch_cal_found`).
+- **`main/memory_store.c`** holds the 32 message memories and the memories
+  panel's 6 tile assignments in RAM (mutex-protected, since the CLI and
+  UI tasks both use it) and saves each change at once: one versioned blob
+  per non-empty memory (`m01`..`m32`) and one for the tiles. A stored
+  memory that no longer validates loads as empty. `memory_store_generation()`
+  counts changes so a screen can poll for updates.
 
 `settings_store` debounces writes by a couple of seconds after the last
 edit (inside `ui_settings.c`, not the store itself) to reduce flash wear
@@ -229,7 +237,8 @@ is what makes it testable at all.
 | Touch calibration math | `components/touch_calibration/` |
 | Touch calibration *screens* | `main/ui_calibration.c`, `main/ui_touch_test.c` |
 | Sidetone pitch/envelope/synthesis | `main/sidetone.c` |
-| Serial CLI commands | `main/cli.c` |
+| Serial CLI commands | `main/cli.c` (`mem`: `main/cli_mem.c`) |
+| Message memory storage | `main/memory_store.c` |
 | GPIO pin assignments | `main/Kconfig.projbuild` (+ `main/board_pins.h`) |
 | Boot sequence / subsystem init order | `main/main.c` |
 

@@ -1,6 +1,7 @@
 #include "cli.h"
 
 #include "auto_brightness.h"
+#include "cli_mem.h"
 #include "display_init.h"
 #include "paddle_input.h"
 #include "settings_store.h"
@@ -388,7 +389,8 @@ void cli_start(void)
         {.command = "get", .help = "get <key>|settings - read one setting or all of them", .hint = NULL, .func = &cmd_get},
         {.command = "set", .help = "set <key> <value> - change and apply a setting", .hint = NULL, .func = &cmd_set},
         {.command = "save", .help = "save - persist current settings to flash", .hint = NULL, .func = &cmd_save},
-        {.command = "reset", .help = "reset - erase saved settings (restart to apply defaults)", .hint = NULL, .func = &cmd_reset},
+        {.command = "reset", .help = "reset - erase saved settings, not memories (restart to apply defaults)", .hint = NULL, .func = &cmd_reset},
+        {.command = "mem", .help = "mem list | get <N> | set <N> name|text|repeat|count|pause <value> | clear <N> | tile <T> <N|none> | tiles - message memories", .hint = NULL, .func = &cli_mem_cmd},
         {.command = "log", .help = "log <none|error|warn|info|debug|verbose> - set log verbosity", .hint = NULL, .func = &cmd_log},
     };
     for (size_t i = 0; i < sizeof(cmds) / sizeof(cmds[0]); i++) {

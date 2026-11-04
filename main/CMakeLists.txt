@@ -1,8 +1,9 @@
-idf_component_register(SRCS "cli.c" "main.c"
+idf_component_register(SRCS "cli.c" "cli_mem.c" "main.c"
                              "auto_brightness.c"
                              "display_init.c"
                              "fonts/lv_font_dejavu_mono_16_12.c"
                              "sidetone.c"
+                             "memory_store.c"
                              "paddle_input.c"
                              "settings_store.c"
                              "touch_cal_store.c"
@@ -15,6 +16,7 @@ idf_component_register(SRCS "cli.c" "main.c"
                        INCLUDE_DIRS "."
                        REQUIRES debouncer
                                 iambic_keyer
+                                message_player
                                 morse_codec
                                 settings
                                 touch_calibration

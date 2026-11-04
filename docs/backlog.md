@@ -25,35 +25,14 @@ How this file works:
 ### Message memories
 
 **Status: detailed spec agreed in discussion, implementation in progress.**
+What's left is playing memories: the panel, picker, sending and repeat.
 Editing on the device is out of scope here (see "Edit memories by keying
-them" below). In this step, memories are edited over the serial CLI only.
+them" below); memories are edited over the serial CLI (`mem`).
 
 #### Memory library
 
-- A library of **32 memories**, numbered 1–32 (shown as `#01`–`#32`).
-  Each memory has:
-  - **Name**: optional, up to 8 characters, shown large on its tile, e.g.
-    `CQ`, `RIG`, `73`.
-  - **Text**: up to 80 characters, the message that gets sent.
-  - **Repeat default**: on/off, whether this memory repeats when played.
-  - **Repeat count**: 0–99, the total number of transmissions when
-    repeating. 0 means repeat until stopped.
-  - **Pause**: 1–99 s of silence between transmissions when repeating.
-- Defaults: every memory is empty (no name, no text), with repeat off,
-  count 0 and pause 10 s.
-- Text and names are stored in uppercase; lowercase input is converted.
-- Allowed text characters are exactly the ones the decoder knows: A–Z,
-  0–9, space, the punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and
-  the eight prosigns the decoder knows, written in angle brackets: `<AR>`,
-  `<SK>`, `<KN>`, `<BT>`, `<HH>`, `<VE>`, `<CT>`, `<AS>`. The letters inside
-  brackets are sent with no gap between them. Any other character, any
-  other bracketed sequence (e.g. `<SOS>`, which the decoder would show as
-  `*`), an unclosed `<`, or an empty `<>` is rejected when the text is
-  set. Names allow the same characters, without prosigns.
-- Spacing: a space is a word gap (7 units). A run of spaces counts as one
-  word gap, and leading/trailing spaces are dropped.
-- Memories persist in NVS, in their own namespace, separate from the
-  keyer settings.
+- Implemented: the library, its storage and validation rules, and the
+  `mem` CLI command are described in `docs/functional-spec.md`.
 
 #### Sending
 
@@ -162,31 +141,6 @@ them" below). In this step, memories are edited over the serial CLI only.
   repeat states are discarded, but the message already playing keeps the
   repeat values it started with.
 
-#### Serial CLI
-
-- A new `mem` command; every response ends with `OK` or `ERR <reason>`,
-  like the existing commands:
-  - `mem list`: one line per non-empty memory: `NN name="..." text="..."
-    repeat=on|off count=N pause=N`.
-  - `mem get <N>`: the same line for one memory.
-  - `mem set <N> <field> <value>`, where field is `name`, `text`, `repeat`
-    (`on`/`off`), `count` (0–99) or `pause` (1–99). Text and names are
-    validated (see Memory library) and rejected with `ERR` if invalid.
-    Quote values that contain spaces. Inside a quoted value, `\"` is a
-    literal `"` (`\` isn't an allowed character, so it needs no escape of
-    its own). `mem list` and `mem get` print `name` and `text` the same
-    way, so their output can be fed back to `mem set` unchanged.
-  - `mem clear <N>`: resets one memory to the empty default.
-  - `mem tile <T> <N|none>`: assigns memory N (or nothing) to tile T (1–6).
-  - `mem tiles`: lists the six tile assignments.
-- Changes apply to the panel at once and are saved to NVS.
-
-#### Reset
-
-- Settings > System > Reset to Defaults also erases all memories and tile
-  assignments, since it is a full factory reset. The CLI `reset` command
-  erases keyer settings only and leaves memories alone.
-
 #### Implementation notes
 
 - `components/morse_codec`: text validation/normalization and a token
@@ -197,10 +151,11 @@ them" below). In this step, memories are edited over the serial CLI only.
   `now_ms`, like `iambic_keyer_service()`, and handles repeat count/pause,
   the queue, stop, and progress status for the strip. Callers serialize
   access to it (the UI and `paddle_task` both use it).
-- `main/`: NVS store for memories and tile assignments, the panel and
-  picker screens, the Send screen button, CLI `mem` command, and
-  integration into `paddle_task`: cancel on paddle contact, then ignore
-  paddle input until both paddles are released.
+- `main/memory_store.c` (NVS store, with a change counter for the panel
+  to poll) and `main/cli_mem.c` are done. Left: the panel and picker
+  screens, the Send screen button, and integration into `paddle_task`:
+  cancel on paddle contact, then ignore paddle input until both paddles
+  are released.
 
 ### Edit memories by keying them
 

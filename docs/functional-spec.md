@@ -256,8 +256,9 @@ implemented.
    - "System" submenu: a read-only "Firmware" tile showing the firmware
      version (the release tag, e.g. `v1.0.1`, for release builds), the
      "Reset to Defaults" tile below, and Back.
-   - "Reset to Defaults" tile (in the System submenu), after a Yes/No confirmation, erases both
-     the keyer settings and the touch calibration and restarts the
+   - "Reset to Defaults" tile (in the System submenu), after a Yes/No confirmation, erases
+     the keyer settings, the touch calibration and the message memories
+     (with their tile assignments) and restarts the
      device, which then comes up as if never configured (lands on the
      Touch Calibration screen with compiled-in defaults).
 4. **Touch Calibration screen** — reachable from Settings' Display >
@@ -313,7 +314,7 @@ implemented.
 - The device exposes a line-based command console on the same UART already
   used for the ESP-IDF log output and `idf.py monitor` (115200 baud) — no
   separate hardware or connection is needed. Prompt: `morse> `.
-- Five commands, chosen for scripting: every response ends with exactly one
+- Six commands, chosen for scripting: every response ends with exactly one
   `OK` or `ERR <reason>` line, so a script can tell where a response ends
   even though log lines from elsewhere in the firmware may appear between
   commands.
@@ -328,9 +329,26 @@ implemented.
   - `save` — persists the current settings to NVS (normally unnecessary,
     since `set` already saves).
   - `reset` — erases saved settings, the same as the Settings screen's
-    "Reset to Defaults" minus the touch-calibration erase and automatic
-    restart; a manual restart is required afterward for the defaults to
-    take effect.
+    "Reset to Defaults" minus the touch-calibration and message-memory
+    erase and automatic restart; a manual restart is required afterward
+    for the defaults to take effect.
+  - `mem` — reads and edits the message memories (see Behavior details),
+    saving each change to NVS at once:
+    - `mem list` — one line per memory with a name or text:
+      `NN name="..." text="..." repeat=on|off count=N pause=N`.
+    - `mem get <N>` — the same line for memory N (1–32), even if empty.
+    - `mem set <N> <field> <value>` — field is `name`, `text`, `repeat`
+      (`on`/`off`), `count` (0–99) or `pause` (1–99, seconds). Name and
+      text are validated and normalized (see Behavior details); an invalid
+      value is rejected with `ERR` naming the problem and its 1-based
+      position. Echoes the memory's new line.
+    - `mem clear <N>` — resets memory N to the empty default.
+    - `mem tile <T> <N|none>` — assigns memory N, or nothing, to memories
+      panel tile T (1–6), echoing `tileT=NN` or `tileT=none`.
+    - `mem tiles` — lists the six tile assignments that way.
+    - Quote values that contain spaces. Inside quotes, `\"` is a literal
+      `"`. `mem list` and `mem get` print name and text the same way, so
+      their output can be pasted back into `mem set`.
   - `log <none|error|warn|info|debug|verbose>` — sets the runtime log
     verbosity for every module, so a script can quiet interleaved log
     output before sending `get`/`set` commands.
@@ -402,8 +420,27 @@ implemented.
   sidetone, 50% sidetone volume, 10 ms sidetone envelope, 100% brightness,
   brightness auto mode off, Small Send screen text size. No default touch calibration
   exists — it must be created via the first-boot calibration flow.
-- **Factory reset**: erases saved keyer settings and touch calibration
-  together and restarts the device, so it comes back up exactly as an
+- **Message memories**: a library of 32 memories, numbered 1–32, stored in
+  their own NVS namespace. Each has a name (up to 8 characters, may be
+  empty), a text (up to 80 characters, may be empty), a repeat default
+  (on/off), a repeat count (0–99, the total number of transmissions
+  including the first; 0 means until stopped) and a pause (1–99 s between
+  transmissions). Defaults: empty name and text, repeat off, count 0,
+  pause 10 s. Six memories panel tile assignments are stored with them,
+  defaulting to tiles 1–6 → memories 1–6; the same memory may be on more
+  than one tile. For now memories can only be edited and inspected over
+  the serial CLI (`mem`); playing them is planned (see the backlog).
+  - Text is converted to uppercase, runs of spaces become one, and
+    leading/trailing spaces are dropped. Allowed: A–Z, 0–9, space, the
+    punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and the eight
+    prosigns the decoder knows written in angle brackets (`<AR>`, `<SK>`,
+    `<KN>`, `<BT>`, `<HH>`, `<VE>`, `<CT>`, `<AS>`, any case). Anything
+    else, an unclosed `<`, an empty `<>`, or any other bracketed sequence
+    is rejected. The length limit applies after normalization, with a
+    prosign counting as its 4 characters. Names follow the same rules
+    without prosigns.
+- **Factory reset**: erases saved keyer settings, touch calibration and
+  message memories together and restarts the device, so it comes back up exactly as an
   unconfigured device would.
 
 ## Explicit non-goals (out of scope for this version)
