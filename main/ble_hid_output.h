@@ -22,9 +22,6 @@ extern "C" {
  */
 void ble_hid_output_init(bool enabled);
 
-/** True once a central (phone/PC) is connected and subscribed to reports. */
-bool ble_hid_output_is_connected(void);
-
 /**
  * Forward one paddle_input decode event as a keystroke. MORSE_CODEC_EVENT_CHAR
  * queues a key-down/key-up HID report for the decoded character, sent from

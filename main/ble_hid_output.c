@@ -104,6 +104,25 @@ static bool s_last_send_was_char;
 static struct ble_hs_adv_fields s_adv_fields;
 static ble_uuid16_t s_hid_svc_uuid = BLE_UUID16_INIT(HID_SERVICE_UUID);
 
+/* Space, punctuation and HH: everything char_to_hid_keycode() maps besides
+ * letters and digits, as (modifier, US-layout keycode). */
+static const struct {
+    char ch;
+    uint8_t modifier;
+    uint8_t keycode;
+} s_other_keys[] = {
+    {' ', KC_MOD_NONE, 0x2C},  {'.', KC_MOD_NONE, 0x37},  {',', KC_MOD_NONE, 0x36},
+    {'/', KC_MOD_NONE, 0x38},  {'?', KC_MOD_SHIFT, 0x38}, {'\'', KC_MOD_NONE, 0x34},
+    {'"', KC_MOD_SHIFT, 0x34}, {';', KC_MOD_NONE, 0x33},  {':', KC_MOD_SHIFT, 0x33},
+    {'-', KC_MOD_NONE, 0x2D},  {'_', KC_MOD_SHIFT, 0x2D}, {'=', KC_MOD_NONE, 0x2E},
+    {'+', KC_MOD_SHIFT, 0x2E}, {'(', KC_MOD_SHIFT, 0x26}, {')', KC_MOD_SHIFT, 0x27},
+    {'&', KC_MOD_SHIFT, 0x24}, {'!', KC_MOD_SHIFT, 0x1E}, {'@', KC_MOD_SHIFT, 0x1F},
+    {'$', KC_MOD_SHIFT, 0x21},
+    /* HH conventionally means "error, keyed over" -- Backspace is the one
+     * prosign with an obvious single-keystroke equivalent. */
+    {MORSE_CODEC_PROSIGN_HH, KC_MOD_NONE, 0x2A},
+};
+
 /* Maps a decoded Morse character to a boot-keyboard (modifier, keycode)
  * pair. Only covers the exact character set morse_codec.c's decode table
  * can produce (see components/morse_codec/morse_codec.c): uppercase
@@ -125,92 +144,14 @@ static bool char_to_hid_keycode(char c, uint8_t *modifier, uint8_t *keycode)
         return true;
     }
 
-    switch (c) {
-    case ' ':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x2C;
-        return true;
-    case '.':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x37;
-        return true;
-    case ',':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x36;
-        return true;
-    case '/':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x38;
-        return true;
-    case '?':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x38;
-        return true;
-    case '\'':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x34;
-        return true;
-    case '"':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x34;
-        return true;
-    case ';':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x33;
-        return true;
-    case ':':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x33;
-        return true;
-    case '-':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x2D;
-        return true;
-    case '_':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x2D;
-        return true;
-    case '=':
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x2E;
-        return true;
-    case '+':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x2E;
-        return true;
-    case '(':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x26;
-        return true;
-    case ')':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x27;
-        return true;
-    case '&':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x24;
-        return true;
-    case '!':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x1E;
-        return true;
-    case '@':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x1F;
-        return true;
-    case '$':
-        *modifier = KC_MOD_SHIFT;
-        *keycode = 0x21;
-        return true;
-    case MORSE_CODEC_PROSIGN_HH:
-        /* HH conventionally means "error, keyed over" -- Backspace is the
-         * one prosign with an obvious single-keystroke equivalent. */
-        *modifier = KC_MOD_NONE;
-        *keycode = 0x2A;
-        return true;
-    default:
-        return false;
+    for (size_t i = 0; i < sizeof(s_other_keys) / sizeof(s_other_keys[0]); i++) {
+        if (s_other_keys[i].ch == c) {
+            *modifier = s_other_keys[i].modifier;
+            *keycode = s_other_keys[i].keycode;
+            return true;
+        }
     }
+    return false;
 }
 
 static void send_key_report(uint8_t modifier, uint8_t keycode)
@@ -439,11 +380,6 @@ void ble_hid_output_init(bool enabled)
 
     xTaskCreate(ble_hid_output_task, "ble_hid_out", TASK_STACK_SIZE, NULL, TASK_PRIORITY, NULL);
     nimble_port_freertos_init(ble_hid_host_task);
-}
-
-bool ble_hid_output_is_connected(void)
-{
-    return s_connected;
 }
 
 void ble_hid_output_notify_char(morse_codec_event_t event, char decoded_char)
