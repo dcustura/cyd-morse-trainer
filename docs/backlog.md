@@ -24,25 +24,180 @@ How this file works:
 
 ### Message memories
 
-- Store several messages (QMX has 12 × 50 characters), e.g. a CQ call or a
-  name/QTH exchange, and send one at the current keyer speed through the
-  same path as paddle keying (sidetone, key output, decoder).
-- Show memories as large tappable buttons reachable from the Practice
-  screen. Tap to send once; a second gesture such as a long press repeats
-  the message.
-- Repeat settings: a repeat count (QMX: 0–99, where 0 means forever) and an
-  interval in seconds between repeats, used for a repeated CQ with listening
-  gaps.
-- Touching either paddle (or the straight key) **cancels sending
-  immediately** and hands control back to the operator, which is how you
-  answer a station that replies to a CQ. A Stop button on screen does the
-  same.
-- Prosigns inside a message: use a marker meaning "send the next two
-  characters with no gap" (QMX uses `_`, e.g. `_AR`, `_KN`, `_SK`). This
-  needs an encoder (text to elements) alongside the existing decoder in
-  `components/morse_codec`. That encoder is also the basis for the CLI
-  `send` command and WinKeyer support below.
-- Persist memories in NVS.
+**Status: detailed spec agreed in discussion, implementation in progress.**
+Editing on the device is out of scope here (see "Edit memories by keying
+them" below). In this step, memories are edited over the serial CLI only.
+
+#### Memory library
+
+- A library of **32 memories**, numbered 1–32 (shown as `#01`–`#32`).
+  Each memory has:
+  - **Name**: optional, up to 8 characters, shown large on its tile, e.g.
+    `CQ`, `RIG`, `73`.
+  - **Text**: up to 80 characters, the message that gets sent.
+  - **Repeat default**: on/off, whether this memory repeats when played.
+  - **Repeat count**: 0–99, the total number of transmissions when
+    repeating. 0 means repeat until stopped.
+  - **Pause**: 1–99 s of silence between transmissions when repeating.
+- Defaults: every memory is empty (no name, no text), with repeat off,
+  count 0 and pause 10 s.
+- Text and names are stored in uppercase; lowercase input is converted.
+- Allowed text characters are exactly the ones the decoder knows: A–Z,
+  0–9, space, the punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and
+  the eight prosigns the decoder knows, written in angle brackets: `<AR>`,
+  `<SK>`, `<KN>`, `<BT>`, `<HH>`, `<VE>`, `<CT>`, `<AS>`. The letters inside
+  brackets are sent with no gap between them. Any other character, any
+  other bracketed sequence (e.g. `<SOS>`, which the decoder would show as
+  `*`), an unclosed `<`, or an empty `<>` is rejected when the text is
+  set. Names allow the same characters, without prosigns.
+- Spacing: a space is a word gap (7 units). A run of spaces counts as one
+  word gap, and leading/trailing spaces are dropped.
+- Memories persist in NVS, in their own namespace, separate from the
+  keyer settings.
+
+#### Sending
+
+- A message is sent at the **current keyer WPM** with standard PARIS
+  timing: dit 1 unit, dah 3, element gap 1, character gap 3, word gap 7.
+  If WPM changes mid-message, the change applies from the next element.
+  Auto Space and Paddle Swap don't apply. Key mode doesn't matter: a
+  message plays the same in every key mode.
+- Playback is a second key source in the same 1 ms paddle task as the
+  keyer. While a message plays, its key state replaces the keyer's, so the
+  sidetone, external key output, keying indicator dot and decoder all
+  behave exactly as for paddle keying. The sent text is therefore also
+  decoded into the Send screen's text area, including prosign handling
+  (e.g. `<AR>` decodes to `+` and forces a line break).
+- **Cancel**: touching either paddle (or the straight key, with or without
+  Ring Input) during sending *or* during a repeat pause stops at once. A
+  dit or dah in progress is cut short (key up immediately), any remaining
+  repeats and the whole queue are cleared, and the touch itself is **not
+  keyed**. Paddle input is ignored until both paddles are released, and
+  keying works normally from the next press.
+- The on-screen **Stop** tile does the same as a cancel.
+- Morse Reference screen playback is ignored while a message is playing,
+  since both use the sidetone.
+
+#### Repeat
+
+- Each tile keeps a **session repeat state** for the current visit to the
+  memories panel: repeat on/off, count and pause. It starts as a copy of
+  its memory's defaults the first time the tile is played in that visit,
+  and is discarded when leaving the panel. The memory itself is never
+  changed by this.
+- When repeating, transmission N+1 starts after the pause. The count
+  includes the first transmission, so count 3 sends 3 times in total.
+- The **Repeat tile** shows and controls the session repeat state of the
+  *current tile*: the one playing, or else the one played most recently in
+  this visit. It shows `Repeat: ON` or `Repeat: OFF`, and is greyed out
+  until a tile has been played in this visit.
+  - Tap: toggles repeat on/off for the current tile.
+    - Turning it on during a single send makes that send repeat once it
+      finishes.
+    - Turning it off during a send lets that transmission finish, then
+      stops.
+    - Turning it off during a pause stops at once.
+  - Long-press: opens a popup to override the current tile's **count**
+    (0 = until stopped) and **pause** for this visit only, using `-`/`+`
+    buttons, plus a "Memory defaults" button that restores the memory's own
+    values.
+
+#### Queue
+
+- Tapping a tile while another message is playing (or pausing) **queues**
+  it after the current one. Queued tiles show their queue position as a
+  small badge. Up to 6 entries can be queued; further taps are ignored.
+- When something is queued, a repeating message finishes its current
+  transmission and then ends its repeats. The next queued message follows
+  after a word gap (7 units), with no pause.
+- Tapping the tile that's currently playing does nothing.
+- Stop and a paddle cancel clear the queue (see Sending).
+
+#### Memories panel (screen)
+
+- Opened from a new icon-only button on the Send screen's bottom row,
+  left of Help and the same size as Help.
+- A full-screen 3×3 tile grid in the Settings style, plus a one-line
+  sending strip at the bottom:
+
+  ```
+  ┌────────┬────────┬────────┐
+  │ CQ  ▶  │ 5NN TU │ NAME   │
+  │ #01    │ #02    │ #07  1 │   <- "1": queue position badge
+  ├────────┼────────┼────────┤
+  │ RIG    │ 73     │ (none) │
+  │ #12    │ #03    │        │
+  ├────────┼────────┼────────┤
+  │Rpt: ON │  Stop  │  Back  │
+  ├────────┴────────┴────────┤
+  │CQ CQ DE Y[O]8ABC K  2/5·6s│   <- sending strip
+  └──────────────────────────┘
+  ```
+
+- **Six memory tiles**, each assigned one library memory. A tile shows the
+  memory's name in large text, or the start of its text if it has no name,
+  with `#NN` small underneath. A tile with no assignment shows `(none)`,
+  and an assigned memory with empty text shows `#NN (empty)`. Tapping
+  either of those does nothing.
+- Tile assignments persist in NVS. Defaults are tiles 1–6 → memories
+  #01–#06. The same memory may be assigned to more than one tile.
+- **Tap** a tile: sends its memory, or queues it if something is already
+  playing (see Queue).
+- **Long-press** a tile: opens the **memory picker**, a full-screen
+  scrollable list of all 32 memories, one row each showing `#NN`, the name
+  and the start of the text, plus a "None" row and Cancel. Tapping a row
+  assigns that memory to the tile and closes the picker. Long-press is
+  ignored on the tile that's playing or queued.
+- The playing tile is highlighted, with a `▶` marker.
+- **Sending strip**: shows the text of the message being sent, scrolled so
+  the current character is visible and highlighted, plus progress: `2/5`
+  while repeating with a count, `2/∞` with count 0, and a seconds countdown
+  during a pause. It's empty when idle.
+
+#### Leaving the panel
+
+- Back returns to the Send screen. Playback **continues**, so you can
+  watch the decoded text, and a paddle touch still cancels it. Session
+  repeat states are discarded, but the message already playing keeps the
+  repeat values it started with.
+
+#### Serial CLI
+
+- A new `mem` command; every response ends with `OK` or `ERR <reason>`,
+  like the existing commands:
+  - `mem list`: one line per non-empty memory: `NN name="..." text="..."
+    repeat=on|off count=N pause=N`.
+  - `mem get <N>`: the same line for one memory.
+  - `mem set <N> <field> <value>`, where field is `name`, `text`, `repeat`
+    (`on`/`off`), `count` (0–99) or `pause` (1–99). Text and names are
+    validated (see Memory library) and rejected with `ERR` if invalid.
+    Quote values that contain spaces. Inside a quoted value, `\"` is a
+    literal `"` (`\` isn't an allowed character, so it needs no escape of
+    its own). `mem list` and `mem get` print `name` and `text` the same
+    way, so their output can be fed back to `mem set` unchanged.
+  - `mem clear <N>`: resets one memory to the empty default.
+  - `mem tile <T> <N|none>`: assigns memory N (or nothing) to tile T (1–6).
+  - `mem tiles`: lists the six tile assignments.
+- Changes apply to the panel at once and are saved to NVS.
+
+#### Reset
+
+- Settings > System > Reset to Defaults also erases all memories and tile
+  assignments, since it is a full factory reset. The CLI `reset` command
+  erases keyer settings only and leaves memories alone.
+
+#### Implementation notes
+
+- `components/morse_codec`: add text validation/normalization and an
+  encoder from text to a timed element sequence, with host tests.
+- New hardware-independent component (e.g. `message_player`): plays a
+  message by returning key_down for a given `now_ms`, like
+  `iambic_keyer_service()`. It handles repeat count/pause, the queue,
+  cancel, and progress reporting for the strip, with host tests.
+- `main/`: NVS store for memories and tile assignments, the panel and
+  picker screens, the Send screen button, CLI `mem` command, and
+  integration into `paddle_task`: cancel on paddle contact, then ignore
+  paddle input until both paddles are released.
 
 ### Edit memories by keying them
 
@@ -50,31 +205,33 @@ How this file works:
   decoder doing the typing. Here the decoder is already the core of the
   product. An "edit memory" mode that records decoded text avoids an
   on-screen keyboard on a 320×240 resistive screen.
-- Open question: how corrections work. On the Practice screen, HH deletes
+- Must cover every field of a memory (name, text, repeat default, count,
+  pause), not just the text. Until then, editing is CLI-only (see Message
+  memories).
+- Open question: how corrections work. On the Send screen, HH deletes
   the whole last word (or a `*` placeholder), not one character. Either
   reuse that word-level HH, or add a per-character delete (an on-screen
   backspace, or a different prosign) for fixing a single wrong letter in a
   memory.
-- Also allow editing over the serial CLI (e.g. `set msg1 "CQ CQ DE ..."`).
 
-### Transmit arm / Practice mode
+### Transmit arm / Off-air mode
 
-- A clearly visible on-air vs practice toggle, reachable without opening the
-  Settings screen. In practice mode the external key output (and future
+- A clearly visible on-air vs off-air toggle, reachable without opening the
+  Settings screen. In off-air mode the external key output (and future
   PTT output) is never driven. Sidetone and decoding still work.
 - This keeps trainer use safe while the board stays wired to a rig. QMX has
-  the same "Practice mode" for the same reason.
+  the same feature (called "Practice mode" there) for the same reason.
 - Open question: whether the toggle persists across reboots, or the device
-  always boots into practice mode to be safe.
+  always boots into off-air mode to be safe.
 
 ### Quick speed change
 
-- Change WPM from the Practice screen in one gesture (QMX: one button press,
+- Change WPM from the Send screen in one gesture (QMX: one button press,
   then turn the knob), without going through Settings > Keyer > WPM. For
   example, long-press the existing WPM/mode label to show `-`/`+` controls
   over the text area.
   - Constraint: a tap on that label already opens the Keyer submenu, via an
-    `LV_EVENT_CLICKED` handler in `main/ui_practice.c`. LVGL fires CLICKED
+    `LV_EVENT_CLICKED` handler in `main/ui_send.c`. LVGL fires CLICKED
     on release even after a long press, so the existing handler has to move
     to `LV_EVENT_SHORT_CLICKED`. Otherwise a long press would show the
     overlay and then jump into Settings on release.
@@ -88,7 +245,7 @@ How this file works:
   tuning, with a safety timeout (on the order of 10–20 s) and cancel on any
   touch or paddle press. QMX uses "speed 0 means straight key" for the same
   purpose. A dedicated button is clearer on a touchscreen.
-- Never active in practice mode.
+- Never active in off-air mode.
 
 ## Tier 2: keyer timing for experienced operators
 
@@ -139,7 +296,7 @@ How this file works:
   a contest serial number that can be sent as-is or sent and then
   incremented. Optionally send numbers as "cut numbers" (e.g. T for 0, N
   for 9).
-- A small serial-number display or control on the Practice screen, so the
+- A small serial-number display or control on the Send screen, so the
   operator can see and correct the next number to send.
 
 ### CLI `send` / `stop`
