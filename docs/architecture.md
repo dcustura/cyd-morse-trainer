@@ -41,17 +41,18 @@ state," it belongs in a `components/` state machine and should get a host
 test. If it's "how do we show that on screen" or "which GPIO is that wired
 to," it belongs in `main/`.
 
-## The five components
+## The six components
 
 | Component | Responsibility |
 |---|---|
 | `debouncer` | Generic consecutive-sample debounce filter (used for paddle/key contacts). |
+| `message_player` | Message memory playback: sends normalized message text as key-down/key-up timing at the current WPM, with repeat count/pause, a queue of up to 6 messages, stop, and progress status for the sending strip. Uses `morse_codec`'s `morse_text`. |
 | `iambic_keyer` | Paddle-to-element state machine: Iambic Mode A/B, Ultimatic, and straight-key passthrough. Given raw dit/dah contact state and a timestamp, decides when dits/dahs start and stop. Also owns Auto Space: in Iambic/Ultimatic, `iambic_keyer_set_auto_space_pct()` makes it withhold starting a new element after too short a pause, so the signal it generates is itself correctly spaced rather than relying on lenient decoding. |
 | `morse_codec` | Timing classifier + decode tree: given key-down/key-up transitions and timestamps, classifies dit vs. dah and gap vs. character-gap vs. word-gap, and turns finished element sequences into characters or prosigns. Also `morse_text`: validates/normalizes message text (`<AR>`-style prosigns) and walks it as per-character dit/dah patterns for sending. |
 | `settings` | The `settings_t` struct, its field bounds/defaults, and pure clamp/validate helpers — no I/O. |
 | `touch_calibration` | 5-point touch calibration math (compute from raw taps, apply to map a raw sample to a screen coordinate) — no I/O, no display driver calls. |
 
-None of these know about each other, GPIOs, LVGL, or NVS. `main/` wires them
+None of these know about GPIOs, LVGL, or NVS, and only `message_player` uses another one (`morse_codec`). `main/` wires them
 together.
 
 ## Data flow: a keystroke to the screen

@@ -110,7 +110,8 @@ them" below). In this step, memories are edited over the serial CLI only.
 - When something is queued, a repeating message finishes its current
   transmission and then ends its repeats. The next queued message follows
   after a word gap (7 units), with no pause.
-- Tapping the tile that's currently playing does nothing.
+- Tapping the tile that's currently playing, or one already queued, does
+  nothing.
 - Stop and a paddle cancel clear the queue (see Sending).
 
 #### Memories panel (screen)
@@ -192,10 +193,10 @@ them" below). In this step, memories are edited over the serial CLI only.
   encoder (`morse_text.h`) are done. They yield each character's dit/dah
   pattern and whether a word gap precedes it; the player turns that into
   timing, so a WPM change applies from the next element.
-- New hardware-independent component (e.g. `message_player`): plays a
-  message by returning key_down for a given `now_ms`, like
-  `iambic_keyer_service()`. It handles repeat count/pause, the queue,
-  cancel, and progress reporting for the strip, with host tests.
+- `components/message_player` is done: it returns key_down for a given
+  `now_ms`, like `iambic_keyer_service()`, and handles repeat count/pause,
+  the queue, stop, and progress status for the strip. Callers serialize
+  access to it (the UI and `paddle_task` both use it).
 - `main/`: NVS store for memories and tile assignments, the panel and
   picker screens, the Send screen button, CLI `mem` command, and
   integration into `paddle_task`: cancel on paddle contact, then ignore
