@@ -236,6 +236,13 @@ static int cmd_set(int argc, char **argv)
             printf("ERR invalid value %s\n", val);
             return 1;
         }
+        /* Saturate to the uint8_t range before narrowing, so e.g. 300
+         * clamps to the max and -1 to the min instead of wrapping. */
+        if (num < 0) {
+            num = 0;
+        } else if (num > UINT8_MAX) {
+            num = UINT8_MAX;
+        }
         s_settings.auto_space_pct = settings_clamp_auto_space_pct((uint8_t)num);
         paddle_input_set_auto_space_pct(s_settings.auto_space_pct);
         break;
