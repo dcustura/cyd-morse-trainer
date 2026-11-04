@@ -605,6 +605,27 @@ TEST(iambic_keyer, auto_space_adjacent_pct_steps_give_distinct_word_thresholds)
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 220u));
 }
 
+TEST(iambic_keyer, auto_space_withhold_preserves_paddle_touch_order)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70);
+    uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
+
+    /* dah touched first (withheld), then dit tapped, then both released --
+     * all before the 3u target. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, true, key_up + 150u));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, true, key_up + 165u));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up + 170u));
+
+    /* dah goes first, as touched ... */
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, false, key_up + 3u * U));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DAH, s_keyer.state);
+    /* ... then the dit, after the dah and its 1-unit gap. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up + 6u * U));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, false, key_up + 7u * U));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -635,4 +656,5 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, auto_space_measures_from_the_actual_key_up_tick);
     RUN_TEST_CASE(iambic_keyer, auto_space_95_pct_still_withholds_just_below_the_standard_gap);
     RUN_TEST_CASE(iambic_keyer, auto_space_adjacent_pct_steps_give_distinct_word_thresholds);
+    RUN_TEST_CASE(iambic_keyer, auto_space_withhold_preserves_paddle_touch_order);
 }

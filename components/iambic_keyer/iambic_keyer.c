@@ -26,6 +26,7 @@ static void reset_state(iambic_keyer_t *k)
     k->auto_space_wait_until_ms = 0;
     k->auto_space_dit_latched = false;
     k->auto_space_dah_latched = false;
+    k->auto_space_first_dit = true;
 }
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm)
@@ -122,12 +123,19 @@ static uint32_t auto_space_pad_target_ms(const iambic_keyer_t *k, uint32_t idle_
  * they came from an earlier, now-released touch latched during the
  * withhold). Returns false if the caller should do nothing more this tick
  * (either nothing was touched, or Auto Space is still withholding).
+ *
+ * *from_withhold is set when the result comes from a finished withhold,
+ * in which case *first_dit says which paddle was touched first (a
+ * same-tick double touch ties toward dit), so the caller can send the
+ * paddles in the order the operator actually touched them.
  */
 static bool auto_space_resolve(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms,
-                                bool *want_dit, bool *want_dah)
+                                bool *want_dit, bool *want_dah, bool *from_withhold, bool *first_dit)
 {
     *want_dit = dit_contact;
     *want_dah = dah_contact;
+    *from_withhold = false;
+    *first_dit = dit_contact;
 
     if (k->auto_space_waiting) {
         k->auto_space_dit_latched = k->auto_space_dit_latched || dit_contact;
@@ -138,6 +146,8 @@ static bool auto_space_resolve(iambic_keyer_t *k, bool dit_contact, bool dah_con
         }
         *want_dit = k->auto_space_dit_latched;
         *want_dah = k->auto_space_dah_latched;
+        *from_withhold = true;
+        *first_dit = k->auto_space_first_dit;
         k->auto_space_waiting = false;
         k->auto_space_dit_latched = false;
         k->auto_space_dah_latched = false;
@@ -156,6 +166,7 @@ static bool auto_space_resolve(iambic_keyer_t *k, bool dit_contact, bool dah_con
             k->auto_space_wait_until_ms = k->idle_start_ms + target_ms;
             k->auto_space_dit_latched = dit_contact;
             k->auto_space_dah_latched = dah_contact;
+            k->auto_space_first_dit = dit_contact;
             return false;
         }
     }
@@ -215,9 +226,17 @@ static bool service_iambic(iambic_keyer_t *k, bool dit_contact, bool dah_contact
 {
     switch (k->state) {
     case IAMBIC_KEYER_STATE_IDLE: {
-        bool want_dit, want_dah;
-        if (auto_space_resolve(k, dit_contact, dah_contact, now_ms, &want_dit, &want_dah)) {
-            if (want_dit) {
+        bool want_dit, want_dah, from_withhold, first_dit;
+        if (auto_space_resolve(k, dit_contact, dah_contact, now_ms, &want_dit, &want_dah, &from_withhold,
+                               &first_dit)) {
+            if (from_withhold && want_dit && want_dah) {
+                /* Both paddles were touched during the withhold: send them
+                 * in the order they were touched, with the second queued
+                 * as a squeeze-insert, just as if the first had started
+                 * immediately and the second was touched while it sent. */
+                start_element(k, first_dit, now_ms);
+                k->opposite_latched = true;
+            } else if (want_dit) {
                 start_element(k, true, now_ms);
             } else if (want_dah) {
                 start_element(k, false, now_ms);
@@ -287,8 +306,11 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
 
     switch (k->state) {
     case IAMBIC_KEYER_STATE_IDLE: {
-        bool want_dit, want_dah;
-        if (auto_space_resolve(k, dit_contact, dah_contact, now_ms, &want_dit, &want_dah)) {
+        bool want_dit, want_dah, from_withhold, first_dit;
+        if (auto_space_resolve(k, dit_contact, dah_contact, now_ms, &want_dit, &want_dah, &from_withhold,
+                               &first_dit)) {
+            (void)from_withhold;
+            (void)first_dit;
             if (want_dit && want_dah) {
                 start_element(k, k->ultimatic_last_dit, now_ms);
             } else if (want_dit) {

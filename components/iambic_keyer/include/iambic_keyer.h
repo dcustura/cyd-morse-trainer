@@ -65,6 +65,7 @@ typedef struct {
     uint32_t auto_space_wait_until_ms;
     bool auto_space_dit_latched;
     bool auto_space_dah_latched;
+    bool auto_space_first_dit; /* which paddle was touched first during the withhold */
     uint8_t auto_space_pct;    /* 1-100; thresholds are derived from it and unit_ms on use */
 } iambic_keyer_t;
 
