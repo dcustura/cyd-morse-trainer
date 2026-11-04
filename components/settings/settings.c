@@ -1,66 +1,38 @@
 #include "settings.h"
 
+static int32_t clamp(int32_t v, int32_t lo, int32_t hi)
+{
+    return v < lo ? lo : (v > hi ? hi : v);
+}
+
 uint16_t settings_clamp_wpm(uint16_t wpm)
 {
-    if (wpm < SETTINGS_WPM_MIN) {
-        return SETTINGS_WPM_MIN;
-    }
-    if (wpm > SETTINGS_WPM_MAX) {
-        return SETTINGS_WPM_MAX;
-    }
-    return wpm;
+    return (uint16_t)clamp(wpm, SETTINGS_WPM_MIN, SETTINGS_WPM_MAX);
 }
 
 uint16_t settings_clamp_tone_hz(uint16_t hz)
 {
-    if (hz < SETTINGS_TONE_HZ_MIN) {
-        return SETTINGS_TONE_HZ_MIN;
-    }
-    if (hz > SETTINGS_TONE_HZ_MAX) {
-        return SETTINGS_TONE_HZ_MAX;
-    }
-    return hz;
+    return (uint16_t)clamp(hz, SETTINGS_TONE_HZ_MIN, SETTINGS_TONE_HZ_MAX);
 }
 
 uint8_t settings_clamp_volume_pct(uint8_t pct)
 {
-    if (pct > SETTINGS_VOLUME_PCT_MAX) {
-        return SETTINGS_VOLUME_PCT_MAX;
-    }
-    return pct;
+    return (uint8_t)clamp(pct, SETTINGS_VOLUME_PCT_MIN, SETTINGS_VOLUME_PCT_MAX);
 }
 
 uint16_t settings_clamp_envelope_ms(uint16_t ms)
 {
-    if (ms < SETTINGS_ENVELOPE_MS_MIN) {
-        return SETTINGS_ENVELOPE_MS_MIN;
-    }
-    if (ms > SETTINGS_ENVELOPE_MS_MAX) {
-        return SETTINGS_ENVELOPE_MS_MAX;
-    }
-    return ms;
+    return (uint16_t)clamp(ms, SETTINGS_ENVELOPE_MS_MIN, SETTINGS_ENVELOPE_MS_MAX);
 }
 
 uint8_t settings_clamp_brightness_pct(uint8_t pct)
 {
-    if (pct < SETTINGS_BRIGHTNESS_PCT_MIN) {
-        return SETTINGS_BRIGHTNESS_PCT_MIN;
-    }
-    if (pct > SETTINGS_BRIGHTNESS_PCT_MAX) {
-        return SETTINGS_BRIGHTNESS_PCT_MAX;
-    }
-    return pct;
+    return (uint8_t)clamp(pct, SETTINGS_BRIGHTNESS_PCT_MIN, SETTINGS_BRIGHTNESS_PCT_MAX);
 }
 
 uint8_t settings_clamp_auto_space_pct(uint8_t pct)
 {
-    if (pct < SETTINGS_AUTO_SPACE_PCT_MIN) {
-        return SETTINGS_AUTO_SPACE_PCT_MIN;
-    }
-    if (pct > SETTINGS_AUTO_SPACE_PCT_MAX) {
-        return SETTINGS_AUTO_SPACE_PCT_MAX;
-    }
-    return pct;
+    return (uint8_t)clamp(pct, SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX);
 }
 
 iambic_keyer_mode_t settings_validate_keymode(uint8_t raw)
