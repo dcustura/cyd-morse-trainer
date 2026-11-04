@@ -40,21 +40,36 @@ typedef struct {
     const char *name;
 } prosign_name_entry_t;
 
+/* Every prosign the codec knows, by name. BT/AR/KN/AS map to the
+ * punctuation glyph they share a sequence with; the rest to a sentinel. */
 static const prosign_name_entry_t PROSIGN_NAMES[] = {
-    { MORSE_CODEC_PROSIGN_SK, "SK" },
-    { MORSE_CODEC_PROSIGN_HH, "HH" },
-    { MORSE_CODEC_PROSIGN_VE, "VE" },
-    { MORSE_CODEC_PROSIGN_CT, "CT" },
+    { MORSE_CODEC_PROSIGN_SK, "SK" }, { MORSE_CODEC_PROSIGN_HH, "HH" },
+    { MORSE_CODEC_PROSIGN_VE, "VE" }, { MORSE_CODEC_PROSIGN_CT, "CT" },
+    { '=', "BT" },                    { '+', "AR" },
+    { '(', "KN" },                    { '&', "AS" },
 };
 
 const char *morse_codec_prosign_name(char ch)
 {
+    if ((unsigned char)ch < 0x80) {
+        return NULL; /* punctuation-glyph prosigns display as the glyph */
+    }
     for (size_t i = 0; i < sizeof(PROSIGN_NAMES) / sizeof(PROSIGN_NAMES[0]); ++i) {
         if (PROSIGN_NAMES[i].ch == ch) {
             return PROSIGN_NAMES[i].name;
         }
     }
     return NULL;
+}
+
+char morse_codec_prosign_char(const char *name)
+{
+    for (size_t i = 0; i < sizeof(PROSIGN_NAMES) / sizeof(PROSIGN_NAMES[0]); ++i) {
+        if (strcmp(PROSIGN_NAMES[i].name, name) == 0) {
+            return PROSIGN_NAMES[i].ch;
+        }
+    }
+    return 0;
 }
 
 const char *morse_codec_pattern_for_char(char ch)

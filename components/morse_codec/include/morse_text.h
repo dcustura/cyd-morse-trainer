@@ -14,7 +14,7 @@ extern "C" {
  * Text syntax: A-Z, 0-9, space, the punctuation the decoder knows
  * (. , ? ' ! / ( ) & : ; = + - _ " $ @), and the eight prosigns the decoder
  * knows written in angle brackets: <AR> <SK> <KN> <BT> <HH> <VE> <CT> <AS>.
- * The letters of a prosign are sent as one unbroken sequence.
+ * A prosign is sent as the one unbroken sequence the decoder reads it from.
  */
 
 /** Longest dit/dah pattern of any character or prosign (<HH>: 8 dits). */

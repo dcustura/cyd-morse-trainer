@@ -104,6 +104,16 @@ morse_codec_event_t morse_codec_tick(morse_codec_t *codec, uint32_t timestamp_ms
 const char *morse_codec_prosign_name(char ch);
 
 /**
+ * Look up the character a prosign decodes to, by its uppercase two-letter
+ * name: "SK"/"HH"/"VE"/"CT" give their MORSE_CODEC_PROSIGN_* sentinel,
+ * "BT"/"AR"/"KN"/"AS" the punctuation glyph they share a sequence with.
+ * Pass the result to morse_codec_pattern_for_char() for its pattern.
+ *
+ * @return the decoded character, or 0 if name isn't a known prosign.
+ */
+char morse_codec_prosign_char(const char *name);
+
+/**
  * Look up the dit/dash pattern for a character or prosign sentinel value
  * (the encode-direction mirror of the codec's own decode table).
  *

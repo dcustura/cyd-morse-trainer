@@ -6,7 +6,6 @@
 #include "paddle_input.h"
 #include "sidetone.h"
 
-#include <string.h>
 
 #define TAB_BAR_SIZE 32
 
@@ -49,23 +48,6 @@ static const char *const SYMBOLS_MAP[] = {
 static const char *const PROSIGN_MAP[] = {
     "SK", "HH", "VE", "CT", "\n",
     "BT", "AR", "KN", "AS", "",
-};
-
-/* BT/AR/KN/AS have no sentinel of their own (see morse_codec.h) - they
- * decode to the punctuation glyph they're timed identically to, by
- * convention, so their pattern is looked up via that glyph instead. Letters/
- * digits/symbols need no such table: their button text (a single character)
- * is the lookup character. */
-typedef struct {
-    const char *label;
-    char lookup_ch;
-} prosign_entry_t;
-
-static const prosign_entry_t PROSIGNS[] = {
-    { "SK", MORSE_CODEC_PROSIGN_SK }, { "HH", MORSE_CODEC_PROSIGN_HH },
-    { "VE", MORSE_CODEC_PROSIGN_VE }, { "CT", MORSE_CODEC_PROSIGN_CT },
-    { "BT", '=' },                    { "AR", '+' },
-    { "KN", '(' },                    { "AS", '&' },
 };
 
 static lv_obj_t *s_highlighted_matrix;
@@ -161,18 +143,13 @@ static void start_playback(const char *pattern)
 }
 
 /* Letters/digits/symbols: the button's own (single-character) text is the
- * lookup character. Prosigns: looked up by name in PROSIGNS. */
+ * lookup character. Prosigns: looked up by name in the codec's table. */
 static char lookup_char_for_label(const char *label_text)
 {
     if (label_text[1] == '\0') {
         return label_text[0];
     }
-    for (size_t i = 0; i < sizeof(PROSIGNS) / sizeof(PROSIGNS[0]); i++) {
-        if (strcmp(PROSIGNS[i].label, label_text) == 0) {
-            return PROSIGNS[i].lookup_ch;
-        }
-    }
-    return 0;
+    return morse_codec_prosign_char(label_text);
 }
 
 static void matrix_event_cb(lv_event_t *e)

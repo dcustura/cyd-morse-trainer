@@ -259,6 +259,28 @@ TEST(morse_codec, pattern_for_char_returns_the_encode_direction_pattern)
     TEST_ASSERT_NULL(morse_codec_pattern_for_char(MORSE_CODEC_UNKNOWN_CHAR));
 }
 
+TEST(morse_codec, prosign_char_maps_all_eight_names)
+{
+    TEST_ASSERT_EQUAL_INT8(MORSE_CODEC_PROSIGN_SK, morse_codec_prosign_char("SK"));
+    TEST_ASSERT_EQUAL_INT8(MORSE_CODEC_PROSIGN_HH, morse_codec_prosign_char("HH"));
+    TEST_ASSERT_EQUAL_INT8(MORSE_CODEC_PROSIGN_VE, morse_codec_prosign_char("VE"));
+    TEST_ASSERT_EQUAL_INT8(MORSE_CODEC_PROSIGN_CT, morse_codec_prosign_char("CT"));
+    TEST_ASSERT_EQUAL_INT8('=', morse_codec_prosign_char("BT"));
+    TEST_ASSERT_EQUAL_INT8('+', morse_codec_prosign_char("AR"));
+    TEST_ASSERT_EQUAL_INT8('(', morse_codec_prosign_char("KN"));
+    TEST_ASSERT_EQUAL_INT8('&', morse_codec_prosign_char("AS"));
+    TEST_ASSERT_EQUAL_INT8(0, morse_codec_prosign_char("SOS"));
+    TEST_ASSERT_EQUAL_INT8(0, morse_codec_prosign_char("ar"));
+}
+
+TEST(morse_codec, prosign_name_is_null_for_punctuation_glyph_prosigns)
+{
+    /* '+' decodes from AR but is shown as the glyph, not an "AR" badge. */
+    TEST_ASSERT_NULL(morse_codec_prosign_name('+'));
+    TEST_ASSERT_NULL(morse_codec_prosign_name('='));
+    TEST_ASSERT_EQUAL_STRING("SK", morse_codec_prosign_name(MORSE_CODEC_PROSIGN_SK));
+}
+
 TEST(morse_codec, wpm_to_unit_ms_matches_paris_timing_and_clamps_zero)
 {
     TEST_ASSERT_EQUAL_UINT32(60, morse_codec_wpm_to_unit_ms(20));
@@ -279,5 +301,7 @@ TEST_GROUP_RUNNER(morse_codec)
     RUN_TEST_CASE(morse_codec, prosigns_sharing_a_punctuation_sequence_decode_to_that_punctuation);
     RUN_TEST_CASE(morse_codec, unique_prosigns_decode_to_a_named_sentinel);
     RUN_TEST_CASE(morse_codec, pattern_for_char_returns_the_encode_direction_pattern);
+    RUN_TEST_CASE(morse_codec, prosign_char_maps_all_eight_names);
+    RUN_TEST_CASE(morse_codec, prosign_name_is_null_for_punctuation_glyph_prosigns);
     RUN_TEST_CASE(morse_codec, wpm_to_unit_ms_matches_paris_timing_and_clamps_zero);
 }

@@ -5,10 +5,6 @@
 
 #include "morse_codec.h"
 
-/* The prosigns accepted in message text, each sent as its letters' patterns
- * run together. These are exactly the eight the decoder recognizes. */
-static const char *const TEXT_PROSIGNS[] = { "AR", "SK", "KN", "BT", "HH", "VE", "CT", "AS" };
-
 #define PROSIGN_TEXT_LEN 4 /* "<XX>" */
 
 static char upper(char ch)
@@ -28,8 +24,9 @@ static const char *char_pattern(char ch)
 }
 
 /* Parse a bracketed prosign starting at text[0] == '<'. On success, writes
- * its uppercase two-letter name into name[3] and returns MORSE_TEXT_OK. */
-static morse_text_result_t parse_prosign(const char *text, char name[3])
+ * its uppercase two-letter name into name[3] and the character it decodes
+ * to into *ch, and returns MORSE_TEXT_OK. */
+static morse_text_result_t parse_prosign(const char *text, char name[3], char *ch)
 {
     const char *close = strchr(text + 1, '>');
     if (close == NULL) {
@@ -45,12 +42,8 @@ static morse_text_result_t parse_prosign(const char *text, char name[3])
     name[0] = upper(text[1]);
     name[1] = upper(text[2]);
     name[2] = '\0';
-    for (size_t i = 0; i < sizeof(TEXT_PROSIGNS) / sizeof(TEXT_PROSIGNS[0]); ++i) {
-        if (strcmp(TEXT_PROSIGNS[i], name) == 0) {
-            return MORSE_TEXT_OK;
-        }
-    }
-    return MORSE_TEXT_ERR_UNKNOWN_PROSIGN;
+    *ch = morse_codec_prosign_char(name);
+    return (*ch != 0) ? MORSE_TEXT_OK : MORSE_TEXT_ERR_UNKNOWN_PROSIGN;
 }
 
 morse_text_result_t morse_text_normalize(const char *in, bool allow_prosigns, char *out, size_t out_size,
@@ -79,7 +72,8 @@ morse_text_result_t morse_text_normalize(const char *in, bool allow_prosigns, ch
         size_t token_len;
         if (in[i] == '<' && allow_prosigns) {
             char name[3];
-            result = parse_prosign(&in[i], name);
+            char prosign_ch;
+            result = parse_prosign(&in[i], name, &prosign_ch);
             if (result != MORSE_TEXT_OK) {
                 break;
             }
@@ -156,15 +150,11 @@ bool morse_text_next_token(const char *text, size_t *pos, morse_text_token_t *ou
 
     if (text[i] == '<') {
         char name[3];
-        if (parse_prosign(&text[i], name) != MORSE_TEXT_OK) {
+        char prosign_ch;
+        if (parse_prosign(&text[i], name, &prosign_ch) != MORSE_TEXT_OK) {
             return false;
         }
-        /* Two letters' patterns run together; the longest (HH) is 8. */
-        const char *first = morse_codec_pattern_for_char(name[0]);
-        const char *second = morse_codec_pattern_for_char(name[1]);
-        size_t first_len = strlen(first);
-        memcpy(out->pattern, first, first_len);
-        strcpy(&out->pattern[first_len], second);
+        strcpy(out->pattern, morse_codec_pattern_for_char(prosign_ch));
         out->text_len = PROSIGN_TEXT_LEN;
     } else {
         const char *pattern = char_pattern(text[i]);
