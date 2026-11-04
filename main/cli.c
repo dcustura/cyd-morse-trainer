@@ -30,6 +30,7 @@ typedef enum {
     KEY_BRIGHTNESS_AUTO,
     KEY_SEND_LARGE_TEXT,
     KEY_STRAIGHT_RING_INPUT,
+    KEY_ON_AIR,
     KEY_COUNT,
 } cli_key_t;
 
@@ -46,6 +47,7 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_BRIGHTNESS_AUTO] = "brightness_auto",
     [KEY_SEND_LARGE_TEXT] = "send_large_text",
     [KEY_STRAIGHT_RING_INPUT] = "straight_ring_input",
+    [KEY_ON_AIR] = "on_air",
 };
 
 static bool parse_key(const char *s, cli_key_t *out)
@@ -149,6 +151,9 @@ static void print_value(const settings_t *s, cli_key_t key)
         break;
     case KEY_STRAIGHT_RING_INPUT:
         printf("straight_ring_input=%s\n", s->straight_ring_input ? "on" : "off");
+        break;
+    case KEY_ON_AIR:
+        printf("on_air=%s\n", s->on_air ? "on" : "off");
         break;
     default:
         break;
@@ -286,6 +291,10 @@ static int apply_setting(settings_t *s, cli_key_t key, const char *val)
         s->straight_ring_input = flag;
         paddle_input_set_straight_ring_input(flag);
         break;
+    case KEY_ON_AIR:
+        s->on_air = flag;
+        paddle_input_set_on_air(flag);
+        break;
     default:
         return 1;
     }
@@ -352,6 +361,26 @@ static int cmd_reset(int argc, char **argv)
     return 0;
 }
 
+/* Live on-air state only, like the touchscreen's quick toggles: the saved
+ * boot value (`set on_air`) is left alone. */
+static int cmd_tx(int argc, char **argv)
+{
+    if (argc == 2) {
+        bool on_air;
+        if (!parse_bool(argv[1], &on_air)) {
+            printf("ERR unknown value %s\n", argv[1]);
+            return 1;
+        }
+        paddle_input_set_on_air(on_air);
+    } else if (argc != 1) {
+        printf("ERR usage: tx [on|off]\n");
+        return 1;
+    }
+    printf("tx=%s\n", paddle_input_is_on_air() ? "on" : "off");
+    printf("OK\n");
+    return 0;
+}
+
 static int cmd_log(int argc, char **argv)
 {
     static const struct {
@@ -391,6 +420,7 @@ void cli_start(void)
         {.command = "save", .help = "save - persist current settings to flash", .hint = NULL, .func = &cmd_save},
         {.command = "reset", .help = "reset - erase saved settings, not memories (restart to apply defaults)", .hint = NULL, .func = &cmd_reset},
         {.command = "mem", .help = "mem list | get <N> | set <N> name|text|repeat|count|pause <value> | clear <N> | tile <T> <N|none> | tiles | play <N> | stop - message memories", .hint = NULL, .func = &cli_mem_cmd},
+        {.command = "tx", .help = "tx [on|off] - show or change the live on-air state (not saved; see set on_air)", .hint = NULL, .func = &cmd_tx},
         {.command = "log", .help = "log <none|error|warn|info|debug|verbose> - set log verbosity", .hint = NULL, .func = &cmd_log},
     };
     for (size_t i = 0; i < sizeof(cmds) / sizeof(cmds[0]); i++) {

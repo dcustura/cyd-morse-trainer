@@ -17,6 +17,7 @@ idf_component_register(SRCS "cli.c" "cli_mem.c" "main.c"
                        INCLUDE_DIRS "."
                        REQUIRES debouncer
                                 iambic_keyer
+                                key_gate
                                 message_player
                                 morse_codec
                                 settings

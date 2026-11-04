@@ -49,6 +49,16 @@ void paddle_input_set_auto_space_pct(uint8_t pct);
  */
 void paddle_input_set_straight_ring_input(bool enabled);
 
+/**
+ * On-air: the external key output follows the key. Off-air: it's never
+ * driven (sidetone, decoding and message playback still work). Takes
+ * effect at once; going on-air mid-element waits for the next key-down
+ * (see components/key_gate). Live state only: the saved boot value is
+ * settings_t.on_air. Safe to call from any task.
+ */
+void paddle_input_set_on_air(bool on_air);
+bool paddle_input_is_on_air(void);
+
 /* Current keyer settings, kept live-updated by the setters above (used by
  * the Send screen to refresh its status label after a Settings save). */
 iambic_keyer_mode_t paddle_input_get_mode(void);

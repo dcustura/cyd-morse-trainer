@@ -3,6 +3,7 @@
 #include "board_pins.h"
 #include "sidetone.h"
 #include "debouncer.h"
+#include "key_gate.h"
 #include "morse_codec.h"
 
 #include "driver/gpio.h"
@@ -31,6 +32,7 @@ static volatile bool s_paddle_debounce;
 static volatile bool s_straight_ring_input;
 static QueueHandle_t s_decoded_char_queue;
 static _Atomic bool s_key_down_state;
+static _Atomic bool s_on_air;
 
 /* Shared with the UI and CLI tasks, so every access holds s_player_lock. */
 static message_player_t s_player;
@@ -114,6 +116,9 @@ static void paddle_task(void *arg)
     debouncer_init(&dah_db, PADDLE_DEBOUNCE_THRESHOLD, false);
 
     bool prev_key_down = false;
+    key_gate_t key_gate;
+    key_gate_init(&key_gate);
+    bool prev_output = false;
     bool ignore_until_released = false;
     uint32_t last_morse_tick_ms = 0;
 
@@ -191,12 +196,20 @@ static void paddle_task(void *arg)
 
         if (key_down != prev_key_down) {
             sidetone_key(key_down);
-            gpio_set_level(BOARD_KEY_OUTPUT_GPIO, key_down ? KEY_OUTPUT_ON_LEVEL : KEY_OUTPUT_OFF_LEVEL);
             atomic_store_explicit(&s_key_down_state, key_down, memory_order_relaxed);
             char out_char = 0;
             morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now, &out_char);
             handle_decode_event(event, out_char);
             prev_key_down = key_down;
+        }
+
+        /* Checked every tick, not just on key edges, so going off-air
+         * mid-element releases the transmitter at once. */
+        bool on_air = atomic_load_explicit(&s_on_air, memory_order_relaxed);
+        bool output = key_gate_update(&key_gate, key_down, on_air);
+        if (output != prev_output) {
+            gpio_set_level(BOARD_KEY_OUTPUT_GPIO, output ? KEY_OUTPUT_ON_LEVEL : KEY_OUTPUT_OFF_LEVEL);
+            prev_output = output;
         }
 
         if (now - last_morse_tick_ms >= MORSE_TICK_INTERVAL_MS) {
@@ -221,6 +234,7 @@ void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *sett
     s_paddle_swap = settings->paddle_swap;
     s_paddle_debounce = settings->paddle_debounce;
     s_straight_ring_input = settings->straight_ring_input;
+    atomic_store(&s_on_air, settings->on_air);
     s_decoded_char_queue = decoded_char_queue;
 
     sidetone_init();
@@ -317,6 +331,17 @@ void paddle_input_set_debounce(bool debounce)
 void paddle_input_set_straight_ring_input(bool enabled)
 {
     s_straight_ring_input = enabled;
+}
+
+void paddle_input_set_on_air(bool on_air)
+{
+    atomic_store(&s_on_air, on_air);
+    ESP_LOGI(TAG, "%s", on_air ? "on-air: key output live" : "off-air: key output disabled");
+}
+
+bool paddle_input_is_on_air(void)
+{
+    return atomic_load(&s_on_air);
 }
 
 void paddle_input_set_auto_space_pct(uint8_t pct)

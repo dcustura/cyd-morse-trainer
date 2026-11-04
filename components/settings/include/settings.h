@@ -33,6 +33,7 @@ extern "C" {
 #define SETTINGS_DEFAULT_BRIGHTNESS_AUTO false
 #define SETTINGS_DEFAULT_SEND_LARGE_TEXT false
 #define SETTINGS_DEFAULT_STRAIGHT_RING_INPUT false
+#define SETTINGS_DEFAULT_ON_AIR false
 
 typedef struct {
     uint16_t wpm;
@@ -56,6 +57,11 @@ typedef struct {
      * key signal, ORed with the dit/"tip" GPIO, for a key wired across both
      * conductors. No effect in any other key mode (see paddle_input.c). */
     bool straight_ring_input;
+    /* Whether the external key output is live (on-air) at boot. Off-air,
+     * it's never driven; sidetone and decoding still work. The quick
+     * on-air toggles outside Settings change only the live state (see
+     * paddle_input_set_on_air()), not this saved value. */
+    bool on_air;
 } settings_t;
 
 /** Clamp a WPM value to [SETTINGS_WPM_MIN, SETTINGS_WPM_MAX]. */

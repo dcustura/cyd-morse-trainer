@@ -40,7 +40,8 @@ implemented.
   switches instantly at each key edge; the sidetone's envelope ramp doesn't
   apply to it. It isn't driven by sidetone-only playback: the Sidetone
   "Test" button and the Morse Reference screen sound the sidetone without
-  keying this line. Wiring requirement: key a transceiver through an
+  keying this line. It's only driven while **on-air** (see On-air /
+  off-air under Behavior details); off-air it stays off. Wiring requirement: key a transceiver through an
   isolating stage such as an optocoupler, not by connecting the GPIO
   directly to the rig's key jack. The default pin hasn't been confirmed on
   real hardware yet (see `main/Kconfig.projbuild`).
@@ -387,7 +388,7 @@ implemented.
 - The device exposes a line-based command console on the same UART already
   used for the ESP-IDF log output and `idf.py monitor` (115200 baud) — no
   separate hardware or connection is needed. Prompt: `morse> `.
-- Six commands, chosen for scripting: every response ends with exactly one
+- Seven commands, chosen for scripting: every response ends with exactly one
   `OK` or `ERR <reason>` line, so a script can tell where a response ends
   even though log lines from elsewhere in the firmware may appear between
   commands.
@@ -427,14 +428,18 @@ implemented.
     - Quote values that contain spaces. Inside quotes, `\"` is a literal
       `"`. `mem list` and `mem get` print name and text the same way, so
       their output can be pasted back into `mem set`.
+  - `tx [on|off]` — shows (`tx=on|off`) or changes the live on-air state,
+    like the touchscreen's quick toggles: not saved, so the next boot
+    returns to the saved `on_air` setting.
   - `log <none|error|warn|info|debug|verbose>` — sets the runtime log
     verbosity for every module, so a script can quiet interleaved log
     output before sending `get`/`set` commands.
 - Keys, matching the Settings screen's Keyer/Sidetone/Display submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
   `paddle_swap`, `paddle_debounce`, `straight_ring_input`,
   `auto_space_pct` (50–100), `tone_hz`, `volume_pct`, `envelope_ms`,
-  `brightness_pct`, `brightness_auto`, and `send_large_text` (all
-  booleans as `on`/`off`). `straight_ring_input` can
+  `brightness_pct`, `brightness_auto`, `send_large_text`, and `on_air` (all
+  booleans as `on`/`off`). `get on_air` shows the saved boot value, which
+  can differ from the live state (`tx`); `set on_air` changes both. `straight_ring_input` can
   be set regardless of the current `keymode`, but (like the Settings
   screen's Ring Input tile) only takes effect while `keymode` is
   `straight`. Setting `brightness_pct` while `brightness_auto` is on
@@ -488,7 +493,7 @@ implemented.
 - **Persistence**: WPM, key mode, paddle swap, paddle debounce, ring
   input, Auto Space percentage, sidetone frequency, sidetone volume,
   sidetone envelope, screen brightness, brightness auto/manual mode,
-  Send screen text size, and touch calibration survive power loss. On boot, the last-saved values are
+  Send screen text size, the on-air setting, and touch calibration survive power loss. On boot, the last-saved values are
   loaded and applied before the operator can key anything (or interact
   with the touchscreen, in the case of calibration). Settings writes to
   NVS are debounced by a couple of seconds after the last edit, rather
@@ -496,7 +501,7 @@ implemented.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
   paddle swap, paddle debounce on, ring input off, Auto Space off (100%), 600 Hz
   sidetone, 50% sidetone volume, 10 ms sidetone envelope, 100% brightness,
-  brightness auto mode off, Small Send screen text size. No default touch calibration
+  brightness auto mode off, Small Send screen text size, off-air. No default touch calibration
   exists — it must be created via the first-boot calibration flow.
 - **Message memories**: a library of 32 memories, numbered 1–32, stored in
   their own NVS namespace. Each has a name (up to 8 characters, may be
@@ -545,6 +550,16 @@ implemented.
     while a message plays. A message started during either one (e.g. by
     `mem play`) ends it once the reference element or 300 ms test beep in
     progress finishes, and then has the sidetone to itself.
+- **On-air / off-air**: the external key output is driven only while
+  on-air. Off-air, everything else works unchanged (sidetone, keying
+  indicator, decoding, message playback), so the device can be used as a
+  trainer while still wired to a rig. Going off-air during an element
+  releases the key output at once; going on-air during an element doesn't
+  key the rest of it, and the output starts with the next key-down.
+  - The saved `on_air` setting sets the state at boot (off-air on a new
+    device or after a factory reset). Changing it saves it and applies it
+    at once. The quick toggles (`tx` on the CLI) change only the live
+    state.
 - **Factory reset**: erases saved keyer settings, touch calibration and
   message memories together and restarts the device, so it comes back up exactly as an
   unconfigured device would.

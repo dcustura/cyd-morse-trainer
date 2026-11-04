@@ -21,6 +21,7 @@
  * existing device. */
 #define NVS_KEY_SEND_LARGE_TEXT "large_text"
 #define NVS_KEY_STRAIGHT_RING_INPUT "ring_input"
+#define NVS_KEY_ON_AIR "on_air"
 
 static const char *TAG = "settings_store";
 
@@ -97,6 +98,11 @@ static esp_err_t load_from_nvs(settings_t *out)
         out->straight_ring_input = (raw_straight_ring_input != 0);
     }
 
+    uint8_t raw_on_air;
+    if (nvs_get_u8(handle, NVS_KEY_ON_AIR, &raw_on_air) == ESP_OK) {
+        out->on_air = (raw_on_air != 0);
+    }
+
     nvs_close(handle);
     return ESP_OK;
 }
@@ -135,6 +141,7 @@ esp_err_t settings_store_save(const settings_t *in)
     nvs_set_u8(handle, NVS_KEY_BRIGHTNESS_AUTO, in->brightness_auto ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_SEND_LARGE_TEXT, in->send_large_text ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_STRAIGHT_RING_INPUT, in->straight_ring_input ? 1 : 0);
+    nvs_set_u8(handle, NVS_KEY_ON_AIR, in->on_air ? 1 : 0);
 
     err = nvs_commit(handle);
     nvs_close(handle);

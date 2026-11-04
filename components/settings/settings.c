@@ -62,4 +62,5 @@ void settings_set_defaults(settings_t *out)
     out->brightness_auto = SETTINGS_DEFAULT_BRIGHTNESS_AUTO;
     out->send_large_text = SETTINGS_DEFAULT_SEND_LARGE_TEXT;
     out->straight_ring_input = SETTINGS_DEFAULT_STRAIGHT_RING_INPUT;
+    out->on_air = SETTINGS_DEFAULT_ON_AIR;
 }
