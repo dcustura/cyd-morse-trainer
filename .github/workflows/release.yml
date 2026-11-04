@@ -1,0 +1,58 @@
+name: Release firmware
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # ESP-IDF picks up PROJECT_VER from version.txt, so the firmware's
+      # embedded app version (esp_app_get_description()) matches the tag.
+      - name: Set firmware version from tag
+        run: echo "${GITHUB_REF_NAME}" > version.txt
+
+      - name: Build firmware
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32
+          command: idf.py build merge-bin
+
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          VER="${GITHUB_REF_NAME}"
+          mkdir -p dist
+          # Single image to flash at offset 0x0 (bootloader + partition table + app).
+          cp build/merged-binary.bin        "dist/morse_trainer-${VER}-esp32-merged.bin"
+          # Individual images for flashing at their own offsets.
+          cp build/morse_trainer.bin        "dist/morse_trainer-${VER}-esp32-app.bin"
+          cp build/bootloader/bootloader.bin "dist/morse_trainer-${VER}-esp32-bootloader.bin"
+          cp build/partition_table/partition-table.bin "dist/morse_trainer-${VER}-esp32-partition-table.bin"
+          (cd dist && sha256sum *.bin > SHA256SUMS.txt)
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            Firmware for the ESP32-2432S028R (Cheap Yellow Display), built with ESP-IDF v6.1.
+
+            **Easiest:** flash the merged image at offset `0x0`:
+            ```
+            esptool.py --chip esp32 write_flash 0x0 morse_trainer-${{ github.ref_name }}-esp32-merged.bin
+            ```
+
+            **Individual images:** bootloader at `0x1000`, partition table at `0x8000`, app at `0x10000`.
