@@ -325,19 +325,6 @@ lv_obj_t *display_add_button_label(lv_obj_t *btn, const char *text)
     return label;
 }
 
-void display_style_button_teal(lv_obj_t *btn)
-{
-    static lv_style_t s_style;
-    static bool s_style_inited = false;
-
-    if (!s_style_inited) {
-        lv_style_init(&s_style);
-        lv_style_set_bg_color(&s_style, display_compensate_color(lv_palette_main(LV_PALETTE_TEAL)));
-        s_style_inited = true;
-    }
-    lv_obj_add_style(btn, &s_style, 0);
-}
-
 static lv_style_t s_tile_style;
 static bool s_tile_style_inited = false;
 

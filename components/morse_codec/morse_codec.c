@@ -78,7 +78,6 @@ static void reset_decode_state(morse_codec_t *codec)
 
 void morse_codec_init(morse_codec_t *codec, uint16_t wpm)
 {
-    codec->wpm = 0;
     reset_decode_state(codec);
     morse_codec_set_wpm(codec, wpm);
 }
@@ -99,7 +98,6 @@ uint32_t morse_codec_wpm_to_unit_ms(uint16_t wpm)
 
 void morse_codec_set_wpm(morse_codec_t *codec, uint16_t wpm)
 {
-    codec->wpm = (wpm == 0) ? 1 : wpm;
     codec->unit_ms = morse_codec_wpm_to_unit_ms(wpm);
 }
 

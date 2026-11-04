@@ -74,18 +74,13 @@ lv_color_t display_compensate_color(lv_color_t c);
 lv_obj_t *display_add_button_label(lv_obj_t *btn, const char *text);
 
 /**
- * Give a button a teal background instead of the default theme's stock
- * blue. Deliberately a local per-object style rather than overriding the
- * shared default theme at runtime - re-initializing that global singleton
- * after screens/objects already exist is fragile (confirmed on hardware: it
- * hung the main task inside LVGL's style-refresh walk).
- */
-void display_style_button_teal(lv_obj_t *btn);
-
-/**
- * Style a Settings-screen tile button: a dark teal background (clearly
- * visible against the app's black screen background) with white text,
- * distinct from the brighter teal used for ordinary buttons.
+ * Style a tile/button: a dark teal background (clearly visible against the
+ * app's black screen background) with white text. Like the other
+ * display_style_*() helpers, this adds a local per-object style rather than
+ * overriding the shared default theme at runtime - re-initializing that
+ * global singleton after screens/objects already exist is fragile
+ * (confirmed on hardware: it hung the main task inside LVGL's
+ * style-refresh walk).
  */
 void display_style_tile(lv_obj_t *tile);
 

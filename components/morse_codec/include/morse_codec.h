@@ -49,7 +49,6 @@ typedef enum {
  * sequence in tests.
  */
 typedef struct {
-    uint16_t wpm;
     uint32_t unit_ms;
     bool key_down;
     bool started;       /* true once the first key transition has been seen */
