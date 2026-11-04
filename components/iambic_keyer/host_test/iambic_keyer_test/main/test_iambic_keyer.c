@@ -423,10 +423,10 @@ TEST(iambic_keyer, auto_space_disabled_by_default_starts_immediately_after_any_p
 TEST(iambic_keyer, auto_space_withholds_a_touch_inside_the_char_gap_window)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
-    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* char threshold=2u, standard=3u */
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* char threshold=2.1u, standard=3u */
     uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
 
-    /* Touched at 2.5 units of silence: inside [2u, 3u), so withheld. */
+    /* Touched at 2.5 units of silence: inside [2.1u, 3u), so withheld. */
     TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + U / 2));
     TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 3u * U - 1));
     /* Exactly at the 3-unit standard char gap, it finally starts. */
@@ -440,9 +440,9 @@ TEST(iambic_keyer, auto_space_latches_a_touch_released_before_the_withhold_ends)
     iambic_keyer_set_auto_space_pct(&s_keyer, 70);
     uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
 
-    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + 5)); /* touched, withheld */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + U / 2)); /* touched, withheld */
     /* Paddle fully released well before the target -- must still fire then. */
-    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up + 2u * U + 10));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up + 2u * U + U / 2 + 5));
     TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up + 3u * U - 1));
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, false, key_up + 3u * U));
 }
@@ -450,20 +450,20 @@ TEST(iambic_keyer, auto_space_latches_a_touch_released_before_the_withhold_ends)
 TEST(iambic_keyer, auto_space_leaves_a_pause_below_the_threshold_alone)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
-    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* char threshold = 2 units */
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* char threshold = 2.1 units */
     uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
 
-    /* 1.5 units of silence: below the 2-unit threshold, so no withhold. */
+    /* 1.5 units of silence: below the 2.1-unit threshold, so no withhold. */
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + U + U / 2));
 }
 
 TEST(iambic_keyer, auto_space_leaves_a_pause_already_past_standard_alone)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
-    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* word threshold = 5 units */
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* word threshold = 4.9 units */
     uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
 
-    /* 4 units: already past the 3-unit char standard and below the 5-unit
+    /* 4 units: already past the 3-unit char standard and below the 4.9-unit
      * word threshold -- neither window applies, no withhold. */
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 4u * U));
 }
@@ -471,7 +471,7 @@ TEST(iambic_keyer, auto_space_leaves_a_pause_already_past_standard_alone)
 TEST(iambic_keyer, auto_space_withholds_a_touch_inside_the_word_gap_window)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
-    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* word threshold=5u, standard=7u */
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70); /* word threshold=4.9u, standard=7u */
     uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
 
     TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 6u * U));
@@ -486,7 +486,7 @@ TEST(iambic_keyer, auto_space_pct_persists_across_set_mode)
     iambic_keyer_set_mode(&s_keyer, IAMBIC_KEYER_MODE_B); /* must not reset pct back to disabled */
 
     uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
-    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + 5));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + U / 2));
 }
 
 TEST(iambic_keyer, auto_space_has_no_effect_in_straight_key_mode)
@@ -579,6 +579,32 @@ TEST(iambic_keyer, auto_space_measures_from_the_actual_key_up_tick)
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 3u * U));
 }
 
+TEST(iambic_keyer, auto_space_95_pct_still_withholds_just_below_the_standard_gap)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 95); /* char threshold = 2.85u = 171ms */
+    uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
+
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 175u));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 3u * U));
+}
+
+TEST(iambic_keyer, auto_space_adjacent_pct_steps_give_distinct_word_thresholds)
+{
+    /* 220ms of silence: past the 3u (180ms) char standard. At 50% the word
+     * threshold is 3.5u (210ms), so it's withheld; at 55% it's 3.85u
+     * (231ms), so it isn't. */
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 50);
+    uint32_t key_up = send_one_dit_and_settle(&s_keyer, 0);
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 220u));
+
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 55);
+    key_up = send_one_dit_and_settle(&s_keyer, 0);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 220u));
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -607,4 +633,6 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, auto_space_reference_survives_a_wpm_change_during_the_trailing_gap);
     RUN_TEST_CASE(iambic_keyer, auto_space_withhold_deadline_is_wrap_safe);
     RUN_TEST_CASE(iambic_keyer, auto_space_measures_from_the_actual_key_up_tick);
+    RUN_TEST_CASE(iambic_keyer, auto_space_95_pct_still_withholds_just_below_the_standard_gap);
+    RUN_TEST_CASE(iambic_keyer, auto_space_adjacent_pct_steps_give_distinct_word_thresholds);
 }

@@ -54,14 +54,6 @@ void iambic_keyer_set_wpm(iambic_keyer_t *k, uint16_t wpm)
     }
 }
 
-/* Round-half-up: standard_units scaled by pct%, as a whole number of dit
- * units (so the result stays in the same "N * unit_ms" shape the rest of
- * the keyer already schedules against, independent of the current WPM). */
-static uint32_t round_half_up_units(uint32_t standard_units, uint8_t pct)
-{
-    return (standard_units * pct + 50u) / 100u;
-}
-
 void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct)
 {
     if (pct < 1u) {
@@ -69,24 +61,19 @@ void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct)
     } else if (pct > 100u) {
         pct = 100u;
     }
+    /* A single byte, so a write from another task (UI/CLI) is never seen
+     * half-applied by the keyer task; the thresholds themselves are
+     * derived from it on every use, in auto_space_pad_target_ms(). */
+    k->auto_space_pct = pct;
+}
 
-    uint32_t char_units = round_half_up_units(IAMBIC_KEYER_CHAR_GAP_STANDARD_UNITS, pct);
-    uint32_t word_units = round_half_up_units(IAMBIC_KEYER_WORD_GAP_STANDARD_UNITS, pct);
-
-    /* A char-gap threshold below 2 units would withhold on the normal
-     * 1-unit gap between elements of the same character. */
-    if (char_units < 2u) {
-        char_units = 2u;
-    }
-    /* Keep the word-gap threshold strictly past the char-gap one, and past
-     * the char standard, so a just-completed character gap never also
-     * triggers a word-gap withhold. */
-    if (word_units <= IAMBIC_KEYER_CHAR_GAP_STANDARD_UNITS) {
-        word_units = IAMBIC_KEYER_CHAR_GAP_STANDARD_UNITS + 1u;
-    }
-
-    k->auto_space_char_threshold_units = (uint8_t)char_units;
-    k->auto_space_word_threshold_units = (uint8_t)word_units;
+/* standard_ms scaled by pct%, rounded half-up to the nearest ms. Done in
+ * ms rather than whole dit units so every percentage step gives its own
+ * threshold (rounding to units collapsed most of the 50-100% range into
+ * a few shared values, and made 95% behave exactly like 100%). */
+static uint32_t scale_pct_ms(uint32_t standard_ms, uint8_t pct)
+{
+    return (standard_ms * pct + 50u) / 100u;
 }
 
 /*
@@ -99,10 +86,23 @@ void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct)
  */
 static uint32_t auto_space_pad_target_ms(const iambic_keyer_t *k, uint32_t idle_elapsed_ms)
 {
-    uint32_t char_threshold_ms = (uint32_t)k->auto_space_char_threshold_units * k->unit_ms;
+    uint8_t pct = k->auto_space_pct;
     uint32_t char_standard_ms = IAMBIC_KEYER_CHAR_GAP_STANDARD_UNITS * k->unit_ms;
-    uint32_t word_threshold_ms = (uint32_t)k->auto_space_word_threshold_units * k->unit_ms;
     uint32_t word_standard_ms = IAMBIC_KEYER_WORD_GAP_STANDARD_UNITS * k->unit_ms;
+    uint32_t char_threshold_ms = scale_pct_ms(char_standard_ms, pct);
+    uint32_t word_threshold_ms = scale_pct_ms(word_standard_ms, pct);
+
+    /* A char-gap threshold below 2 units would withhold on the normal
+     * 1-unit gap between elements of the same character. */
+    if (char_threshold_ms < 2u * k->unit_ms) {
+        char_threshold_ms = 2u * k->unit_ms;
+    }
+    /* Keep the word-gap threshold strictly past the char standard, so a
+     * just-completed character gap never also triggers a word-gap
+     * withhold. */
+    if (word_threshold_ms <= char_standard_ms) {
+        word_threshold_ms = char_standard_ms + 1u;
+    }
 
     if (idle_elapsed_ms >= char_threshold_ms && idle_elapsed_ms < char_standard_ms) {
         return char_standard_ms;

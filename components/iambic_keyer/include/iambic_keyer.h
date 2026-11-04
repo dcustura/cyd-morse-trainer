@@ -65,8 +65,7 @@ typedef struct {
     uint32_t auto_space_wait_until_ms;
     bool auto_space_dit_latched;
     bool auto_space_dah_latched;
-    uint8_t auto_space_char_threshold_units;
-    uint8_t auto_space_word_threshold_units;
+    uint8_t auto_space_pct;    /* 1-100; thresholds are derived from it and unit_ms on use */
 } iambic_keyer_t;
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm);

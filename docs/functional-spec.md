@@ -373,7 +373,7 @@ It does not teach receiving/copying code — it is a tool for practicing
   released again before then. 100% disables this outright (an element
   always starts the instant a paddle is touched, however short the
   preceding pause); the default 70% withholds whenever the pause is at
-  least 2 units (character) or 5 units (word). A pause already below the
+  least 2.1 units (character) or 4.9 units (word). A pause already below the
   threshold, or already at or past the standard gap on its own, is left
   alone — nothing is ever slowed down while the operator is actively
   sending. The character-gap threshold is never allowed below 2 units
