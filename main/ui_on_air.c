@@ -18,7 +18,6 @@ static lv_obj_t *s_frame;
 static tracked_t s_tracked[MAX_TRACKED];
 static size_t s_tracked_count;
 static bool s_shown_on_air;
-static bool s_shown_valid;
 
 static lv_color_t on_air_red(void)
 {
@@ -44,7 +43,6 @@ static void apply(bool on_air)
         }
     }
     s_shown_on_air = on_air;
-    s_shown_valid = true;
 }
 
 void ui_on_air_refresh(void)
@@ -56,7 +54,7 @@ static void poll_timer_cb(lv_timer_t *timer)
 {
     (void)timer;
     bool on_air = paddle_input_is_on_air();
-    if (!s_shown_valid || on_air != s_shown_on_air) {
+    if (on_air != s_shown_on_air) {
         apply(on_air);
     }
 }
@@ -86,8 +84,7 @@ static void track(lv_obj_t *obj, lv_obj_t *label, const char *on_text, const cha
         return;
     }
     s_tracked[s_tracked_count++] = (tracked_t){obj, label, on_text, off_text};
-    s_shown_valid = false; /* bring the new one in step on the next poll */
-    ui_on_air_refresh();
+    ui_on_air_refresh(); /* bring the new one in step now */
 }
 
 void ui_on_air_track(lv_obj_t *obj)
