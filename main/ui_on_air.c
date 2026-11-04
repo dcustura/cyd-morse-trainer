@@ -3,9 +3,13 @@
 #include "display_init.h"
 #include "paddle_input.h"
 
+#include "esp_log.h"
+
 #define FRAME_WIDTH_PX 3
 #define POLL_PERIOD_MS 100 /* picks up changes made outside the UI, e.g. CLI `tx` */
 #define MAX_TRACKED 6
+
+static const char *TAG = "ui_on_air";
 
 typedef struct {
     lv_obj_t *obj;
@@ -81,6 +85,7 @@ void ui_on_air_init(void)
 static void track(lv_obj_t *obj, lv_obj_t *label, const char *on_text, const char *off_text)
 {
     if (s_tracked_count >= MAX_TRACKED) {
+        ESP_LOGW(TAG, "too many on-air controls (max %d): one won't show the on-air state", MAX_TRACKED);
         return;
     }
     s_tracked[s_tracked_count++] = (tracked_t){obj, label, on_text, off_text};
