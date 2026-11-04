@@ -64,7 +64,8 @@ when stale artifacts are a demonstrated problem.
 - `docs/hardware-tests.md` lists checks that need a person at the board
   (touchscreen, paddle, scope on the key output) and haven't been done.
   When a change can't be fully verified over serial, add its checks there
-  in the same change. Delete an item once the user confirms it passed.
+  in the same change; add serial-CLI checks too if they weren't run. Delete
+  an item once it has passed (the user confirms on-board items).
 
 ## Documentation
 

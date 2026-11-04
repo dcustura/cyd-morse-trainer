@@ -1,8 +1,8 @@
 # Pending Hardware Tests
 
 Checks that need a person at the board (touchscreen, paddle, or a scope/LED
-on the key output) and haven't been done yet. Serial-CLI checks that could be
-run remotely are already done and aren't listed.
+on the key output) and haven't been done yet. Checks that can be run over
+the serial CLI are listed here too until someone has run them.
 
 How this file works:
 
@@ -10,7 +10,21 @@ How this file works:
 - When an item passes on the board, **delete it** (don't tick it). If it
   fails, replace it with a note of what went wrong, or fix it and delete it.
 - When a section is empty, delete the section.
-- Before serial testing, run `set volume_pct 0` so the board stays silent.
+- Remote serial testing runs `set volume_pct 0`, and `set` saves to flash,
+  so the board may be muted. Before the checks below, turn the sidetone
+  back up (Settings > Sidetone > Volume, or `set volume_pct 50`): several
+  of them are about what you hear.
+- Settings changes are saved about 2 s after the last tap. Wait a few
+  seconds before rebooting to check that something was kept.
+
+## Setup
+
+- At least 8 non-empty memories (for the queue check), with tiles 1–6
+  assigned to non-empty ones and memory 1 long enough to keep playing for
+  a while, e.g. from the CLI:
+  `mem set 1 text "VVV VVV VVV VVV VVV VVV VVV VVV VVV VVV"` and
+  `mem set 2 text "TEST"` … `mem set 8 text "TEST"`, then
+  `mem tile 1 1` … `mem tile 6 6`.
 
 ## Message memories panel (`f36b0e8`, `a6f4be1`)
 
@@ -18,8 +32,8 @@ How this file works:
 - [ ] Tap another tile while one plays: it queues, showing its queue
       position (`1`, `2`, …) in the corner. Tapping the playing or a queued
       tile does nothing.
-- [ ] Tile 6 is assigned to memory 06, which is empty: it shows
-      `#06 (empty)` and a tap does nothing.
+- [ ] A tile assigned to an empty memory (e.g. `mem tile 6 9` with
+      memory 9 empty) shows `#09 (empty)` and a tap does nothing.
 - [ ] Long-press a tile: the memory picker opens (None row, 32 memories,
       current one highlighted, Cancel). Picking a row reassigns the tile and
       survives a reboot. Long-press is ignored on the playing/queued tile.
@@ -34,9 +48,10 @@ How this file works:
 - [ ] Sending strip: text scrolls with the current character highlighted
       amber; progress `2/5`, loop icon for count 0, seconds countdown during
       a pause; empty when idle.
-- [ ] `Queue full` notice: fill the queue from the CLI (`mem play` six
-      other memories while one plays), then tap a tile: the strip shows
-      `Queue full` for 2 s.
+- [ ] `Queue full` notice: with memory 1 playing, queue six others from
+      the CLI (`mem play 3` … `mem play 8`), then tap tile 2: the strip
+      shows `Queue full` for 2 s. (Tiles alone can't fill the queue: six
+      tiles give at most one playing plus five queued.)
 - [ ] Back returns to the Send screen with playback continuing; the sent
       text appears decoded there.
 - [ ] Touching a paddle or the key during playback cancels it at once, the
@@ -67,7 +82,7 @@ How this file works:
       Settings, Help and the Reset to Defaults popup; taps right at the
       screen edge still reach the buttons under it.
 - [ ] A TX / Main Menu toggle is lost on reboot; a Settings > On Air change
-      is kept.
+      is kept (wait a few seconds after the change before rebooting).
 - [ ] Scope or LED on the key output (GPIO17): off-air it never keys
       (paddle, straight key, message playback). Going on-air while holding a
       dah doesn't key the rest of it; the next element keys normally.
@@ -81,4 +96,5 @@ How this file works:
       label underneath updates.
 - [ ] The bar hides after 5 s idle, on ✕, and when leaving the screen; it
       doesn't cover anything important.
-- [ ] A WPM changed here survives a reboot.
+- [ ] A WPM changed here survives a reboot (wait a few seconds after the
+      last step before rebooting).
