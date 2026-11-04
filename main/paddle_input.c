@@ -174,7 +174,6 @@ static void paddle_task(void *arg)
             ignore_until_released = true;
         }
         bool message_key_down = playing && message_player_service(&s_player, now);
-        player_unlock();
 
         if (ignore_until_released) {
             if (any_contact) {
@@ -185,14 +184,16 @@ static void paddle_task(void *arg)
             }
         }
 
+        /* Still under the player lock (the keyer service is quick), so the
+         * key-down is recorded before any enqueue can see this tick. */
         bool keyer_key_down = iambic_keyer_service(&s_keyer, dit_contact && !playing, dah_contact && !playing, now);
-        bool key_down = playing ? message_key_down : keyer_key_down;
         if (!playing && keyer_key_down) {
             /* So a message started now waits a word gap after this. */
-            player_lock();
             message_player_note_key_down(&s_player, now);
-            player_unlock();
         }
+        player_unlock();
+
+        bool key_down = playing ? message_key_down : keyer_key_down;
 
         if (key_down != prev_key_down) {
             sidetone_set_source(SIDETONE_SOURCE_KEY, key_down);
