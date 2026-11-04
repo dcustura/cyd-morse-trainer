@@ -58,9 +58,11 @@ one built into the QRP Labs QMX, while keeping the trainer.
 └── components/
     ├── morse_codec/         # Morse element sequence -> character decoding
     ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, Ultimatic, straight key)
+    ├── message_player/      # message memory playback: text to key timing, repeats, queue
     ├── settings/            # persisted trainer settings (WPM, key mode, paddle swap, tone, brightness, ...)
     ├── touch_calibration/   # touchscreen calibration math
-    └── debouncer/           # consecutive-sample debounce filter, used by paddle_input for straight key / paddle contacts
+    ├── debouncer/           # consecutive-sample debounce filter, used by paddle_input for straight key / paddle contacts
+    └── key_gate/            # on-air/off-air gating of the external key output
 ```
 
 Each component under `components/` is hardware-independent logic with its
@@ -92,7 +94,7 @@ idf.py build
 ```
 
 The same pattern applies to `iambic_keyer`, `settings`,
-`touch_calibration`, and `debouncer`. A passing run ends with a
+`touch_calibration`, `debouncer`, `message_player` and `key_gate`. A passing run ends with a
 Unity summary line such as `5 Tests 0 Failures 0 Ignored OK`.
 
 ### Host build prerequisites
