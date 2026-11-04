@@ -1,7 +1,5 @@
 #pragma once
 
-#include "settings.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,7 +11,7 @@ extern "C" {
  * (which also brings up the sidetone driver), display_init(),
  * auto_brightness_init(), and the Settings screen (ui_settings_create()).
  */
-void cli_start(const settings_t *initial_settings);
+void cli_start(void);
 
 #ifdef __cplusplus
 }

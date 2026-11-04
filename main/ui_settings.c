@@ -992,6 +992,11 @@ void ui_settings_sync(const settings_t *settings)
     refresh_tile_labels();
 }
 
+void ui_settings_get(settings_t *out)
+{
+    *out = s_current_settings;
+}
+
 lv_obj_t *ui_settings_get_keyer_submenu(void)
 {
     return s_keyer_submenu_screen;

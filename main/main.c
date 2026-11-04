@@ -82,5 +82,5 @@ void app_main(void)
 
     ble_hid_output_init(settings.ble_hid_enabled);
 
-    cli_start(&settings);
+    cli_start();
 }

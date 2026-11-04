@@ -97,6 +97,13 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
 void ui_settings_sync(const settings_t *settings);
 
 /**
+ * Copy out the current settings -- the single live copy, updated by every
+ * Settings-screen change and by ui_settings_sync(). Must be called while
+ * holding the LVGL lock (lvgl_port_lock).
+ */
+void ui_settings_get(settings_t *out);
+
+/**
  * The Keyer submenu screen created internally by ui_settings_create(), for
  * navigating to it directly from outside this file (e.g. from the Practice
  * screen). Must be called after ui_settings_create().

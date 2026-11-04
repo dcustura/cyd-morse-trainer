@@ -49,8 +49,6 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_STRAIGHT_RING_INPUT] = "straight_ring_input",
 };
 
-static settings_t s_settings;
-
 static bool parse_key(const char *s, cli_key_t *out)
 {
     for (int i = 0; i < KEY_COUNT; i++) {
@@ -114,51 +112,61 @@ static bool keymode_from_str(const char *s, iambic_keyer_mode_t *out)
     return true;
 }
 
-static void print_value(cli_key_t key)
+static void print_value(const settings_t *s, cli_key_t key)
 {
     switch (key) {
     case KEY_WPM:
-        printf("wpm=%u\n", s_settings.wpm);
+        printf("wpm=%u\n", s->wpm);
         break;
     case KEY_KEYMODE:
-        printf("keymode=%s\n", keymode_to_str(s_settings.keymode));
+        printf("keymode=%s\n", keymode_to_str(s->keymode));
         break;
     case KEY_PADDLE_SWAP:
-        printf("paddle_swap=%s\n", s_settings.paddle_swap ? "on" : "off");
+        printf("paddle_swap=%s\n", s->paddle_swap ? "on" : "off");
         break;
     case KEY_PADDLE_DEBOUNCE:
-        printf("paddle_debounce=%s\n", s_settings.paddle_debounce ? "on" : "off");
+        printf("paddle_debounce=%s\n", s->paddle_debounce ? "on" : "off");
         break;
     case KEY_AUTO_SPACE_PCT:
-        printf("auto_space_pct=%u\n", s_settings.auto_space_pct);
+        printf("auto_space_pct=%u\n", s->auto_space_pct);
         break;
     case KEY_TONE_HZ:
-        printf("tone_hz=%u\n", s_settings.tone_hz);
+        printf("tone_hz=%u\n", s->tone_hz);
         break;
     case KEY_VOLUME_PCT:
-        printf("volume_pct=%u\n", s_settings.volume_pct);
+        printf("volume_pct=%u\n", s->volume_pct);
         break;
     case KEY_ENVELOPE_MS:
-        printf("envelope_ms=%u\n", s_settings.envelope_ms);
+        printf("envelope_ms=%u\n", s->envelope_ms);
         break;
     case KEY_BRIGHTNESS_PCT:
-        printf("brightness_pct=%u\n", s_settings.brightness_pct);
+        printf("brightness_pct=%u\n", s->brightness_pct);
         break;
     case KEY_BRIGHTNESS_AUTO:
-        printf("brightness_auto=%s\n", s_settings.brightness_auto ? "on" : "off");
+        printf("brightness_auto=%s\n", s->brightness_auto ? "on" : "off");
         break;
     case KEY_PRACTICE_LARGE_TEXT:
-        printf("practice_large_text=%s\n", s_settings.practice_large_text ? "on" : "off");
+        printf("practice_large_text=%s\n", s->practice_large_text ? "on" : "off");
         break;
     case KEY_BLE_HID_ENABLED:
-        printf("ble_hid_enabled=%s\n", s_settings.ble_hid_enabled ? "on" : "off");
+        printf("ble_hid_enabled=%s\n", s->ble_hid_enabled ? "on" : "off");
         break;
     case KEY_STRAIGHT_RING_INPUT:
-        printf("straight_ring_input=%s\n", s_settings.straight_ring_input ? "on" : "off");
+        printf("straight_ring_input=%s\n", s->straight_ring_input ? "on" : "off");
         break;
     default:
         break;
     }
+}
+
+/* The Settings screen owns the live settings (every touchscreen change
+ * lands there first), so each command starts from a fresh copy of them
+ * rather than a CLI-private copy that the touchscreen never updates. */
+static void snapshot_settings(settings_t *out)
+{
+    lvgl_port_lock(0);
+    ui_settings_get(out);
+    lvgl_port_unlock();
 }
 
 static int cmd_get(int argc, char **argv)
@@ -167,35 +175,29 @@ static int cmd_get(int argc, char **argv)
         printf("ERR usage: get <key>|settings\n");
         return 1;
     }
-    if (strcmp(argv[1], "settings") == 0) {
-        for (int i = 0; i < KEY_COUNT; i++) {
-            print_value((cli_key_t)i);
-        }
-        printf("OK\n");
-        return 0;
-    }
-    cli_key_t key;
-    if (!parse_key(argv[1], &key)) {
+    bool all = strcmp(argv[1], "settings") == 0;
+    cli_key_t key = KEY_WPM;
+    if (!all && !parse_key(argv[1], &key)) {
         printf("ERR unknown key %s\n", argv[1]);
         return 1;
     }
-    print_value(key);
+
+    settings_t s;
+    snapshot_settings(&s);
+    int first = all ? 0 : (int)key;
+    int last = all ? KEY_COUNT - 1 : (int)key;
+    for (int i = first; i <= last; i++) {
+        print_value(&s, (cli_key_t)i);
+    }
     printf("OK\n");
     return 0;
 }
 
-static int cmd_set(int argc, char **argv)
+/* Parses val, stores it in *s, and applies it live. Returns 0 on success,
+ * 1 (after printing an ERR line) on a bad value. Called with the LVGL lock
+ * held. */
+static int apply_setting(settings_t *s, cli_key_t key, const char *val)
 {
-    if (argc != 3) {
-        printf("ERR usage: set <key> <value>\n");
-        return 1;
-    }
-    cli_key_t key;
-    if (!parse_key(argv[1], &key)) {
-        printf("ERR unknown key %s\n", argv[1]);
-        return 1;
-    }
-    const char *val = argv[2];
     long num;
     bool flag;
 
@@ -205,22 +207,22 @@ static int cmd_set(int argc, char **argv)
             printf("ERR invalid value %s\n", val);
             return 1;
         }
-        s_settings.wpm = settings_clamp_wpm((uint16_t)num);
-        paddle_input_set_wpm(s_settings.wpm);
+        s->wpm = settings_clamp_wpm((uint16_t)num);
+        paddle_input_set_wpm(s->wpm);
         break;
     case KEY_KEYMODE:
-        if (!keymode_from_str(val, &s_settings.keymode)) {
+        if (!keymode_from_str(val, &s->keymode)) {
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        paddle_input_set_mode(s_settings.keymode);
+        paddle_input_set_mode(s->keymode);
         break;
     case KEY_PADDLE_SWAP:
         if (!parse_bool(val, &flag)) {
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        s_settings.paddle_swap = flag;
+        s->paddle_swap = flag;
         paddle_input_set_swap(flag);
         break;
     case KEY_PADDLE_DEBOUNCE:
@@ -228,7 +230,7 @@ static int cmd_set(int argc, char **argv)
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        s_settings.paddle_debounce = flag;
+        s->paddle_debounce = flag;
         paddle_input_set_debounce(flag);
         break;
     case KEY_AUTO_SPACE_PCT:
@@ -243,55 +245,55 @@ static int cmd_set(int argc, char **argv)
         } else if (num > UINT8_MAX) {
             num = UINT8_MAX;
         }
-        s_settings.auto_space_pct = settings_clamp_auto_space_pct((uint8_t)num);
-        paddle_input_set_auto_space_pct(s_settings.auto_space_pct);
+        s->auto_space_pct = settings_clamp_auto_space_pct((uint8_t)num);
+        paddle_input_set_auto_space_pct(s->auto_space_pct);
         break;
     case KEY_TONE_HZ:
         if (!parse_long(val, &num)) {
             printf("ERR invalid value %s\n", val);
             return 1;
         }
-        s_settings.tone_hz = settings_clamp_tone_hz((uint16_t)num);
-        sidetone_set_freq(s_settings.tone_hz);
+        s->tone_hz = settings_clamp_tone_hz((uint16_t)num);
+        sidetone_set_freq(s->tone_hz);
         break;
     case KEY_VOLUME_PCT:
         if (!parse_long(val, &num)) {
             printf("ERR invalid value %s\n", val);
             return 1;
         }
-        s_settings.volume_pct = settings_clamp_volume_pct((uint8_t)num);
-        sidetone_set_volume(s_settings.volume_pct);
+        s->volume_pct = settings_clamp_volume_pct((uint8_t)num);
+        sidetone_set_volume(s->volume_pct);
         break;
     case KEY_ENVELOPE_MS:
         if (!parse_long(val, &num)) {
             printf("ERR invalid value %s\n", val);
             return 1;
         }
-        s_settings.envelope_ms = settings_clamp_envelope_ms((uint16_t)num);
-        sidetone_set_envelope_ms(s_settings.envelope_ms);
+        s->envelope_ms = settings_clamp_envelope_ms((uint16_t)num);
+        sidetone_set_envelope_ms(s->envelope_ms);
         break;
     case KEY_BRIGHTNESS_PCT:
         if (!parse_long(val, &num)) {
             printf("ERR invalid value %s\n", val);
             return 1;
         }
-        s_settings.brightness_pct = settings_clamp_brightness_pct((uint8_t)num);
-        if (s_settings.brightness_auto) {
+        s->brightness_pct = settings_clamp_brightness_pct((uint8_t)num);
+        if (s->brightness_auto) {
             /* An explicit level always overrides Auto, matching the touchscreen UI. */
-            s_settings.brightness_auto = false;
+            s->brightness_auto = false;
             auto_brightness_set_enabled(false);
         }
-        display_set_brightness(s_settings.brightness_pct);
+        display_set_brightness(s->brightness_pct);
         break;
     case KEY_BRIGHTNESS_AUTO:
         if (!parse_bool(val, &flag)) {
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        s_settings.brightness_auto = flag;
+        s->brightness_auto = flag;
         auto_brightness_set_enabled(flag);
         if (!flag) {
-            display_set_brightness(s_settings.brightness_pct);
+            display_set_brightness(s->brightness_pct);
         }
         break;
     case KEY_PRACTICE_LARGE_TEXT:
@@ -299,17 +301,15 @@ static int cmd_set(int argc, char **argv)
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        s_settings.practice_large_text = flag;
-        lvgl_port_lock(0);
+        s->practice_large_text = flag;
         ui_practice_set_text_size(flag);
-        lvgl_port_unlock();
         break;
     case KEY_BLE_HID_ENABLED:
         if (!parse_bool(val, &flag)) {
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        s_settings.ble_hid_enabled = flag;
+        s->ble_hid_enabled = flag;
         printf("note=restart required to apply\n");
         break;
     case KEY_STRAIGHT_RING_INPUT:
@@ -317,28 +317,53 @@ static int cmd_set(int argc, char **argv)
             printf("ERR unknown value %s\n", val);
             return 1;
         }
-        s_settings.straight_ring_input = flag;
+        s->straight_ring_input = flag;
         paddle_input_set_straight_ring_input(flag);
         break;
     default:
         return 1;
     }
+    return 0;
+}
 
-    settings_store_save(&s_settings);
+static int cmd_set(int argc, char **argv)
+{
+    if (argc != 3) {
+        printf("ERR usage: set <key> <value>\n");
+        return 1;
+    }
+    cli_key_t key;
+    if (!parse_key(argv[1], &key)) {
+        printf("ERR unknown key %s\n", argv[1]);
+        return 1;
+    }
+
+    /* Held across read-modify-write so a touchscreen edit can't land in
+     * between and be overwritten. */
     lvgl_port_lock(0);
-    ui_settings_sync(&s_settings);
+    settings_t s;
+    ui_settings_get(&s);
+    int rc = apply_setting(&s, key, argv[2]);
+    if (rc == 0) {
+        settings_store_save(&s);
+        ui_settings_sync(&s);
+    }
     lvgl_port_unlock();
 
-    print_value(key);
-    printf("OK\n");
-    return 0;
+    if (rc == 0) {
+        print_value(&s, key);
+        printf("OK\n");
+    }
+    return rc;
 }
 
 static int cmd_save(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    esp_err_t err = settings_store_save(&s_settings);
+    settings_t s;
+    snapshot_settings(&s);
+    esp_err_t err = settings_store_save(&s);
     if (err != ESP_OK) {
         printf("ERR save failed (%s)\n", esp_err_to_name(err));
         return 1;
@@ -385,10 +410,8 @@ static int cmd_log(int argc, char **argv)
     return 1;
 }
 
-void cli_start(const settings_t *initial_settings)
+void cli_start(void)
 {
-    s_settings = *initial_settings;
-
     esp_console_repl_t *repl = NULL;
     esp_console_repl_config_t repl_config = ESP_CONSOLE_REPL_CONFIG_DEFAULT();
     repl_config.prompt = "morse> ";
