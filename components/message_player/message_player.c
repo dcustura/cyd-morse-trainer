@@ -134,14 +134,16 @@ void message_player_set_wpm(message_player_t *p, uint16_t wpm)
 message_player_enqueue_result_t message_player_enqueue(message_player_t *p, const message_player_message_t *msg,
                                                        uint32_t now_ms)
 {
+    /* Terminate first: the caller's text may fill the whole array. */
+    message_player_message_t copy = *msg;
+    copy.text[MESSAGE_PLAYER_TEXT_MAX] = '\0';
+
     size_t pos = 0;
     morse_text_token_t first;
-    if (!morse_text_next_token(msg->text, &pos, &first)) {
+    if (!morse_text_next_token(copy.text, &pos, &first)) {
         return MESSAGE_PLAYER_INVALID;
     }
 
-    message_player_message_t copy = *msg;
-    copy.text[MESSAGE_PLAYER_TEXT_MAX] = '\0';
     copy.count = clamp_u8(copy.count, 0, MESSAGE_PLAYER_COUNT_MAX);
     copy.pause_s = clamp_u8(copy.pause_s, MESSAGE_PLAYER_PAUSE_MIN_S, MESSAGE_PLAYER_PAUSE_MAX_S);
 

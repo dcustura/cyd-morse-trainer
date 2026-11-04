@@ -255,6 +255,23 @@ TEST(message_player, shortening_a_pause_that_already_ran_out_sends_next_at_once)
     assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 }
 
+TEST(message_player, enqueue_reads_an_unterminated_text_only_up_to_its_limit)
+{
+    /* All spaces with no NUL in the array: nothing to send, and the
+     * tokenizer must stop at the array's end, not run into later fields. */
+    message_player_message_t m = repeating("", 1, 0, 1);
+    memset(m.text, ' ', sizeof(m.text));
+    enqueue_ok(m, 0, MESSAGE_PLAYER_INVALID);
+
+    /* Full of letters with no NUL: sends the first MESSAGE_PLAYER_TEXT_MAX. */
+    m = msg("", 2);
+    memset(m.text, 'E', sizeof(m.text));
+    enqueue_ok(m, 0, MESSAGE_PLAYER_STARTED);
+    message_player_status_t st;
+    message_player_get_status(&s_p, 0, &st);
+    TEST_ASSERT_EQUAL_size_t(MESSAGE_PLAYER_TEXT_MAX, strlen(st.text));
+}
+
 TEST(message_player, enqueue_clamps_count_and_pause)
 {
     enqueue_ok(repeating("E", 1, 200, 0), 0, MESSAGE_PLAYER_STARTED);
@@ -331,6 +348,7 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, repeat_off_during_a_pause_stops_at_once);
     RUN_TEST_CASE(message_player, repeat_params_during_a_pause_apply_from_the_pause_start);
     RUN_TEST_CASE(message_player, shortening_a_pause_that_already_ran_out_sends_next_at_once);
+    RUN_TEST_CASE(message_player, enqueue_reads_an_unterminated_text_only_up_to_its_limit);
     RUN_TEST_CASE(message_player, enqueue_clamps_count_and_pause);
     RUN_TEST_CASE(message_player, status_reports_progress_for_the_sending_strip);
     RUN_TEST_CASE(message_player, late_service_calls_do_not_shift_later_elements);
