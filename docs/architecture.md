@@ -63,6 +63,9 @@ This is the core runtime path, all running inside `paddle_input.c`'s
 ```
 GPIO (dit/dah, active-low)
    -> debouncer_feed()             [components/debouncer]      (optional per Paddle Debounce setting; always on for Straight Key)
+   -> if a message memory is playing: any contact stops it (then input is
+      ignored until both paddles are released); otherwise
+      message_player_service()  [components/message_player] -> key_down, replacing the keyer's
    -> iambic_keyer_service()       [components/iambic_keyer]   -> key_down bool for this tick
    -> on key_down transition:
         sidetone_key(key_down)                    [main/sidetone.c]     -> audible tone, DAC
@@ -87,7 +90,9 @@ coupled:
 - **`paddle_task`** (`main/paddle_input.c`): the 1ms real-time loop described
   above. Talks to the rest of the system only by writing to
   `decoded_char_queue` and an atomic
-  `s_key_down_state` flag that the UI polls for the keying indicator dot.
+  `s_key_down_state` flag that the UI polls for the keying indicator dot,
+  plus the message player, which it shares with the UI and CLI tasks
+  under a mutex (`paddle_input_message_*()`).
 - **LVGL's own task** (via `esp_lvgl_port`): owns all screen objects. Any code
   touching LVGL objects from another context must hold the LVGL lock
   (`lvgl_port_lock(0)` / `lvgl_port_unlock()`), as `main.c` does while

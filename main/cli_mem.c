@@ -6,11 +6,12 @@
 
 #include "memory_store.h"
 #include "message_player.h"
+#include "paddle_input.h"
 #include "morse_text.h"
 
 #define USAGE                                                                                                     \
     "ERR usage: mem list | get <N> | set <N> name|text|repeat|count|pause <value> | clear <N> | tile <T> <N|none> " \
-    "| tiles\n"
+    "| tiles | play <N> | stop\n"
 
 static bool parse_uint_in(const char *s, long lo, long hi, long *out)
 {
@@ -197,6 +198,51 @@ static int mem_tiles(void)
     return 0;
 }
 
+/* Plays (or queues) memory n with its own repeat defaults. CLI plays are
+ * tagged -n so they never collide with a panel tile's tag (1..6). */
+static int mem_play(uint8_t n)
+{
+    memory_t m;
+    memory_store_get(n, &m);
+    message_player_message_t msg = {
+        .repeat = m.repeat,
+        .count = m.count,
+        .pause_s = m.pause_s,
+        .tag = -(int)n,
+    };
+    strlcpy(msg.text, m.text, sizeof(msg.text));
+
+    switch (paddle_input_message_enqueue(&msg)) {
+    case MESSAGE_PLAYER_STARTED:
+        printf("play=started\n");
+        break;
+    case MESSAGE_PLAYER_QUEUED:
+        printf("play=queued\n");
+        break;
+    case MESSAGE_PLAYER_IGNORED_PLAYING:
+        printf("ERR memory %u is already playing\n", (unsigned)n);
+        return 1;
+    case MESSAGE_PLAYER_IGNORED_QUEUED:
+        printf("ERR memory %u is already queued\n", (unsigned)n);
+        return 1;
+    case MESSAGE_PLAYER_QUEUE_FULL:
+        printf("ERR queue full\n");
+        return 1;
+    case MESSAGE_PLAYER_INVALID:
+        printf("ERR memory %u is empty\n", (unsigned)n);
+        return 1;
+    }
+    printf("OK\n");
+    return 0;
+}
+
+static int mem_stop(void)
+{
+    paddle_input_message_stop();
+    printf("OK\n");
+    return 0;
+}
+
 int cli_mem_cmd(int argc, char **argv)
 {
     const char *sub = (argc >= 2) ? argv[1] : "";
@@ -216,6 +262,12 @@ int cli_mem_cmd(int argc, char **argv)
     }
     if (strcmp(sub, "set") == 0 && argc == 5) {
         return parse_memory_number(argv[2], &n) ? mem_set(n, argv[3], argv[4]) : 1;
+    }
+    if (strcmp(sub, "play") == 0 && argc == 3) {
+        return parse_memory_number(argv[2], &n) ? mem_play(n) : 1;
+    }
+    if (strcmp(sub, "stop") == 0 && argc == 2) {
+        return mem_stop();
     }
     if (strcmp(sub, "tile") == 0 && argc == 4) {
         return mem_tile(argv[2], argv[3]);

@@ -25,7 +25,8 @@ How this file works:
 ### Message memories
 
 **Status: detailed spec agreed in discussion, implementation in progress.**
-What's left is playing memories: the panel, picker, sending and repeat.
+What's left is the memories panel: tiles, picker, Repeat and Stop tiles,
+and the sending strip.
 Editing on the device is out of scope here (see "Edit memories by keying
 them" below); memories are edited over the serial CLI (`mem`).
 
@@ -36,26 +37,10 @@ them" below); memories are edited over the serial CLI (`mem`).
 
 #### Sending
 
-- A message is sent at the **current keyer WPM** with standard PARIS
-  timing: dit 1 unit, dah 3, element gap 1, character gap 3, word gap 7.
-  If WPM changes mid-message, the change applies from the next element.
-  Auto Space and Paddle Swap don't apply. Key mode doesn't matter: a
-  message plays the same in every key mode.
-- Playback is a second key source in the same 1 ms paddle task as the
-  keyer. While a message plays, its key state replaces the keyer's, so the
-  sidetone, external key output, keying indicator dot and decoder all
-  behave exactly as for paddle keying. The sent text is therefore also
-  decoded into the Send screen's text area, including prosign handling
-  (e.g. `<AR>` decodes to `+` and forces a line break).
-- **Cancel**: touching either paddle (or the straight key, with or without
-  Ring Input) during sending *or* during a repeat pause stops at once. A
-  dit or dah in progress is cut short (key up immediately), any remaining
-  repeats and the whole queue are cleared, and the touch itself is **not
-  keyed**. Paddle input is ignored until both paddles are released, and
-  keying works normally from the next press.
-- The on-screen **Stop** tile does the same as a cancel.
-- Morse Reference screen playback is ignored while a message is playing,
-  since both use the sidetone.
+- Implemented (see "Playing memories" in `docs/functional-spec.md`):
+  timing, playback as a second key source, paddle cancel, the queue and
+  repeat engine, and `mem play`/`mem stop`. Left for the panel:
+- The on-screen **Stop** tile does the same as a paddle cancel.
 
 #### Repeat
 
@@ -152,10 +137,9 @@ them" below); memories are edited over the serial CLI (`mem`).
   the queue, stop, and progress status for the strip. Callers serialize
   access to it (the UI and `paddle_task` both use it).
 - `main/memory_store.c` (NVS store, with a change counter for the panel
-  to poll) and `main/cli_mem.c` are done. Left: the panel and picker
-  screens, the Send screen button, and integration into `paddle_task`:
-  cancel on paddle contact, then ignore paddle input until both paddles
-  are released.
+  to poll), `main/cli_mem.c` and playback in `main/paddle_input.c`
+  (`paddle_input_message_*()`) are done. Left: the panel and picker
+  screens and the Send screen button.
 
 ### Edit memories by keying them
 

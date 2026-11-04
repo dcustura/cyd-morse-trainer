@@ -390,7 +390,7 @@ void cli_start(void)
         {.command = "set", .help = "set <key> <value> - change and apply a setting", .hint = NULL, .func = &cmd_set},
         {.command = "save", .help = "save - persist current settings to flash", .hint = NULL, .func = &cmd_save},
         {.command = "reset", .help = "reset - erase saved settings, not memories (restart to apply defaults)", .hint = NULL, .func = &cmd_reset},
-        {.command = "mem", .help = "mem list | get <N> | set <N> name|text|repeat|count|pause <value> | clear <N> | tile <T> <N|none> | tiles - message memories", .hint = NULL, .func = &cli_mem_cmd},
+        {.command = "mem", .help = "mem list | get <N> | set <N> name|text|repeat|count|pause <value> | clear <N> | tile <T> <N|none> | tiles | play <N> | stop - message memories", .hint = NULL, .func = &cli_mem_cmd},
         {.command = "log", .help = "log <none|error|warn|info|debug|verbose> - set log verbosity", .hint = NULL, .func = &cmd_log},
     };
     for (size_t i = 0; i < sizeof(cmds) / sizeof(cmds[0]); i++) {

@@ -10,9 +10,11 @@
 #include "esp_log.h"
 #include "esp_err.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 #include <stdatomic.h>
+#include <string.h>
 
 static const char *TAG = "paddle_input";
 
@@ -29,6 +31,25 @@ static volatile bool s_paddle_debounce;
 static volatile bool s_straight_ring_input;
 static QueueHandle_t s_decoded_char_queue;
 static _Atomic bool s_key_down_state;
+
+/* Shared with the UI and CLI tasks, so every access holds s_player_lock. */
+static message_player_t s_player;
+static SemaphoreHandle_t s_player_lock;
+
+static void player_lock(void)
+{
+    xSemaphoreTake(s_player_lock, portMAX_DELAY);
+}
+
+static void player_unlock(void)
+{
+    xSemaphoreGive(s_player_lock);
+}
+
+static uint32_t now_ms(void)
+{
+    return (uint32_t)(esp_timer_get_time() / 1000);
+}
 
 static void configure_input_gpio(int gpio)
 {
@@ -93,10 +114,11 @@ static void paddle_task(void *arg)
     debouncer_init(&dah_db, PADDLE_DEBOUNCE_THRESHOLD, false);
 
     bool prev_key_down = false;
+    bool ignore_until_released = false;
     uint32_t last_morse_tick_ms = 0;
 
     while (1) {
-        uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000);
+        uint32_t now = now_ms();
 
         bool raw_dit = !gpio_get_level(BOARD_PADDLE_DIT_GPIO); /* active-low: pressed = 0 */
         bool raw_dah = !gpio_get_level(BOARD_PADDLE_DAH_GPIO);
@@ -134,22 +156,47 @@ static void paddle_task(void *arg)
             dit_contact = dit_contact || dah_contact;
         }
 
-        bool key_down = iambic_keyer_service(&s_keyer, dit_contact, dah_contact, now_ms);
+        /* A message being played owns the key. Any contact stops it; that
+         * contact isn't keyed, and paddle input stays ignored until both
+         * paddles are released, so the stop never turns into a stray
+         * element. */
+        bool any_contact = dit_contact || dah_contact;
+        player_lock();
+        bool playing = message_player_is_active(&s_player);
+        if (playing && any_contact) {
+            message_player_stop(&s_player);
+            playing = false;
+            ignore_until_released = true;
+        }
+        bool message_key_down = playing && message_player_service(&s_player, now);
+        player_unlock();
+
+        if (ignore_until_released) {
+            if (any_contact) {
+                dit_contact = false;
+                dah_contact = false;
+            } else {
+                ignore_until_released = false;
+            }
+        }
+
+        bool keyer_key_down = iambic_keyer_service(&s_keyer, dit_contact && !playing, dah_contact && !playing, now);
+        bool key_down = playing ? message_key_down : keyer_key_down;
 
         if (key_down != prev_key_down) {
             sidetone_key(key_down);
             gpio_set_level(BOARD_KEY_OUTPUT_GPIO, key_down ? KEY_OUTPUT_ON_LEVEL : KEY_OUTPUT_OFF_LEVEL);
             atomic_store_explicit(&s_key_down_state, key_down, memory_order_relaxed);
             char out_char = 0;
-            morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now_ms, &out_char);
+            morse_codec_event_t event = morse_codec_key_event(&s_codec, key_down, now, &out_char);
             handle_decode_event(event, out_char);
             prev_key_down = key_down;
         }
 
-        if (now_ms - last_morse_tick_ms >= MORSE_TICK_INTERVAL_MS) {
-            last_morse_tick_ms = now_ms;
+        if (now - last_morse_tick_ms >= MORSE_TICK_INTERVAL_MS) {
+            last_morse_tick_ms = now;
             char out_char = 0;
-            morse_codec_event_t event = morse_codec_tick(&s_codec, now_ms, &out_char);
+            morse_codec_event_t event = morse_codec_tick(&s_codec, now, &out_char);
             handle_decode_event(event, out_char);
         }
 
@@ -162,6 +209,9 @@ void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *sett
     iambic_keyer_init(&s_keyer, settings->keymode, settings->wpm);
     iambic_keyer_set_auto_space_pct(&s_keyer, settings->auto_space_pct);
     morse_codec_init(&s_codec, settings->wpm);
+    message_player_init(&s_player, settings->wpm);
+    s_player_lock = xSemaphoreCreateMutex();
+    ESP_ERROR_CHECK(s_player_lock != NULL ? ESP_OK : ESP_ERR_NO_MEM);
     s_paddle_swap = settings->paddle_swap;
     s_paddle_debounce = settings->paddle_debounce;
     s_straight_ring_input = settings->straight_ring_input;
@@ -194,6 +244,58 @@ void paddle_input_set_wpm(uint16_t wpm)
 {
     iambic_keyer_set_wpm(&s_keyer, wpm);
     morse_codec_set_wpm(&s_codec, wpm);
+    player_lock();
+    message_player_set_wpm(&s_player, wpm);
+    player_unlock();
+}
+
+message_player_enqueue_result_t paddle_input_message_enqueue(const message_player_message_t *msg)
+{
+    player_lock();
+    message_player_enqueue_result_t result = message_player_enqueue(&s_player, msg, now_ms());
+    player_unlock();
+    return result;
+}
+
+void paddle_input_message_stop(void)
+{
+    player_lock();
+    message_player_stop(&s_player);
+    player_unlock();
+}
+
+void paddle_input_message_set_repeat(bool repeat)
+{
+    player_lock();
+    message_player_set_repeat(&s_player, repeat);
+    player_unlock();
+}
+
+void paddle_input_message_set_repeat_params(uint8_t count, uint8_t pause_s)
+{
+    player_lock();
+    message_player_set_repeat_params(&s_player, count, pause_s);
+    player_unlock();
+}
+
+bool paddle_input_message_is_active(void)
+{
+    player_lock();
+    bool active = message_player_is_active(&s_player);
+    player_unlock();
+    return active;
+}
+
+void paddle_input_message_get_status(message_player_status_t *out, char text_buf[MESSAGE_PLAYER_TEXT_MAX + 1])
+{
+    player_lock();
+    message_player_get_status(&s_player, now_ms(), out);
+    text_buf[0] = '\0';
+    if (out->text != NULL) {
+        strlcpy(text_buf, out->text, MESSAGE_PLAYER_TEXT_MAX + 1);
+    }
+    out->text = text_buf;
+    player_unlock();
 }
 
 void paddle_input_set_swap(bool swap)

@@ -346,6 +346,11 @@ implemented.
     - `mem tile <T> <N|none>` — assigns memory N, or nothing, to memories
       panel tile T (1–6), echoing `tileT=NN` or `tileT=none`.
     - `mem tiles` — lists the six tile assignments that way.
+    - `mem play <N>` — plays memory N with its own repeat settings, or
+      queues it if a message is already playing (see Behavior details).
+      Prints `play=started` or `play=queued`; `ERR` if the memory is empty,
+      already playing, already queued, or the queue is full.
+    - `mem stop` — stops playback and clears the queue.
     - Quote values that contain spaces. Inside quotes, `\"` is a literal
       `"`. `mem list` and `mem get` print name and text the same way, so
       their output can be pasted back into `mem set`.
@@ -429,7 +434,8 @@ implemented.
   pause 10 s. Six memories panel tile assignments are stored with them,
   defaulting to tiles 1–6 → memories 1–6; the same memory may be on more
   than one tile. For now memories can only be edited and inspected over
-  the serial CLI (`mem`); playing them is planned (see the backlog).
+  the serial CLI (`mem`), and played with `mem play`; the on-screen
+  memories panel is planned (see the backlog).
   - Text is converted to uppercase, runs of spaces become one, and
     leading/trailing spaces are dropped. Allowed: A–Z, 0–9, space, the
     punctuation `. , ? ' ! / ( ) & : ; = + - _ " $ @`, and the eight
@@ -439,6 +445,27 @@ implemented.
     is rejected. The length limit applies after normalization, with a
     prosign counting as its 4 characters. Names follow the same rules
     without prosigns.
+- **Playing memories**:
+  - A message is sent at the current keyer WPM with standard PARIS
+    timing: dit 1 unit, dah 3, element gap 1, character gap 3, word gap 7.
+    A prosign's letters run together with element gaps only. A WPM change
+    applies from the next element or gap. Auto Space, Paddle Swap and the
+    key mode don't affect it.
+  - While a message plays it replaces the keyer as the key source, so the
+    sidetone, key output, keying indicator dot and decoder all follow it,
+    and the sent text appears decoded on the Send screen.
+  - **Cancel**: touching either paddle or the straight key (with or
+    without Ring Input) while a message is sending or pausing stops it at
+    once: a dit or dah in progress is cut short, remaining repeats and the
+    queue are cleared, and the touch itself is not keyed. Paddle input is
+    then ignored until both paddles are released.
+  - **Repeat**: with repeat on, the message is sent `count` times in total
+    (0 = until stopped), with `pause` seconds of silence between sends.
+  - **Queue**: up to 6 more messages can wait behind the playing one. A
+    message already playing or queued isn't queued again. Once something
+    is queued, a repeating message ends after its current send (or at
+    once, during a pause), and the next message follows after a word gap.
+  - Morse Reference playback is ignored while a message plays.
 - **Factory reset**: erases saved keyer settings, touch calibration and
   message memories together and restarts the device, so it comes back up exactly as an
   unconfigured device would.

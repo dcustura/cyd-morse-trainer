@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "iambic_keyer.h"
+#include "message_player.h"
 #include "settings.h"
 
 #ifdef __cplusplus
@@ -52,6 +53,26 @@ void paddle_input_set_straight_ring_input(bool enabled);
  * the Send screen to refresh its status label after a Settings save). */
 iambic_keyer_mode_t paddle_input_get_mode(void);
 uint16_t paddle_input_get_wpm(void);
+
+/*
+ * Message playback (message memories). While a message plays, it replaces
+ * the keyer as the key source, so the sidetone, key output, keying
+ * indicator and decoder all follow it. Touching either paddle or the key
+ * stops it at once; that touch isn't keyed, and paddle input is ignored
+ * until both paddles are released. Plays at the keyer's current WPM.
+ * Safe to call from any task.
+ */
+message_player_enqueue_result_t paddle_input_message_enqueue(const message_player_message_t *msg);
+void paddle_input_message_stop(void);
+void paddle_input_message_set_repeat(bool repeat);
+void paddle_input_message_set_repeat_params(uint8_t count, uint8_t pause_s);
+bool paddle_input_message_is_active(void);
+
+/**
+ * Snapshot of playback progress. out->text points at text_buf, which
+ * receives a copy of the current message's text.
+ */
+void paddle_input_message_get_status(message_player_status_t *out, char text_buf[MESSAGE_PLAYER_TEXT_MAX + 1]);
 
 /* Clears in-progress decode state (called from the Send screen's Clear button). */
 void paddle_input_reset_decoder(void);

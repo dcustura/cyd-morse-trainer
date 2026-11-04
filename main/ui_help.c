@@ -161,6 +161,10 @@ static void matrix_event_cb(lv_event_t *e)
     if (s_play_timer != NULL && esp_timer_is_active(s_play_timer)) {
         return;
     }
+    /* A message memory playing owns the sidetone (and the key). */
+    if (paddle_input_message_is_active()) {
+        return;
+    }
 
     lv_obj_t *matrix = lv_event_get_target_obj(e);
     uint32_t id = lv_buttonmatrix_get_selected_button(matrix);
