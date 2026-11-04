@@ -12,6 +12,7 @@
 #include "ui_help.h"
 #include "ui_memories.h"
 #include "ui_menu.h"
+#include "ui_on_air.h"
 #include "ui_send.h"
 #include "ui_settings.h"
 #include "ui_touch_test.h"
@@ -48,8 +49,13 @@ void app_main(void)
 
     QueueHandle_t decoded_char_queue = xQueueCreate(DECODED_CHAR_QUEUE_DEPTH, sizeof(char));
 
+    /* Before any UI reads the live on-air state; the keying task itself
+     * starts later (see below). */
+    paddle_input_set_on_air(settings.on_air);
+
     lvgl_port_lock(0);
 
+    ui_on_air_init();
     lv_obj_t *menu_screen = lv_obj_create(NULL);
     lv_obj_t *calibration_screen = ui_calibration_create(menu_screen);
     lv_obj_t *touch_test_screen = ui_touch_test_create();

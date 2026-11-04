@@ -5,6 +5,7 @@
 #include "morse_codec.h"
 #include "paddle_input.h"
 #include "ui_help.h"
+#include "ui_on_air.h"
 #include "ui_settings.h"
 
 #include <stdio.h>
@@ -453,7 +454,8 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_t *clear_btn = lv_button_create(btn_row);
     display_style_tile(clear_btn);
     lv_obj_add_event_cb(clear_btn, clear_btn_cb, LV_EVENT_CLICKED, NULL);
-    display_add_button_label(clear_btn, "Clear");
+    /* Icon-only, to leave room in this row for the TX toggle. */
+    display_add_button_label(clear_btn, LV_SYMBOL_TRASH);
 
     /* status_col (WPM/Mode) is tappable - it opens the Keyer settings - but
      * stays a plain layout wrapper around the two labels otherwise (no
@@ -511,6 +513,13 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_bg_color(s_keying_dot, display_compensate_color(lv_palette_main(LV_PALETTE_RED)), 0);
     lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_TRANSP, 0);
+
+    /* Quick on-air toggle (live state only; see ui_on_air.h): red while
+     * on-air. */
+    lv_obj_t *tx_btn = lv_button_create(right_group);
+    display_style_tile(tx_btn);
+    display_add_button_label(tx_btn, "TX");
+    ui_on_air_add_toggle(tx_btn, NULL, NULL, NULL);
 
     lv_obj_t *back_btn = lv_button_create(right_group);
     display_style_button_dismiss(back_btn);

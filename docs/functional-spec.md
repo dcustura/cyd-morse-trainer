@@ -57,8 +57,10 @@ implemented.
 
 ## Screens and navigation
 
-1. **Main Menu** — entry point on boot (once calibrated). Two buttons:
-   "Send" and "Settings".
+1. **Main Menu** — entry point on boot (once calibrated). Three buttons:
+   "Send", "Settings", and an on-air quick toggle labeled `Off Air` or
+   `On Air` (red while on-air). A tap flips the live on-air state only;
+   it isn't saved (see On-air / off-air under Behavior details).
 2. **Send screen** — reachable from the Main Menu.
    - Shows a scrolling text area of decoded characters, updated live as the
      operator keys, in one of two sizes set by the Large Text setting
@@ -75,13 +77,16 @@ implemented.
    - A small red indicator dot (bottom-right of the screen, vertically
      centered on the Clear/Back buttons) lights up whenever the key/paddle
      is down and the sidetone is sounding, and goes dark when it releases.
+   - A **TX** button (between the indicator dot and Back) is an on-air
+     quick toggle: red while on-air, and a tap flips the live on-air state
+     only, without saving it.
    - An icon-only Memories button (envelope glyph, left of Help) opens the
      **Memories panel** (see below).
    - An icon-only Help button (list glyph, bottom-right, left of the
      indicator dot and Back) opens the **Morse Reference screen** (see
      below).
-   - "Clear" button empties the decoded text and resets in-progress decode
-     state.
+   - An icon-only Clear button (trash glyph, bottom-left) empties the
+     decoded text and resets in-progress decode state.
    - "Back" button returns to the Main Menu.
    - Behavior: every completed character is appended to the text area;
      word gaps insert a space.
@@ -120,7 +125,10 @@ implemented.
    - A grid of large, tappable tiles (three columns × two rows) filling the
      whole display with no scrolling and no separate title bar: Keyer,
      Sidetone, and Display fill the top row; the bottom row has System, an
-     empty cell, and a Back tile (marked with a left-chevron icon).
+     **On Air** toggle, and a Back tile (marked with a left-chevron icon).
+     - **On Air**'s switch shows the live on-air state. A tap flips it and
+       saves the new state as the one the device boots into; it's the only
+       on-air control that saves.
      There is no slider or dropdown anywhere on this screen or its
      submenus, and no OK/Cancel step — every change is applied to the
      running trainer and persisted to NVS the moment it's made (writes are
@@ -556,10 +564,15 @@ implemented.
   trainer while still wired to a rig. Going off-air during an element
   releases the key output at once; going on-air during an element doesn't
   key the rest of it, and the output starts with the next key-down.
+  - While on-air, a red frame is drawn around the edge of every screen
+    (including popups), so the live state is visible wherever the operator
+    is. It doesn't block touches.
   - The saved `on_air` setting sets the state at boot (off-air on a new
-    device or after a factory reset). Changing it saves it and applies it
-    at once. The quick toggles (`tx` on the CLI) change only the live
-    state.
+    device or after a factory reset). Changing it (the Settings screen's
+    On Air tile, or `set on_air`) saves it and applies it at once. The
+    quick toggles (Send screen TX button, Main Menu button, `tx` on the
+    CLI) change only the live state, so a reboot returns to the saved
+    one.
 - **Factory reset**: erases saved keyer settings, touch calibration and
   message memories together and restarts the device, so it comes back up exactly as an
   unconfigured device would.

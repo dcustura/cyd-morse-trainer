@@ -37,16 +37,6 @@ How this file works:
   backspace, or a different prosign) for fixing a single wrong letter in a
   memory.
 
-### Transmit arm / Off-air mode
-
-- A clearly visible on-air vs off-air toggle, reachable without opening the
-  Settings screen. In off-air mode the external key output (and future
-  PTT output) is never driven. Sidetone and decoding still work.
-- This keeps trainer use safe while the board stays wired to a rig. QMX has
-  the same feature (called "Practice mode" there) for the same reason.
-- Open question: whether the toggle persists across reboots, or the device
-  always boots into off-air mode to be safe.
-
 ### Quick speed change
 
 - Change WPM from the Send screen in one gesture (QMX: one button press,
@@ -68,7 +58,8 @@ How this file works:
   tuning, with a safety timeout (on the order of 10–20 s) and cancel on any
   touch or paddle press. QMX uses "speed 0 means straight key" for the same
   purpose. A dedicated button is clearer on a touchscreen.
-- Never active in off-air mode.
+- Never active off-air (see On-air / off-air in `docs/functional-spec.md`):
+  gate it through the same `key_gate` path as normal keying.
 
 ## Tier 2: keyer timing for experienced operators
 
@@ -97,6 +88,7 @@ How this file works:
   (green channel) is the likely candidate but is unconfirmed. Add it as a
   Kconfig option like `MORSE_KEY_OUTPUT_GPIO`, with the same "verify on your
   unit" warning.
+- Never driven off-air, like the key output (`components/key_gate`).
 
 ### Keying compensation / first-element extension
 

@@ -8,6 +8,7 @@
 #include "sidetone.h"
 #include "touch_cal_store.h"
 #include "ui_calibration.h"
+#include "ui_on_air.h"
 #include "ui_send.h"
 #include "ui_touch_test.h"
 
@@ -615,18 +616,15 @@ static lv_obj_t *create_tile(lv_obj_t *grid, const char *name, int32_t col, int3
     return tile;
 }
 
-/* Like create_tile(), but for an on/off setting with no popup: an lv_switch
- * shows the current state, and tapping anywhere on the tile flips it
- * immediately (toggle_tile_cb()). The switch is made non-clickable so the
- * tap is handled once, by the tile itself, rather than also being
- * intercepted by the switch's own default click-to-toggle behavior (which
- * would animate it independently of the setting actually being applied).
- * refresh_tile_labels() keeps the switch in step; *switch_out is set to it
- * for that. */
-static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row,
-                                     const toggle_t *toggle, lv_obj_t **switch_out)
+/* A tile with an lv_switch showing an on/off state; tapping anywhere on the
+ * tile calls cb. The switch is made non-clickable so the tap is handled
+ * once, by the tile itself, rather than also being intercepted by the
+ * switch's own default click-to-toggle behavior (which would animate it
+ * independently of the setting actually being applied). */
+static lv_obj_t *create_switch_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row, lv_event_cb_t cb,
+                                     void *user_data, lv_obj_t **switch_out)
 {
-    lv_obj_t *tile = create_tile_shell(grid, name, col, row, toggle_tile_cb, (void *)toggle);
+    lv_obj_t *tile = create_tile_shell(grid, name, col, row, cb, user_data);
     lv_obj_set_style_pad_row(tile, 6, 0);
 
     lv_obj_t *sw = lv_switch_create(tile);
@@ -642,6 +640,27 @@ static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t co
 
     *switch_out = sw;
     return tile;
+}
+
+/* Like create_tile(), but for an on/off setting with no popup: tapping
+ * the tile flips it immediately (toggle_tile_cb()). refresh_tile_labels()
+ * keeps the switch in step; *switch_out is set to it for that. */
+static lv_obj_t *create_toggle_tile(lv_obj_t *grid, const char *name, int32_t col, int32_t row,
+                                     const toggle_t *toggle, lv_obj_t **switch_out)
+{
+    return create_switch_tile(grid, name, col, row, toggle_tile_cb, (void *)toggle, switch_out);
+}
+
+/* On Air: the switch shows the live state (which the quick toggles outside
+ * Settings may have changed), and a tap here flips it and saves the new
+ * state as the boot value. */
+static void on_air_tile_cb(lv_event_t *e)
+{
+    (void)e;
+    s_current_settings.on_air = !paddle_input_is_on_air();
+    paddle_input_set_on_air(s_current_settings.on_air);
+    schedule_settings_save();
+    ui_on_air_refresh();
 }
 
 /* The gray "< Back" tile every Settings grid ends with. */
@@ -759,6 +778,9 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     create_tile(scr, "Display", 2, 0, nav_btn_cb, create_display_submenu(scr, calibration_screen, touch_test_screen),
                 NULL);
     create_tile(scr, "System", 0, 1, nav_btn_cb, create_system_submenu(scr), NULL);
+    lv_obj_t *on_air_switch;
+    create_switch_tile(scr, "On Air", 1, 1, on_air_tile_cb, NULL, &on_air_switch);
+    ui_on_air_track(on_air_switch);
     create_back_tile(scr, 2, 1, nav_btn_cb, menu_screen);
 
     refresh_tile_labels();

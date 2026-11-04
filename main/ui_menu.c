@@ -1,9 +1,10 @@
 #include "ui_menu.h"
 
 #include "display_init.h"
+#include "ui_on_air.h"
 
 #define MENU_BTN_WIDTH 140
-#define MENU_BTN_HEIGHT 60
+#define MENU_BTN_HEIGHT 50
 
 static void nav_btn_cb(lv_event_t *e)
 {
@@ -27,11 +28,18 @@ void ui_menu_populate(lv_obj_t *menu_screen, lv_obj_t *send_screen, lv_obj_t *se
 {
     lv_obj_set_flex_flow(menu_screen, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(menu_screen, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(menu_screen, 16, 0);
+    lv_obj_set_style_pad_row(menu_screen, 12, 0);
 
     lv_obj_t *title = lv_label_create(menu_screen);
     lv_label_set_text(title, "Morse Trainer");
 
     create_menu_button(menu_screen, "Send", send_screen);
     create_menu_button(menu_screen, "Settings", settings_screen);
+
+    /* Quick on-air toggle (live state only; see ui_on_air.h). */
+    lv_obj_t *on_air_btn = lv_button_create(menu_screen);
+    display_style_tile(on_air_btn);
+    lv_obj_set_size(on_air_btn, MENU_BTN_WIDTH, MENU_BTN_HEIGHT);
+    lv_obj_t *label = display_add_button_label(on_air_btn, "");
+    ui_on_air_add_toggle(on_air_btn, label, "On Air", "Off Air");
 }

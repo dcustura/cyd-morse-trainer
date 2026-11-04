@@ -69,8 +69,10 @@ GPIO (dit/dah, active-low)
    -> iambic_keyer_service()       [components/iambic_keyer]   -> key_down bool for this tick
    -> on key_down transition:
         sidetone_key(key_down)                    [main/sidetone.c]     -> audible tone, DAC
-        gpio_set_level(KEY_OUTPUT_GPIO, ...)       [main/paddle_input.c] -> external CW key output
         morse_codec_key_event()    [components/morse_codec]    -> classifies the just-finished element/gap
+   -> every tick: key_gate_update(key_down, on_air)  [components/key_gate] -> whether the external
+      key output may be on (never off-air; on-air waits for a fresh key-down)
+        gpio_set_level(KEY_OUTPUT_GPIO, ...)       [main/paddle_input.c] -> external CW key output, on change
    -> every 30ms while idle: morse_codec_tick()    [components/morse_codec] -> flushes a trailing char/word gap
    -> on a decode event (char / space / unknown):
         xQueueSend(decoded_char_queue, ...)        -> drained by an lv_timer in ui_send.c, appended to the text area
@@ -150,7 +152,11 @@ is a rare, one-shot action rather than something tapped repeatedly.
 Built on LVGL 9, with each screen a standalone `.c`/`.h` pair created once at
 boot in `main.c` and switched between via `lv_scr_load()`:
 
-- `ui_menu.c` — Main Menu (two buttons, Send/Settings).
+- `ui_menu.c` — Main Menu (Send, Settings, and an on-air quick toggle).
+- `ui_on_air.c` — the on-air indication shared by every screen: a red
+  frame on LVGL's system layer while on-air, plus the quick toggles (Send
+  screen TX, Main Menu) and the Settings On Air switch, all kept in step
+  with `paddle_input_is_on_air()` by a 100 ms poll so CLI changes show too.
 - `ui_send.c` — Send screen: drains `decoded_char_queue`, owns the
   WPM/Mode status label and the keying indicator dot.
 - `ui_settings.c` (the largest file, ~780 lines) — the entire Settings screen
