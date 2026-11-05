@@ -403,12 +403,10 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
 static bool service_bug(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
 {
     if (k->state == IAMBIC_KEYER_STATE_SEND_DIT) {
-        if (now_ms < k->element_end_ms) {
+        advance_sending(k, dit_contact, dah_contact, now_ms); /* same end/gap timing as the other modes */
+        if (k->state == IAMBIC_KEYER_STATE_SEND_DIT) {
             return true;
         }
-        k->state = IAMBIC_KEYER_STATE_GAP;
-        k->last_key_up_ms = now_ms;
-        k->gap_end_ms = now_ms + (uint32_t)((int32_t)k->unit_ms - k->element_extra_ms);
     }
     if (k->state == IAMBIC_KEYER_STATE_SEND_DAH) {
         /* A hand-keyed dah: down for exactly as long as the contact, then
