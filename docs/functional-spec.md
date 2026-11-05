@@ -18,8 +18,7 @@ The project has two goals:
   as the K1EL WinKeyer.
 
 This spec describes **implemented** behavior only. Planned keyer features
-(transmit arm/off-air mode, weight, PTT/hang time,
-contest macros, computer keying, …) are tracked in
+(PTT/hang time, contest macros, computer keying, …) are tracked in
 [`backlog.md`](backlog.md). Each one moves into this spec when it's
 implemented.
 
