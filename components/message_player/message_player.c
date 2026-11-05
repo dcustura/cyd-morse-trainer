@@ -43,16 +43,18 @@ static int32_t weight_extra_ms(const message_player_t *p)
 }
 
 /* A gap that follows a key-up: weight takes from (or adds to) it whatever
- * it added to (or took from) the element before. */
+ * it added to (or took from) the element before -- that element's own
+ * extra, so element + gap stays right even if weight changed meanwhile. */
 static uint32_t gap_after_element_ms(const message_player_t *p, uint32_t units)
 {
-    return (uint32_t)((int32_t)(units * p->unit_ms) - weight_extra_ms(p));
+    return (uint32_t)((int32_t)(units * p->unit_ms) - p->element_extra_ms);
 }
 
 static void key_element(message_player_t *p, uint32_t t_ms)
 {
     uint32_t units = (p->token.pattern[p->element] == '-') ? DAH_UNITS : 1u;
-    uint32_t ms = (uint32_t)((int32_t)(units * p->unit_ms) + weight_extra_ms(p));
+    p->element_extra_ms = weight_extra_ms(p);
+    uint32_t ms = (uint32_t)((int32_t)(units * p->unit_ms) + p->element_extra_ms);
     set_phase(p, MESSAGE_PLAYER_PHASE_KEY_DOWN, t_ms, ms);
 }
 

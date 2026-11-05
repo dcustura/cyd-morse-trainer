@@ -66,6 +66,7 @@ typedef struct {
     uint32_t phase_end_ms;
     uint32_t unit_ms;
     uint8_t weight_pct; /* see message_player_set_weight_pct() */
+    int32_t element_extra_ms; /* weight extra of the last element keyed; the gap after it gives it back */
     uint32_t sends_done; /* finished transmissions of the current message */
 
     size_t cursor;             /* text offset after the token being sent */

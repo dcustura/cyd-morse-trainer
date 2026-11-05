@@ -340,6 +340,18 @@ TEST(message_player, weight_below_standard_shortens_elements)
     assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 }
 
+TEST(message_player, weight_change_mid_element_keeps_that_elements_total)
+{
+    message_player_set_weight_pct(&s_p, 75);
+    enqueue_ok(msg("I", 1), 0, MESSAGE_PLAYER_STARTED);
+    run(0, 10);                               /* first dit keyed: 1.5u */
+    message_player_set_weight_pct(&s_p, 25);  /* before its key-up */
+    run(10, 1000);
+    /* The gap gives back that dit's 0.5u; the next dit is lighter (0.5u). */
+    const uint32_t expected[] = { 0, U + U / 2, 2 * U, 2 * U + U / 2 };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
 TEST(message_player, weight_is_clamped)
 {
     message_player_set_weight_pct(&s_p, 0);
@@ -470,6 +482,7 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, a_key_down_a_word_gap_old_is_forgotten);
     RUN_TEST_CASE(message_player, weight_lengthens_elements_and_shortens_the_gaps_after_them);
     RUN_TEST_CASE(message_player, weight_below_standard_shortens_elements);
+    RUN_TEST_CASE(message_player, weight_change_mid_element_keeps_that_elements_total);
     RUN_TEST_CASE(message_player, weight_is_clamped);
     RUN_TEST_CASE(message_player, weighted_playback_still_decodes_at_both_limits);
     RUN_TEST_CASE(message_player, enqueue_clamps_count_and_pause);
