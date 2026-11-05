@@ -153,6 +153,24 @@ void message_player_set_weight_pct(message_player_t *p, uint8_t pct)
     p->weight_pct = iambic_keyer_clamp_weight_pct(pct);
 }
 
+bool message_player_tag_pending(const message_player_t *p, int tag, message_player_enqueue_result_t *why)
+{
+    if (p->phase == MESSAGE_PLAYER_PHASE_IDLE) {
+        return false; /* p->current is stale once idle */
+    }
+    if (tag == p->current.tag) {
+        *why = MESSAGE_PLAYER_IGNORED_PLAYING;
+        return true;
+    }
+    for (uint8_t i = 0; i < p->queue_len; ++i) {
+        if (p->queue[i].tag == tag) {
+            *why = MESSAGE_PLAYER_IGNORED_QUEUED;
+            return true;
+        }
+    }
+    return false;
+}
+
 message_player_enqueue_result_t message_player_enqueue(message_player_t *p, const message_player_message_t *msg,
                                                        uint32_t now_ms)
 {
@@ -187,13 +205,9 @@ message_player_enqueue_result_t message_player_enqueue(message_player_t *p, cons
         }
         return MESSAGE_PLAYER_STARTED;
     }
-    if (copy.tag == p->current.tag) {
-        return MESSAGE_PLAYER_IGNORED_PLAYING;
-    }
-    for (uint8_t i = 0; i < p->queue_len; ++i) {
-        if (p->queue[i].tag == copy.tag) {
-            return MESSAGE_PLAYER_IGNORED_QUEUED;
-        }
+    message_player_enqueue_result_t why;
+    if (message_player_tag_pending(p, copy.tag, &why)) {
+        return why;
     }
     if (p->queue_len >= MESSAGE_PLAYER_QUEUE_MAX) {
         return MESSAGE_PLAYER_QUEUE_FULL;

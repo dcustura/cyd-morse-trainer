@@ -144,7 +144,8 @@ type from `components/`):
   name/value pairs, sorted by name) in RAM, mutex-protected, saved at
   once as one versioned blob. `macro_vars_expand()` fills a message's
   variables in under the lock, using `morse_text_expand()` from
-  `components/morse_codec/`; callers do this before enqueueing, so the
+  `components/morse_codec/`. `paddle_input_message_enqueue()`, the only
+  way to enqueue a message, calls it after its duplicate-tag check, so the
   message player only ever sees plain text.
 
 `settings_store` debounces writes by a couple of seconds after the last

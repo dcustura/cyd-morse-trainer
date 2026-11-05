@@ -122,6 +122,15 @@ message_player_enqueue_result_t message_player_enqueue(message_player_t *p, cons
                                                        uint32_t now_ms);
 
 /**
+ * True if message_player_enqueue() would ignore a message with this tag
+ * because one with the same tag is playing or queued; *why then receives
+ * MESSAGE_PLAYER_IGNORED_PLAYING or MESSAGE_PLAYER_IGNORED_QUEUED. Lets a
+ * caller skip preparing a message (e.g. filling in its variables) that
+ * would be ignored anyway.
+ */
+bool message_player_tag_pending(const message_player_t *p, int tag, message_player_enqueue_result_t *why);
+
+/**
  * The operator's own key (not this player's) state at now_ms. Call every
  * tick while idle: a key-down a word gap old is forgotten, so it can't
  * look recent again once the millisecond counter wraps (~49.7 days).

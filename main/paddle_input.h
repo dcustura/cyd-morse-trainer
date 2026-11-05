@@ -6,6 +6,7 @@
 #include "freertos/queue.h"
 #include "iambic_keyer.h"
 #include "message_player.h"
+#include "morse_text.h"
 #include "settings.h"
 
 #ifdef __cplusplus
@@ -81,7 +82,25 @@ uint16_t paddle_input_get_wpm(void);
  * until both paddles are released. Plays at the keyer's current WPM.
  * Safe to call from any task.
  */
-message_player_enqueue_result_t paddle_input_message_enqueue(const message_player_message_t *msg);
+
+/**
+ * Play or queue a message: msg gives its repeat settings and tag (its
+ * text field is ignored), text its normalized text, whose {VAR}s are
+ * filled in first (macro_vars_expand()). The only way to enqueue, so no
+ * message reaches the player with its variables unfilled.
+ *
+ * A message whose tag is already playing or queued is reported as
+ * MESSAGE_PLAYER_IGNORED_* before its variables are looked at, so a tap
+ * on a queued tile stays a no-op even if a variable has since been cleared.
+ *
+ * @param text_result  Receives MORSE_TEXT_OK, or why text couldn't be
+ *                     filled in (e.g. MORSE_TEXT_ERR_UNSET_VARIABLE); the
+ *                     result is then MESSAGE_PLAYER_INVALID.
+ * @param missing      On MORSE_TEXT_ERR_UNSET_VARIABLE, the variable's name.
+ */
+message_player_enqueue_result_t paddle_input_message_enqueue(const message_player_message_t *msg, const char *text,
+                                                             morse_text_result_t *text_result,
+                                                             char missing[MORSE_TEXT_VAR_NAME_MAX + 1]);
 void paddle_input_message_stop(void);
 void paddle_input_message_set_repeat(bool repeat);
 void paddle_input_message_set_repeat_params(uint8_t count, uint8_t pause_s);

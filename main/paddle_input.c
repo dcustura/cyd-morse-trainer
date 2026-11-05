@@ -4,6 +4,7 @@
 #include "sidetone.h"
 #include "debouncer.h"
 #include "key_gate.h"
+#include "macro_vars.h"
 #include "morse_codec.h"
 
 #include "driver/gpio.h"
@@ -273,10 +274,30 @@ void paddle_input_set_wpm(uint16_t wpm)
     player_unlock();
 }
 
-message_player_enqueue_result_t paddle_input_message_enqueue(const message_player_message_t *msg)
+message_player_enqueue_result_t paddle_input_message_enqueue(const message_player_message_t *msg, const char *text,
+                                                             morse_text_result_t *text_result,
+                                                             char missing[MORSE_TEXT_VAR_NAME_MAX + 1])
 {
+    *text_result = MORSE_TEXT_OK;
+    message_player_enqueue_result_t result;
     player_lock();
-    message_player_enqueue_result_t result = message_player_enqueue(&s_player, msg, now_ms());
+    bool pending = message_player_tag_pending(&s_player, msg->tag, &result);
+    player_unlock();
+    if (pending) {
+        return result;
+    }
+
+    /* Filled in outside the player lock: the paddle task takes that lock
+     * every tick. If the message's tag starts playing meanwhile, enqueue
+     * below still reports it as a duplicate. */
+    message_player_message_t full = *msg;
+    *text_result = macro_vars_expand(text, full.text, sizeof(full.text), missing);
+    if (*text_result != MORSE_TEXT_OK) {
+        return MESSAGE_PLAYER_INVALID;
+    }
+
+    player_lock();
+    result = message_player_enqueue(&s_player, &full, now_ms());
     player_unlock();
     return result;
 }

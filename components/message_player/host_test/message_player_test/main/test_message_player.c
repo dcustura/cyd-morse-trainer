@@ -200,6 +200,22 @@ TEST(message_player, enqueue_ignores_duplicates_full_queue_and_empty_text)
     TEST_ASSERT_EQUAL_INT(7, st.queue_tags[5]);
 }
 
+TEST(message_player, tag_pending_matches_what_enqueue_would_ignore)
+{
+    message_player_enqueue_result_t why = MESSAGE_PLAYER_STARTED;
+    TEST_ASSERT_FALSE(message_player_tag_pending(&s_p, 1, &why));
+    enqueue_ok(msg("E", 1), 0, MESSAGE_PLAYER_STARTED);
+    enqueue_ok(msg("E", 2), 0, MESSAGE_PLAYER_QUEUED);
+    TEST_ASSERT_TRUE(message_player_tag_pending(&s_p, 1, &why));
+    TEST_ASSERT_EQUAL(MESSAGE_PLAYER_IGNORED_PLAYING, why);
+    TEST_ASSERT_TRUE(message_player_tag_pending(&s_p, 2, &why));
+    TEST_ASSERT_EQUAL(MESSAGE_PLAYER_IGNORED_QUEUED, why);
+    TEST_ASSERT_FALSE(message_player_tag_pending(&s_p, 3, &why));
+    message_player_stop(&s_p);
+    /* Idle: the last message's tag no longer counts as playing. */
+    TEST_ASSERT_FALSE(message_player_tag_pending(&s_p, 1, &why));
+}
+
 TEST(message_player, repeat_on_during_a_single_send_makes_it_repeat)
 {
     enqueue_ok(msg("E", 1), 0, MESSAGE_PLAYER_STARTED);
@@ -480,6 +496,7 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, queueing_during_a_pause_starts_the_next_message_promptly);
     RUN_TEST_CASE(message_player, queueing_early_in_a_pause_still_waits_a_word_gap);
     RUN_TEST_CASE(message_player, enqueue_ignores_duplicates_full_queue_and_empty_text);
+    RUN_TEST_CASE(message_player, tag_pending_matches_what_enqueue_would_ignore);
     RUN_TEST_CASE(message_player, repeat_on_during_a_single_send_makes_it_repeat);
     RUN_TEST_CASE(message_player, repeat_off_during_a_send_lets_it_finish);
     RUN_TEST_CASE(message_player, repeat_off_during_a_pause_stops_at_once);

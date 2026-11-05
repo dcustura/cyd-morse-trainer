@@ -201,12 +201,28 @@ static int mem_tiles(void)
     return 0;
 }
 
-/* Enqueue msg and print the outcome: `<verb>=started|queued` then OK, or
- * an ERR line naming subject (e.g. "memory 3"). Returns the command's exit
- * code. */
-static int enqueue_and_report(const message_player_message_t *msg, const char *verb, const char *subject)
+/* Enqueue msg with text (filling in its variables) and print the outcome:
+ * `<verb>=started|queued` then OK, or an ERR line naming subject (e.g.
+ * "memory 3"). Returns the command's exit code. */
+static int enqueue_and_report(const message_player_message_t *msg, const char *text, const char *verb,
+                              const char *subject)
 {
-    switch (paddle_input_message_enqueue(msg)) {
+    morse_text_result_t text_result;
+    char missing[MORSE_TEXT_VAR_NAME_MAX + 1];
+    message_player_enqueue_result_t result = paddle_input_message_enqueue(msg, text, &text_result, missing);
+    if (text_result == MORSE_TEXT_ERR_UNSET_VARIABLE) {
+        printf("ERR variable {%s} is not set (var set %s <value>)\n", missing, missing);
+        return 1;
+    }
+    if (text_result == MORSE_TEXT_ERR_TOO_LONG) {
+        printf("ERR text too long once variables are filled in (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
+        return 1;
+    }
+    if (text_result != MORSE_TEXT_OK) {
+        printf("ERR text: %s\n", morse_text_result_str(text_result));
+        return 1;
+    }
+    switch (result) {
     case MESSAGE_PLAYER_STARTED:
         printf("%s=started\n", verb);
         break;
@@ -230,25 +246,6 @@ static int enqueue_and_report(const message_player_message_t *msg, const char *v
     return 0;
 }
 
-/* Fill text's {VAR}s into out (MESSAGE_PLAYER_TEXT_MAX + 1 chars), printing
- * ERR on failure. */
-static bool expand_or_report(const char *text, char out[MESSAGE_PLAYER_TEXT_MAX + 1])
-{
-    char missing[MORSE_TEXT_VAR_NAME_MAX + 1];
-    morse_text_result_t r = macro_vars_expand(text, out, MESSAGE_PLAYER_TEXT_MAX + 1, missing);
-    if (r == MORSE_TEXT_OK) {
-        return true;
-    }
-    if (r == MORSE_TEXT_ERR_UNSET_VARIABLE) {
-        printf("ERR variable {%s} is not set (var set %s <value>)\n", missing, missing);
-    } else if (r == MORSE_TEXT_ERR_TOO_LONG) {
-        printf("ERR text too long once variables are filled in (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
-    } else {
-        printf("ERR text: %s\n", morse_text_result_str(r));
-    }
-    return false;
-}
-
 /* Plays (or queues) memory n with its own repeat defaults. CLI plays are
  * tagged -n so they never collide with a panel tile's tag (1..6). */
 static int mem_play(uint8_t n)
@@ -261,13 +258,9 @@ static int mem_play(uint8_t n)
         .pause_s = m.pause_s,
         .tag = -(int)n,
     };
-    if (!expand_or_report(m.text, msg.text)) {
-        return 1;
-    }
-
     char subject[16];
     snprintf(subject, sizeof(subject), "memory %u", (unsigned)n);
-    return enqueue_and_report(&msg, "play", subject);
+    return enqueue_and_report(&msg, m.text, "play", subject);
 }
 
 /* `send` messages get tags from here up, each one new, so repeated sends of
@@ -331,13 +324,12 @@ int cli_send_cmd(int argc, char **argv)
     }
 
     char text[MESSAGE_PLAYER_TEXT_MAX + 1];
-    message_player_message_t msg = {.repeat = false};
-    if (!normalize_field("text", joined, MEMORY_TEXT_FLAGS, text, sizeof(text)) || !expand_or_report(text, msg.text)) {
+    if (!normalize_field("text", joined, MEMORY_TEXT_FLAGS, text, sizeof(text))) {
         return 1;
     }
-    msg.tag = s_next_tag;
+    message_player_message_t msg = {.repeat = false, .tag = s_next_tag};
 
-    int rc = enqueue_and_report(&msg, "send", "text");
+    int rc = enqueue_and_report(&msg, text, "send", "text");
     if (rc == 0) {
         s_next_tag++; /* ~2^31 sends to overflow: not a concern */
     }

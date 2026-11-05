@@ -2,7 +2,6 @@
 
 #include "display_init.h"
 #include "fonts.h"
-#include "macro_vars.h"
 #include "memory_store.h"
 #include "message_player.h"
 #include "paddle_input.h"
@@ -340,21 +339,15 @@ static void tile_clicked_cb(lv_event_t *e)
     };
     /* The notice must outlive this call: show_notice() keeps the pointer. */
     static char s_unset_notice[MORSE_TEXT_VAR_NAME_MAX + 16];
+    morse_text_result_t text_result;
     char missing[MORSE_TEXT_VAR_NAME_MAX + 1];
-    morse_text_result_t expanded = macro_vars_expand(m.text, msg.text, sizeof(msg.text), missing);
-    if (expanded == MORSE_TEXT_ERR_UNSET_VARIABLE) {
+    message_player_enqueue_result_t result = paddle_input_message_enqueue(&msg, m.text, &text_result, missing);
+    if (text_result == MORSE_TEXT_ERR_UNSET_VARIABLE) {
         snprintf(s_unset_notice, sizeof(s_unset_notice), "{%s} not set", missing);
         show_notice(s_unset_notice);
-        refresh();
-        return;
-    }
-    if (expanded != MORSE_TEXT_OK) {
+    } else if (text_result != MORSE_TEXT_OK) {
         show_notice("Too long");
-        refresh();
-        return;
-    }
-    message_player_enqueue_result_t result = paddle_input_message_enqueue(&msg);
-    if (result == MESSAGE_PLAYER_QUEUE_FULL) {
+    } else if (result == MESSAGE_PLAYER_QUEUE_FULL) {
         show_notice("Queue full");
     } else if (result == MESSAGE_PLAYER_INVALID) {
         show_notice("Can't send");
