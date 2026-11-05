@@ -304,6 +304,16 @@ TEST(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_w
     assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 }
 
+TEST(message_player, start_after_the_operators_key_waits_a_weighted_word_gap)
+{
+    message_player_set_weight_pct(&s_p, 75); /* word gap silence 7u - 0.5u */
+    message_player_note_key(&s_p, true, 1000);
+    enqueue_ok(msg("E", 1), 1000 + U, MESSAGE_PLAYER_STARTED);
+    run(1000 + U, 2000);
+    const uint32_t expected[] = { 1000 + 7 * U - U / 2, 1000 + 7 * U - U / 2 + U + U / 2 };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
 TEST(message_player, a_key_down_a_word_gap_old_is_forgotten)
 {
     message_player_note_key(&s_p, true, 1000);
@@ -479,6 +489,7 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, start_waits_a_word_gap_after_the_operators_key);
     RUN_TEST_CASE(message_player, start_counts_the_word_gap_from_the_operators_last_key_down);
     RUN_TEST_CASE(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_word_gap);
+    RUN_TEST_CASE(message_player, start_after_the_operators_key_waits_a_weighted_word_gap);
     RUN_TEST_CASE(message_player, a_key_down_a_word_gap_old_is_forgotten);
     RUN_TEST_CASE(message_player, weight_lengthens_elements_and_shortens_the_gaps_after_them);
     RUN_TEST_CASE(message_player, weight_below_standard_shortens_elements);

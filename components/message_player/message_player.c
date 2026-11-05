@@ -173,7 +173,10 @@ message_player_enqueue_result_t message_player_enqueue(message_player_t *p, cons
         p->current = copy;
         p->sends_done = 0;
         p->lead_in_is_pause = false;
-        uint32_t word_gap_ms = WORD_GAP_UNITS * p->unit_ms;
+        /* The operator's keyer is weighted the same way, so the silence
+         * after their last element is a weighted word gap, as between
+         * queued messages. */
+        uint32_t word_gap_ms = (uint32_t)((int32_t)(WORD_GAP_UNITS * p->unit_ms) - weight_extra_ms(p));
         uint32_t since_key_ms = now_ms - p->key_down_ms;
         if (p->key_down_seen && since_key_ms < word_gap_ms) {
             /* The operator keyed moments ago: their element is cut off here
