@@ -5,7 +5,7 @@
 
 #include "esp_log.h"
 
-#define FRAME_WIDTH_PX 3
+#define FRAME_WIDTH_PX 1
 #define POLL_PERIOD_MS 100 /* picks up changes made outside the UI, e.g. CLI `tx` */
 #define MAX_TRACKED 6
 

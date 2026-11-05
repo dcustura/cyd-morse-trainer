@@ -29,22 +29,6 @@ How this file works:
   `mem tile 1 21` … `mem tile 6 26`. Afterwards, `mem clear 21` …
   `mem clear 28` and reassign the tiles.
 
-## On-air / off-air (`7ac7e25`, `beb599a`)
-
-- [ ] TX toggles and turns red while on-air.
-- [ ] Main Menu has three buttons that fit; the third reads `Off Air` /
-      `On Air` and turns red while on-air.
-- [ ] Settings > On Air switch shows the live state (also after using TX
-      or the Main Menu button).
-- [ ] Red frame shows on every screen while on-air, including Memories,
-      Settings, Help and the Reset to Defaults popup; taps right at the
-      screen edge still reach the buttons under it.
-- [ ] A TX / Main Menu toggle is lost on reboot; a Settings > On Air change
-      is kept (wait a few seconds after the change before rebooting).
-- [ ] Scope or LED on the key output (GPIO17): off-air it never keys
-      (paddle, straight key, message playback). Going on-air while holding a
-      dah doesn't key the rest of it; the next element keys normally.
-
 ## Quick speed change (`2421fe0`)
 
 - [ ] Long-press the WPM/mode label: the speed bar appears, and releasing
