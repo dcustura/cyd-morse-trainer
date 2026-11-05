@@ -72,6 +72,14 @@ void app_main(void)
     ui_menu_populate(menu_screen, send_screen, settings_screen);
     lv_scr_load(touch_cal_found ? menu_screen : calibration_screen);
 
+    /* Every screen is now built and stays allocated. If this gets low,
+     * popups can't get a draw-layer buffer and LVGL's renderer retries
+     * forever (a hang): raise CONFIG_LV_MEM_SIZE_KILOBYTES. */
+    lv_mem_monitor_t mem;
+    lv_mem_monitor(&mem);
+    ESP_LOGI(TAG, "LVGL memory: %u of %u bytes free (largest block %u)", (unsigned)mem.free_size,
+             (unsigned)mem.total_size, (unsigned)mem.free_biggest_size);
+
     lvgl_port_unlock();
 
     /* paddle_input_start() brings up the sidetone, which claims a small,

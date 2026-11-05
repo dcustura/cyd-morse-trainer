@@ -35,3 +35,10 @@ CONFIG_LV_TXT_LINE_BREAK_LONG_POST_MIN_LEN=1
 # (see display_init.c) and draw buffer size are the other limits on actual
 # paint throughput; this just lets LVGL invalidate/flush more often.
 CONFIG_LV_DEF_REFR_PERIOD=16
+
+# LVGL's own memory pool. Every screen is built at boot and kept, which at
+# 64 KB left only ~7.6 KB free: opening a popup then needed a draw-layer
+# buffer LVGL couldn't allocate, and its renderer retries that forever
+# (the UI hung, tripping the task watchdog). 96 KB leaves ~40 KB of the pool
+# free and ~97 KB of system heap. main.c logs the pool's free space at boot.
+CONFIG_LV_MEM_SIZE_KILOBYTES=96

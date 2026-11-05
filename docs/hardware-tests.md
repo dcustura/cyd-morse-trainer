@@ -29,6 +29,15 @@ How this file works:
   `mem tile 1 21` … `mem tile 6 26`. Afterwards, `mem clear 21` …
   `mem clear 28` and reassign the tiles.
 
+## Popups no longer hang the UI (LVGL memory pool raised to 96 KB)
+
+- [ ] Every Settings popup opens and closes without the screen freezing:
+      Keyer (WPM, Key Mode, Auto Space, Weight), Sidetone (Pitch, Volume,
+      Smoothing), Display (Brightness), and Reset to Defaults (answer No).
+      Also the Memories panel's picker and Repeat popup, and Help's tabs.
+      Verified over serial for the Keyer popups with simulated taps; boot
+      log shows `LVGL memory: ~39000 of 91172 bytes free`.
+
 ## Message memories panel (`f36b0e8`, `a6f4be1`)
 
 - [ ] Tap a tile: its memory plays; the tile turns amber with `▶`.
