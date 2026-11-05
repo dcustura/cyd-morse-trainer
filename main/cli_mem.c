@@ -252,6 +252,20 @@ static int mem_play(uint8_t n)
  * (-1..-32). */
 #define SEND_TAG_FIRST 1000
 
+/* Append ch to buf (holding *len chars, room for size - 1), skipping a
+ * space at the start or after another space. False if it doesn't fit. */
+static bool append_collapsing_spaces(char *buf, size_t size, size_t *len, char ch)
+{
+    if (ch == ' ' && (*len == 0 || buf[*len - 1] == ' ')) {
+        return true;
+    }
+    if (*len + 1 >= size) {
+        return false;
+    }
+    buf[(*len)++] = ch;
+    return true;
+}
+
 int cli_send_cmd(int argc, char **argv)
 {
     static int s_next_tag = SEND_TAG_FIRST;
@@ -266,17 +280,23 @@ int cli_send_cmd(int argc, char **argv)
         return 1;
     }
     /* Unquoted words arrive as separate arguments: join them with one
-     * space, so `send CQ CQ DE X` works as well as `send "CQ CQ DE X"`. */
-    char joined[256] = "";
-    for (int i = 1; i < argc; ++i) {
-        if (i > 1) {
-            strlcat(joined, " ", sizeof(joined));
+     * space, so `send CQ CQ DE X` works as well as `send "CQ CQ DE X"`.
+     * Runs of spaces (inside quotes too) collapse as they're copied, the way
+     * normalizing would, so only text that really is too long overflows. */
+    char joined[256];
+    size_t len = 0;
+    bool fits = true;
+    for (int i = 1; i < argc && fits; ++i) {
+        for (const char *c = argv[i]; *c != '\0' && fits; ++c) {
+            fits = append_collapsing_spaces(joined, sizeof(joined), &len, *c);
         }
-        if (strlcat(joined, argv[i], sizeof(joined)) >= sizeof(joined)) {
-            printf("ERR text too long (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
-            return 1;
-        }
+        fits = fits && append_collapsing_spaces(joined, sizeof(joined), &len, ' ');
     }
+    if (!fits) {
+        printf("ERR text too long (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
+        return 1;
+    }
+    joined[len] = '\0';
 
     message_player_message_t msg = {.repeat = false};
     if (!normalize_field("text", joined, true, msg.text, sizeof(msg.text))) {
