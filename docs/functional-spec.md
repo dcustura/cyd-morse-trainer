@@ -539,11 +539,12 @@ implemented.
   threshold, or already at or past the standard gap on its own, is left
   alone — nothing is ever slowed down while the operator is actively
   sending. The character-gap threshold is never allowed below 2 units
-  regardless of the setting, so it can't be confused with the normal
-  1-unit gap between elements of the same character. Straight Key mode
-  has no automatic element timing for this to act on (the operator's own
-  dit/dah/gap timing is read directly, unmodified), so Auto Space has no
-  effect there.
+  (at standard weight; one unit above the weighted element gap in
+  general), so it can't be confused with the normal gap between elements
+  of the same character. Straight Key mode has no automatic element
+  timing for this to act on (the operator's own dit/dah/gap timing is
+  read directly, unmodified), and Bug mode's dahs are hand-timed, so
+  Auto Space has no effect in either.
 - **Persistence**: WPM, key mode, paddle swap, paddle debounce, ring
   input, Auto Space percentage, weight, sidetone frequency, sidetone volume,
   sidetone envelope, screen brightness, brightness auto/manual mode,
