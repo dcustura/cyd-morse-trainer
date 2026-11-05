@@ -44,6 +44,13 @@ void paddle_input_set_debounce(bool debounce);
 void paddle_input_set_auto_space_pct(uint8_t pct);
 
 /**
+ * Weight (dit/dah ratio, 50 = standard) for the keyer (Iambic A/B and
+ * Ultimatic) and message playback. See components/iambic_keyer's
+ * iambic_keyer_set_weight_pct().
+ */
+void paddle_input_set_weight_pct(uint8_t pct);
+
+/**
  * Straight Key mode only: also read the paddle DAH GPIO (the "ring"
  * conductor on a TRS paddle/key jack) as part of the key signal, ORed with
  * the dit/"tip" GPIO -- for a key wired across both conductors. No effect

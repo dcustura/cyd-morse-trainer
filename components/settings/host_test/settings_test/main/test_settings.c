@@ -92,6 +92,15 @@ TEST(settings, clamp_auto_space_pct_passes_in_range_values_through)
     TEST_ASSERT_EQUAL_UINT8(100, settings_clamp_auto_space_pct(100));
 }
 
+TEST(settings, clamp_weight_pct_keeps_the_keyer_range)
+{
+    TEST_ASSERT_EQUAL_UINT8(25, settings_clamp_weight_pct(0));
+    TEST_ASSERT_EQUAL_UINT8(25, settings_clamp_weight_pct(24));
+    TEST_ASSERT_EQUAL_UINT8(50, settings_clamp_weight_pct(50));
+    TEST_ASSERT_EQUAL_UINT8(75, settings_clamp_weight_pct(76));
+    TEST_ASSERT_EQUAL_UINT8(75, settings_clamp_weight_pct(255));
+}
+
 TEST(settings, clamp_auto_space_pct_clamps_out_of_range_values)
 {
     TEST_ASSERT_EQUAL_UINT8(50, settings_clamp_auto_space_pct(0));
@@ -126,6 +135,7 @@ TEST(settings, set_defaults_populates_the_compiled_in_defaults)
     TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_PADDLE_SWAP, settings.paddle_swap);
     TEST_ASSERT_EQUAL(SETTINGS_DEFAULT_PADDLE_DEBOUNCE, settings.paddle_debounce);
     TEST_ASSERT_EQUAL_UINT8(SETTINGS_DEFAULT_AUTO_SPACE_PCT, settings.auto_space_pct);
+    TEST_ASSERT_EQUAL_UINT8(50, settings.weight_pct);
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_TONE_HZ, settings.tone_hz);
     TEST_ASSERT_EQUAL_UINT8(SETTINGS_DEFAULT_VOLUME_PCT, settings.volume_pct);
     TEST_ASSERT_EQUAL_UINT16(SETTINGS_DEFAULT_ENVELOPE_MS, settings.envelope_ms);
@@ -150,6 +160,7 @@ TEST_GROUP_RUNNER(settings)
     RUN_TEST_CASE(settings, clamp_brightness_pct_clamps_out_of_range_values);
     RUN_TEST_CASE(settings, clamp_auto_space_pct_passes_in_range_values_through);
     RUN_TEST_CASE(settings, clamp_auto_space_pct_clamps_out_of_range_values);
+    RUN_TEST_CASE(settings, clamp_weight_pct_keeps_the_keyer_range);
     RUN_TEST_CASE(settings, validate_keymode_passes_valid_values_through);
     RUN_TEST_CASE(settings, validate_keymode_falls_back_to_default_for_invalid_bytes);
     RUN_TEST_CASE(settings, set_defaults_populates_the_compiled_in_defaults);

@@ -33,6 +33,7 @@
 typedef enum {
     FIELD_WPM,
     FIELD_AUTO_SPACE,
+    FIELD_WEIGHT,
     FIELD_TONE_HZ,
     FIELD_VOLUME,
     FIELD_ENVELOPE,
@@ -52,6 +53,7 @@ typedef struct {
 static const numeric_field_info_t s_field_info[FIELD_COUNT] = {
     [FIELD_WPM] = {"WPM", SETTINGS_WPM_MIN, SETTINGS_WPM_MAX, 1, "%d", false},
     [FIELD_AUTO_SPACE] = {"Auto Space", SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX, 5, "%d%%", false},
+    [FIELD_WEIGHT] = {"Weight", SETTINGS_WEIGHT_PCT_MIN, SETTINGS_WEIGHT_PCT_MAX, 1, "%d%%", false},
     [FIELD_TONE_HZ] = {"Pitch", SETTINGS_TONE_HZ_MIN, SETTINGS_TONE_HZ_MAX, 10, "%d Hz", true},
     [FIELD_VOLUME] = {"Volume", SETTINGS_VOLUME_PCT_MIN, SETTINGS_VOLUME_PCT_MAX, 5, "%d%%", true},
     [FIELD_ENVELOPE] = {"Smoothing", SETTINGS_ENVELOPE_MS_MIN, SETTINGS_ENVELOPE_MS_MAX, 2, "%d ms", true},
@@ -67,6 +69,7 @@ static settings_t s_current_settings;
 /* Value line of each numeric field's tile, indexed by numeric_field_t. */
 static lv_obj_t *s_field_tile_value[FIELD_COUNT];
 static lv_obj_t *s_auto_space_tile;
+static lv_obj_t *s_weight_tile;
 static lv_obj_t *s_keymode_tile_value;
 static lv_obj_t *s_swap_tile;
 static lv_obj_t *s_swap_switch;
@@ -172,10 +175,11 @@ static void refresh_tile_labels(void)
      * with dah via Ring Input below. So the Keyer submenu's grid swaps the
      * Paddle Swap tile out for a Ring Input tile, and forces Paddle
      * Debounce's switch on and disabled, whenever Key Mode is Straight
-     * Key. Auto Space is an iambic_keyer encoder feature with nothing to
-     * hook into in Straight Key's direct passthrough, so its tile is
-     * disabled there too (its stored value is untouched and takes effect
-     * again as soon as a different Key Mode is selected). */
+     * Key. Auto Space and Weight are iambic_keyer encoder features with
+     * nothing to hook into in Straight Key's direct passthrough, so their
+     * tiles are disabled there too (their stored values are untouched and
+     * take effect again as soon as a different Key Mode is selected;
+     * Weight still applies to message playback meanwhile). */
     bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
 
     set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
@@ -188,9 +192,11 @@ static void refresh_tile_labels(void)
     if (straight_key) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
         lv_obj_add_state(s_auto_space_tile, LV_STATE_DISABLED);
+        lv_obj_add_state(s_weight_tile, LV_STATE_DISABLED);
     } else {
         lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);
         lv_obj_remove_state(s_auto_space_tile, LV_STATE_DISABLED);
+        lv_obj_remove_state(s_weight_tile, LV_STATE_DISABLED);
     }
 
     set_switch_checked(s_text_size_switch, s_current_settings.send_large_text);
@@ -203,6 +209,8 @@ static int32_t field_get_value(numeric_field_t field)
         return s_current_settings.wpm;
     case FIELD_AUTO_SPACE:
         return s_current_settings.auto_space_pct;
+    case FIELD_WEIGHT:
+        return s_current_settings.weight_pct;
     case FIELD_TONE_HZ:
         return s_current_settings.tone_hz;
     case FIELD_VOLUME:
@@ -226,6 +234,10 @@ static void field_set_value(numeric_field_t field, int32_t value)
     case FIELD_AUTO_SPACE:
         s_current_settings.auto_space_pct = (uint8_t)value;
         paddle_input_set_auto_space_pct(s_current_settings.auto_space_pct);
+        break;
+    case FIELD_WEIGHT:
+        s_current_settings.weight_pct = (uint8_t)value;
+        paddle_input_set_weight_pct(s_current_settings.weight_pct);
         break;
     case FIELD_TONE_HZ:
         s_current_settings.tone_hz = (uint16_t)value;
@@ -313,16 +325,20 @@ static void nav_btn_cb(lv_event_t *e)
  * grid tile (see ui_settings_create()'s main grid for the same pattern) --
  * no separate title bar, since the submenu the user just navigated into is
  * self-evident from context. */
-static lv_obj_t *create_submenu_screen(bool three_columns)
+static lv_obj_t *create_grid_screen(bool three_columns, bool three_rows)
 {
-    static const int32_t cols2_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t cols3_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static const int32_t rows_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t two_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static const int32_t three_dsc[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
 
     lv_obj_t *scr = lv_obj_create(NULL);
     lv_obj_set_style_pad_all(scr, 4, 0);
-    lv_obj_set_grid_dsc_array(scr, three_columns ? cols3_dsc : cols2_dsc, rows_dsc);
+    lv_obj_set_grid_dsc_array(scr, three_columns ? three_dsc : two_dsc, three_rows ? three_dsc : two_dsc);
     return scr;
+}
+
+static lv_obj_t *create_submenu_screen(bool three_columns)
+{
+    return create_grid_screen(three_columns, false);
 }
 
 static void test_tone_stop_cb(lv_timer_t *timer)
@@ -683,7 +699,9 @@ static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calib
 
 static lv_obj_t *create_keyer_submenu(void)
 {
-    lv_obj_t *scr = create_submenu_screen(true);
+    /* 3x3: a third row was added for Weight; the free cells left of Back
+     * are room for future keyer timing settings. */
+    lv_obj_t *scr = create_grid_screen(true, true);
 
     create_tile(scr, "WPM", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_WPM, &s_field_tile_value[FIELD_WPM]);
     create_tile(scr, "Key Mode", 1, 0, keymode_tile_cb, NULL, &s_keymode_tile_value);
@@ -698,7 +716,10 @@ static lv_obj_t *create_keyer_submenu(void)
     s_auto_space_tile = create_tile(scr, "Auto\nSpace", 1, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_AUTO_SPACE,
                                      &s_field_tile_value[FIELD_AUTO_SPACE]);
 
-    create_back_tile(scr, 2, 1, keyer_back_btn_cb, NULL);
+    s_weight_tile = create_tile(scr, "Weight", 2, 1, numeric_tile_cb, (void *)(intptr_t)FIELD_WEIGHT,
+                                &s_field_tile_value[FIELD_WEIGHT]);
+
+    create_back_tile(scr, 2, 2, keyer_back_btn_cb, NULL);
 
     return scr;
 }

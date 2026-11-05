@@ -39,17 +39,6 @@ How this file works:
 
 ## Tier 2: keyer timing for experienced operators
 
-### Weight (dit/dah ratio)
-
-- Make key-down elements longer or shorter than standard (QMX allows 5–95%
-  with 50% as standard; WinKeyer allows 25–75%). The extra key-down time is
-  taken from the following gap, so overall speed doesn't change. Some
-  operators use this for a "heavier" or "lighter" sound, or to suit a
-  particular rig.
-- Belongs in `components/iambic_keyer`, with host tests. It must also apply
-  to memory playback, and the decoder must still read weighted keying
-  correctly.
-
 ### PTT output with lead-in / tail (semi-QSK hang time)
 
 - A second output, separate from the key line, that switches the

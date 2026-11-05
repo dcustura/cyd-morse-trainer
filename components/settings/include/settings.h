@@ -20,12 +20,15 @@ extern "C" {
 #define SETTINGS_BRIGHTNESS_PCT_MAX 100
 #define SETTINGS_AUTO_SPACE_PCT_MIN 50
 #define SETTINGS_AUTO_SPACE_PCT_MAX 100
+#define SETTINGS_WEIGHT_PCT_MIN IAMBIC_KEYER_WEIGHT_PCT_MIN
+#define SETTINGS_WEIGHT_PCT_MAX IAMBIC_KEYER_WEIGHT_PCT_MAX
 
 #define SETTINGS_DEFAULT_WPM 15
 #define SETTINGS_DEFAULT_KEYMODE IAMBIC_KEYER_MODE_B
 #define SETTINGS_DEFAULT_PADDLE_SWAP false
 #define SETTINGS_DEFAULT_PADDLE_DEBOUNCE true
 #define SETTINGS_DEFAULT_AUTO_SPACE_PCT 100
+#define SETTINGS_DEFAULT_WEIGHT_PCT IAMBIC_KEYER_WEIGHT_PCT_STANDARD
 #define SETTINGS_DEFAULT_TONE_HZ 600
 #define SETTINGS_DEFAULT_VOLUME_PCT 50
 #define SETTINGS_DEFAULT_ENVELOPE_MS 10
@@ -46,6 +49,9 @@ typedef struct {
      * (3/7 units); 100 = disabled. No effect in Straight Key mode. See
      * components/iambic_keyer's iambic_keyer_set_auto_space_pct(). */
     uint8_t auto_space_pct;
+    /* Weight (dit/dah ratio), 50 = standard: see components/iambic_keyer's
+     * iambic_keyer_set_weight_pct(). Also applies to message playback. */
+    uint8_t weight_pct;
     uint16_t tone_hz;
     uint8_t volume_pct;
     uint16_t envelope_ms;
@@ -81,6 +87,9 @@ uint8_t settings_clamp_brightness_pct(uint8_t pct);
 
 /** Clamp an Auto Space percentage to [SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX]. */
 uint8_t settings_clamp_auto_space_pct(uint8_t pct);
+
+/** Clamp a weight percentage to [SETTINGS_WEIGHT_PCT_MIN, SETTINGS_WEIGHT_PCT_MAX]. */
+uint8_t settings_clamp_weight_pct(uint8_t pct);
 
 /** Validate a raw stored key-mode byte, falling back to the default key mode on an out-of-range value. */
 iambic_keyer_mode_t settings_validate_keymode(uint8_t raw);

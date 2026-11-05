@@ -23,6 +23,7 @@ typedef enum {
     KEY_PADDLE_SWAP,
     KEY_PADDLE_DEBOUNCE,
     KEY_AUTO_SPACE_PCT,
+    KEY_WEIGHT_PCT,
     KEY_TONE_HZ,
     KEY_VOLUME_PCT,
     KEY_ENVELOPE_MS,
@@ -40,6 +41,7 @@ static const char *const s_key_names[KEY_COUNT] = {
     [KEY_PADDLE_SWAP] = "paddle_swap",
     [KEY_PADDLE_DEBOUNCE] = "paddle_debounce",
     [KEY_AUTO_SPACE_PCT] = "auto_space_pct",
+    [KEY_WEIGHT_PCT] = "weight_pct",
     [KEY_TONE_HZ] = "tone_hz",
     [KEY_VOLUME_PCT] = "volume_pct",
     [KEY_ENVELOPE_MS] = "envelope_ms",
@@ -131,6 +133,9 @@ static void print_value(const settings_t *s, cli_key_t key)
     case KEY_AUTO_SPACE_PCT:
         printf("auto_space_pct=%u\n", s->auto_space_pct);
         break;
+    case KEY_WEIGHT_PCT:
+        printf("weight_pct=%u\n", s->weight_pct);
+        break;
     case KEY_TONE_HZ:
         printf("tone_hz=%u\n", s->tone_hz);
         break;
@@ -201,6 +206,7 @@ static const struct {
 } s_num_range[KEY_COUNT] = {
     [KEY_WPM] = {SETTINGS_WPM_MIN, SETTINGS_WPM_MAX},
     [KEY_AUTO_SPACE_PCT] = {SETTINGS_AUTO_SPACE_PCT_MIN, SETTINGS_AUTO_SPACE_PCT_MAX},
+    [KEY_WEIGHT_PCT] = {SETTINGS_WEIGHT_PCT_MIN, SETTINGS_WEIGHT_PCT_MAX},
     [KEY_TONE_HZ] = {SETTINGS_TONE_HZ_MIN, SETTINGS_TONE_HZ_MAX},
     [KEY_VOLUME_PCT] = {SETTINGS_VOLUME_PCT_MIN, SETTINGS_VOLUME_PCT_MAX},
     [KEY_ENVELOPE_MS] = {SETTINGS_ENVELOPE_MS_MIN, SETTINGS_ENVELOPE_MS_MAX},
@@ -254,6 +260,10 @@ static int apply_setting(settings_t *s, cli_key_t key, const char *val)
     case KEY_AUTO_SPACE_PCT:
         s->auto_space_pct = (uint8_t)num;
         paddle_input_set_auto_space_pct(s->auto_space_pct);
+        break;
+    case KEY_WEIGHT_PCT:
+        s->weight_pct = (uint8_t)num;
+        paddle_input_set_weight_pct(s->weight_pct);
         break;
     case KEY_TONE_HZ:
         s->tone_hz = (uint16_t)num;

@@ -11,6 +11,7 @@
 #define NVS_KEY_SWAP "swap"
 #define NVS_KEY_DEBOUNCE "pdl_debounce"
 #define NVS_KEY_AUTO_SPACE_PCT "auto_space_pct"
+#define NVS_KEY_WEIGHT_PCT "weight_pct"
 #define NVS_KEY_TONE_HZ "tone_hz"
 #define NVS_KEY_VOLUME_PCT "volume_pct"
 #define NVS_KEY_ENVELOPE_MS "envelope_ms"
@@ -61,6 +62,11 @@ static esp_err_t load_from_nvs(settings_t *out)
     uint8_t raw_auto_space_pct;
     if (nvs_get_u8(handle, NVS_KEY_AUTO_SPACE_PCT, &raw_auto_space_pct) == ESP_OK) {
         out->auto_space_pct = settings_clamp_auto_space_pct(raw_auto_space_pct);
+    }
+
+    uint8_t raw_weight_pct;
+    if (nvs_get_u8(handle, NVS_KEY_WEIGHT_PCT, &raw_weight_pct) == ESP_OK) {
+        out->weight_pct = settings_clamp_weight_pct(raw_weight_pct);
     }
 
     uint16_t raw_tone_hz;
@@ -134,6 +140,7 @@ esp_err_t settings_store_save(const settings_t *in)
     nvs_set_u8(handle, NVS_KEY_SWAP, in->paddle_swap ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_DEBOUNCE, in->paddle_debounce ? 1 : 0);
     nvs_set_u8(handle, NVS_KEY_AUTO_SPACE_PCT, in->auto_space_pct);
+    nvs_set_u8(handle, NVS_KEY_WEIGHT_PCT, in->weight_pct);
     nvs_set_u16(handle, NVS_KEY_TONE_HZ, in->tone_hz);
     nvs_set_u8(handle, NVS_KEY_VOLUME_PCT, in->volume_pct);
     nvs_set_u16(handle, NVS_KEY_ENVELOPE_MS, in->envelope_ms);

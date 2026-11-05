@@ -145,7 +145,9 @@ implemented.
      bar, and Back (left-chevron icon) is just the last tile in the grid,
      sized N×M with N = M or N = M + 1 so tiles stay wide rather than tall
      and narrow.
-   - **Keyer** tile opens a submenu screen with a 3×2 grid of tiles; every
+   - **Keyer** tile opens a submenu screen with a 3×3 grid of tiles (WPM,
+     Key Mode, Paddle Swap/Ring Input; Paddle Debounce, Auto Space, Weight;
+     two empty cells and Back); every
      tile opens a popup to change its value except Paddle Swap and Paddle
      Debounce, which are themselves on/off toggle switches (see below).
      Paddle Swap's tile only appears while Key Mode is Iambic Mode A/B or
@@ -239,6 +241,16 @@ implemented.
        that wouldn't actually apply, though the real stored value is
        untouched and takes effect again as soon as a different Key Mode
        is selected.
+     - **Weight** (25–75%, default 50%): the dit/dah ratio. 50% is
+       standard timing. Above it, every dit and dah is lengthened by
+       `(weight − 50) × 2`% of a unit and the gap after it shortened by
+       the same amount, so overall speed doesn't change (75%: a dit is
+       1.5 units on and the element gap 0.5 units); below 50% the reverse.
+       Auto Space counts the shortened (or lengthened) gaps as standard.
+       Its popup has `-`/`+` buttons, stepping by 1 point (hold to
+       repeat). It also applies to message playback. Like Auto Space it
+       has no effect in Straight Key mode, where its tile is greyed out;
+       message playback stays weighted there.
    - **Sidetone** tile opens a submenu screen with a 2×2 grid of tiles (one
      cell left empty), each opening a popup to change just that value:
      - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while
@@ -462,7 +474,7 @@ implemented.
     output before sending `get`/`set` commands.
 - Keys, matching the Settings screen's Keyer/Sidetone/Display submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
   `paddle_swap`, `paddle_debounce`, `straight_ring_input`,
-  `auto_space_pct` (50–100), `tone_hz`, `volume_pct`, `envelope_ms`,
+  `auto_space_pct` (50–100), `weight_pct` (25–75), `tone_hz`, `volume_pct`, `envelope_ms`,
   `brightness_pct`, `brightness_auto`, `send_large_text`, and `on_air` (all
   booleans as `on`/`off`). `get on_air` shows the saved boot value, which
   can differ from the live state (`tx`); `set on_air` changes both. `straight_ring_input` can
@@ -517,7 +529,7 @@ implemented.
   dit/dah/gap timing is read directly, unmodified), so Auto Space has no
   effect there.
 - **Persistence**: WPM, key mode, paddle swap, paddle debounce, ring
-  input, Auto Space percentage, sidetone frequency, sidetone volume,
+  input, Auto Space percentage, weight, sidetone frequency, sidetone volume,
   sidetone envelope, screen brightness, brightness auto/manual mode,
   Send screen text size, the on-air setting, and touch calibration survive power loss. On boot, the last-saved values are
   loaded and applied before the operator can key anything (or interact
@@ -525,7 +537,7 @@ implemented.
   NVS are debounced by a couple of seconds after the last edit, rather
   than on every tap/step, to reduce flash wear.
 - **Defaults** (first boot / no saved settings): 15 WPM, Iambic Mode B, no
-  paddle swap, paddle debounce on, ring input off, Auto Space off (100%), 600 Hz
+  paddle swap, paddle debounce on, ring input off, Auto Space off (100%), 50% weight, 600 Hz
   sidetone, 50% sidetone volume, 10 ms sidetone envelope, 100% brightness,
   brightness auto mode off, Small Send screen text size, off-air. No default touch calibration
   exists — it must be created via the first-boot calibration flow.
@@ -549,11 +561,13 @@ implemented.
     prosign counting as its 4 characters. Names follow the same rules
     without prosigns.
 - **Playing memories**:
-  - A message is sent at the current keyer WPM with standard PARIS
-    timing: dit 1 unit, dah 3, element gap 1, character gap 3, word gap 7.
-    A prosign's letters run together with element gaps only. A WPM change
-    applies from the next element or gap. Auto Space, Paddle Swap and the
-    key mode don't affect it.
+  - A message is sent at the current keyer WPM with PARIS timing: dit 1
+    unit, dah 3, element gap 1, character gap 3, word gap 7, adjusted by
+    the Weight setting (each element longer or shorter, the gap after it
+    shorter or longer by the same). A prosign's letters run together with
+    element gaps only. A WPM or weight change applies from the next
+    element or gap. Auto Space, Paddle Swap and the key mode don't affect
+    it.
   - While a message plays it replaces the keyer as the key source, so the
     sidetone, key output, keying indicator dot and decoder all follow it,
     and the sent text appears decoded on the Send screen. A message

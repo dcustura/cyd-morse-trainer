@@ -228,8 +228,10 @@ void paddle_input_start(QueueHandle_t decoded_char_queue, const settings_t *sett
 {
     iambic_keyer_init(&s_keyer, settings->keymode, settings->wpm);
     iambic_keyer_set_auto_space_pct(&s_keyer, settings->auto_space_pct);
+    iambic_keyer_set_weight_pct(&s_keyer, settings->weight_pct);
     morse_codec_init(&s_codec, settings->wpm);
     message_player_init(&s_player, settings->wpm);
+    message_player_set_weight_pct(&s_player, settings->weight_pct);
     s_player_lock = xSemaphoreCreateMutex();
     ESP_ERROR_CHECK(s_player_lock != NULL ? ESP_OK : ESP_ERR_NO_MEM);
     s_paddle_swap = settings->paddle_swap;
@@ -347,6 +349,14 @@ bool paddle_input_is_on_air(void)
 void paddle_input_set_auto_space_pct(uint8_t pct)
 {
     iambic_keyer_set_auto_space_pct(&s_keyer, pct);
+}
+
+void paddle_input_set_weight_pct(uint8_t pct)
+{
+    iambic_keyer_set_weight_pct(&s_keyer, pct);
+    player_lock();
+    message_player_set_weight_pct(&s_player, pct);
+    player_unlock();
 }
 
 iambic_keyer_mode_t paddle_input_get_mode(void)

@@ -110,3 +110,15 @@ How this file works:
 - [ ] While a `send` or CLI `mem play` message plays, the Memories panel's
       Repeat tile is greyed out and does nothing, the sending strip shows
       the text, and no tile is highlighted as playing.
+
+## Weight (`fc6bfac`, `a4a26f9`, and "Add the Weight setting…")
+
+- [ ] Settings > Keyer is a 3×3 grid that fits and reads well: WPM, Key
+      Mode, Paddle Swap; Paddle Debounce, Auto Space, Weight; two empty
+      cells and Back. Back still returns to the right screen (Settings, or
+      the Send screen when entered from its WPM label).
+- [ ] The Weight popup steps 25–75% by 1 (hold to repeat); its tile is
+      greyed out in Straight Key mode.
+- [ ] By ear (sidetone up): weight 75% sounds heavier and 25% lighter than
+      50% at the same WPM, with paddle keying; and the Send screen still
+      decodes paddle keying correctly at both 25% and 75%.
