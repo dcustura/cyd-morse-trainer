@@ -248,9 +248,9 @@ implemented.
        1.5 units on and the element gap 0.5 units); below 50% the reverse.
        Auto Space counts the shortened (or lengthened) gaps as standard.
        Its popup has `-`/`+` buttons, stepping by 1 point (hold to
-       repeat). It also applies to message playback. Like Auto Space it
-       has no effect in Straight Key mode, where its tile is greyed out;
-       message playback stays weighted there.
+       repeat). It also applies to message playback. It doesn't change
+       hand keying in Straight Key mode, but its tile stays enabled there
+       since message playback is still weighted.
    - **Sidetone** tile opens a submenu screen with a 2×2 grid of tiles (one
      cell left empty), each opening a popup to change just that value:
      - **Pitch** (300–1200 Hz): pitch of the audible sidetone played while

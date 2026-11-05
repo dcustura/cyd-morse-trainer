@@ -175,11 +175,12 @@ static void refresh_tile_labels(void)
      * with dah via Ring Input below. So the Keyer submenu's grid swaps the
      * Paddle Swap tile out for a Ring Input tile, and forces Paddle
      * Debounce's switch on and disabled, whenever Key Mode is Straight
-     * Key. Auto Space and Weight are iambic_keyer encoder features with
-     * nothing to hook into in Straight Key's direct passthrough, so their
-     * tiles are disabled there too (their stored values are untouched and
-     * take effect again as soon as a different Key Mode is selected;
-     * Weight still applies to message playback meanwhile). */
+     * Key. Auto Space is an iambic_keyer encoder feature with nothing to
+     * hook into in Straight Key's direct passthrough, so its tile is
+     * disabled there too (its stored value is untouched and takes effect
+     * again as soon as a different Key Mode is selected). Weight stays
+     * enabled: it doesn't change hand keying, but it still weights message
+     * playback in Straight Key mode. */
     bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
 
     set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
@@ -192,11 +193,9 @@ static void refresh_tile_labels(void)
     if (straight_key) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
         lv_obj_add_state(s_auto_space_tile, LV_STATE_DISABLED);
-        lv_obj_add_state(s_weight_tile, LV_STATE_DISABLED);
     } else {
         lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);
         lv_obj_remove_state(s_auto_space_tile, LV_STATE_DISABLED);
-        lv_obj_remove_state(s_weight_tile, LV_STATE_DISABLED);
     }
 
     set_switch_checked(s_text_size_switch, s_current_settings.send_large_text);

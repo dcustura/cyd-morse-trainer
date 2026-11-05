@@ -117,8 +117,8 @@ How this file works:
       Mode, Paddle Swap; Paddle Debounce, Auto Space, Weight; two empty
       cells and Back. Back still returns to the right screen (Settings, or
       the Send screen when entered from its WPM label).
-- [ ] The Weight popup steps 25–75% by 1 (hold to repeat); its tile is
-      greyed out in Straight Key mode.
+- [ ] The Weight popup steps 25–75% by 1 (hold to repeat); its tile stays
+      enabled in Straight Key mode (Auto Space's is greyed out).
 - [ ] By ear (sidetone up): weight 75% sounds heavier and 25% lighter than
       50% at the same WPM, with paddle keying; and the Send screen still
       decodes paddle keying correctly at both 25% and 75%.
