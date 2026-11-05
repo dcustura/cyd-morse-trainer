@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cli.h"
 #include "memory_store.h"
 #include "message_player.h"
 #include "paddle_input.h"
@@ -248,6 +249,11 @@ int cli_send_cmd(int argc, char **argv)
 
     if (argc < 2) {
         printf("ERR usage: send <text>\n");
+        return 1;
+    }
+    if (argc >= CLI_MAX_ARGS - 1) {
+        /* The console may have dropped words past this point. */
+        printf("ERR too many words (max %d unquoted): quote the text\n", CLI_MAX_ARGS - 3);
         return 1;
     }
     /* Unquoted words arrive as separate arguments: join them with one

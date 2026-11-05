@@ -446,7 +446,8 @@ implemented.
     message memory: started at once, or queued behind a playing message
     (see Playing memories under Behavior details), and cancelled by a
     paddle touch or `mem stop`. Words may be given unquoted
-    (`send CQ CQ DE X <AR>`) or quoted. The text is validated and
+    (`send CQ CQ DE X <AR>`, up to 29 words; more is refused with `ERR`,
+    since the console would silently drop the rest) or quoted. The text is validated and
     normalized like a memory's text (up to 80 characters, prosigns in
     `<..>`). Prints `send=started` or `send=queued`; `ERR` for invalid
     text, nothing to send, or a full queue. Sending the same text again
