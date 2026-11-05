@@ -18,7 +18,12 @@ static const char *TAG = "macro_vars";
 
 static macro_var_t s_vars[MACRO_VARS_MAX]; /* sorted by name */
 static size_t s_count;
+/* s_lock guards s_vars/s_count and is only held briefly, never across a
+ * flash write, so a tile tap expanding a message doesn't wait on one.
+ * s_write_lock serializes the writers, so the copy a writer edits and
+ * saves can't go stale before it's swapped in. */
 static SemaphoreHandle_t s_lock;
+static SemaphoreHandle_t s_write_lock;
 
 static void lock(void)
 {
@@ -28,6 +33,22 @@ static void lock(void)
 static void unlock(void)
 {
     xSemaphoreGive(s_lock);
+}
+
+/* Start an edit: take the write lock and copy the current variables. */
+static size_t begin_write(macro_var_t vars[MACRO_VARS_MAX])
+{
+    xSemaphoreTake(s_write_lock, portMAX_DELAY);
+    lock();
+    size_t count = s_count;
+    memcpy(vars, s_vars, sizeof(s_vars));
+    unlock();
+    return count;
+}
+
+static void end_write(void)
+{
+    xSemaphoreGive(s_write_lock);
 }
 
 /* True if name and value are what macro_vars_set() accepts, unchanged by
@@ -103,7 +124,8 @@ static void decode_blob(const uint8_t *blob, size_t len)
 esp_err_t macro_vars_init(void)
 {
     s_lock = xSemaphoreCreateMutex();
-    if (s_lock == NULL) {
+    s_write_lock = xSemaphoreCreateMutex();
+    if (s_lock == NULL || s_write_lock == NULL) {
         return ESP_ERR_NO_MEM;
     }
     nvs_handle_t handle;
@@ -157,13 +179,16 @@ static esp_err_t save(const macro_var_t *vars, size_t count)
     return err;
 }
 
-/* Save the edited copy and, only if that worked, make it current. */
+/* Save the edited copy and, only if that worked, make it current. Called
+ * between begin_write() and end_write(). */
 static esp_err_t commit(const macro_var_t *vars, size_t count)
 {
     esp_err_t err = save(vars, count);
     if (err == ESP_OK) {
+        lock();
         memcpy(s_vars, vars, count * sizeof(s_vars[0]));
         s_count = count;
+        unlock();
     }
     return err;
 }
@@ -174,9 +199,7 @@ esp_err_t macro_vars_set(const char *name, const char *value)
         return ESP_ERR_INVALID_ARG;
     }
     macro_var_t vars[MACRO_VARS_MAX];
-    lock();
-    size_t count = s_count;
-    memcpy(vars, s_vars, sizeof(vars));
+    size_t count = begin_write(vars);
     bool found;
     size_t i = find(vars, count, name, &found);
     esp_err_t err = ESP_OK;
@@ -193,16 +216,14 @@ esp_err_t macro_vars_set(const char *name, const char *value)
         strcpy(vars[i].value, value);
         err = commit(vars, count);
     }
-    unlock();
+    end_write();
     return err;
 }
 
 esp_err_t macro_vars_clear(const char *name)
 {
     macro_var_t vars[MACRO_VARS_MAX];
-    lock();
-    size_t count = s_count;
-    memcpy(vars, s_vars, sizeof(vars));
+    size_t count = begin_write(vars);
     bool found;
     size_t i = find(vars, count, name, &found);
     esp_err_t err = ESP_ERR_NOT_FOUND;
@@ -210,15 +231,16 @@ esp_err_t macro_vars_clear(const char *name)
         memmove(&vars[i], &vars[i + 1], (count - i - 1) * sizeof(vars[0]));
         err = commit(vars, count - 1);
     }
-    unlock();
+    end_write();
     return err;
 }
 
 esp_err_t macro_vars_reset(void)
 {
-    lock();
-    esp_err_t err = commit(s_vars, 0);
-    unlock();
+    macro_var_t vars[MACRO_VARS_MAX];
+    begin_write(vars);
+    esp_err_t err = commit(vars, 0);
+    end_write();
     return err;
 }
 
