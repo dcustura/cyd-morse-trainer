@@ -335,10 +335,6 @@ static lv_obj_t *create_grid_screen(bool three_columns, bool three_rows)
     return scr;
 }
 
-static lv_obj_t *create_submenu_screen(bool three_columns)
-{
-    return create_grid_screen(three_columns, false);
-}
 
 static void test_tone_stop_cb(lv_timer_t *timer)
 {
@@ -686,7 +682,7 @@ static void create_back_tile(lv_obj_t *grid, int32_t col, int32_t row, lv_event_
 static lv_obj_t *create_touch_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                        lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(false);
+    lv_obj_t *scr = create_grid_screen(false, false);
 
     create_tile(scr, "Calibrate", 0, 0, calibrate_btn_cb, calibration_screen, NULL);
     create_tile(scr, "Verify\nCalibration", 1, 0, nav_btn_cb, touch_test_screen, NULL);
@@ -726,7 +722,7 @@ static lv_obj_t *create_keyer_submenu(void)
 static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *calibration_screen,
                                          lv_obj_t *touch_test_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(false);
+    lv_obj_t *scr = create_grid_screen(false, false);
 
     create_tile(scr, "Brightness", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_BRIGHTNESS,
                 &s_field_tile_value[FIELD_BRIGHTNESS]);
@@ -744,7 +740,7 @@ static lv_obj_t *create_display_submenu(lv_obj_t *settings_screen, lv_obj_t *cal
 
 static lv_obj_t *create_system_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(false);
+    lv_obj_t *scr = create_grid_screen(false, false);
 
     /* Read-only: the app version baked into the image (PROJECT_VER -- the
      * release tag for CI builds via version.txt, `git describe` output for
@@ -766,7 +762,7 @@ static lv_obj_t *create_system_submenu(lv_obj_t *settings_screen)
 
 static lv_obj_t *create_sidetone_submenu(lv_obj_t *settings_screen)
 {
-    lv_obj_t *scr = create_submenu_screen(false);
+    lv_obj_t *scr = create_grid_screen(false, false);
 
     create_tile(scr, "Pitch", 0, 0, numeric_tile_cb, (void *)(intptr_t)FIELD_TONE_HZ,
                 &s_field_tile_value[FIELD_TONE_HZ]);
@@ -786,7 +782,7 @@ lv_obj_t *ui_settings_create(lv_obj_t *menu_screen, lv_obj_t *calibration_screen
     s_current_settings = *initial;
 
     /* Same grid as the 3-column submenus, just with a refresh on load. */
-    lv_obj_t *scr = create_submenu_screen(true);
+    lv_obj_t *scr = create_grid_screen(true, false);
     s_settings_screen = scr;
     lv_obj_add_event_cb(scr, settings_screen_loaded_cb, LV_EVENT_SCREEN_LOADED, NULL);
 
