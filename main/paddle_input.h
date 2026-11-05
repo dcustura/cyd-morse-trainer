@@ -28,13 +28,13 @@ void paddle_input_set_mode(iambic_keyer_mode_t mode);
 void paddle_input_set_wpm(uint16_t wpm);
 void paddle_input_set_swap(bool swap);
 
-/* Enables/disables debounce while in paddle (Mode A/B) keying; Straight Key
- * mode is always debounced regardless of this setting. */
+/* Enables/disables debounce in Iambic A/B and Ultimatic keying; Straight
+ * Key and Bug modes are always debounced regardless of this setting. */
 void paddle_input_set_debounce(bool debounce);
 
 /**
  * Auto Space: in Iambic Mode A/B and Ultimatic (no effect in Straight
- * Key), withholds starting a new element after too short a pause so the
+ * Key or Bug), withholds starting a new element after too short a pause so the
  * actual generated signal is correctly spaced (100 = disabled, an element
  * always starts the instant a paddle is touched, however short the
  * preceding pause; lower percentages withhold on a correspondingly
@@ -44,8 +44,8 @@ void paddle_input_set_debounce(bool debounce);
 void paddle_input_set_auto_space_pct(uint8_t pct);
 
 /**
- * Weight (dit/dah ratio, 50 = standard) for the keyer (Iambic A/B and
- * Ultimatic) and message playback. See components/iambic_keyer's
+ * Weight (dit/dah ratio, 50 = standard) for the keyer (Iambic A/B,
+ * Ultimatic, and Bug mode's automatic dits) and message playback. See components/iambic_keyer's
  * iambic_keyer_set_weight_pct().
  */
 void paddle_input_set_weight_pct(uint8_t pct);

@@ -58,7 +58,7 @@ one built into the QRP Labs QMX, while keeping the trainer.
 ├── main/                    # app entry point, LVGL UI screens, display/touch/paddle glue
 └── components/
     ├── morse_codec/         # Morse element sequence -> character decoding
-    ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, Ultimatic, straight key)
+    ├── iambic_keyer/        # paddle-to-element timing/state machine (Mode A/B, Ultimatic, Bug, straight key)
     ├── message_player/      # message memory playback: text to key timing, repeats, queue
     ├── settings/            # persisted trainer settings (WPM, key mode, paddle swap, tone, brightness, ...)
     ├── touch_calibration/   # touchscreen calibration math

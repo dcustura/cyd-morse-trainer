@@ -47,7 +47,7 @@ to," it belongs in `main/`.
 |---|---|
 | `debouncer` | Generic consecutive-sample debounce filter (used for paddle/key contacts). |
 | `message_player` | Message memory playback: sends normalized message text as key-down/key-up timing at the current WPM, with repeat count/pause, a queue of up to 6 messages, stop, and progress status for the sending strip. Uses `morse_codec`'s `morse_text`. |
-| `iambic_keyer` | Paddle-to-element state machine: Iambic Mode A/B, Ultimatic, and straight-key passthrough. Given raw dit/dah contact state and a timestamp, decides when dits/dahs start and stop. Also owns Auto Space: in Iambic/Ultimatic, `iambic_keyer_set_auto_space_pct()` makes it withhold starting a new element after too short a pause, so the signal it generates is itself correctly spaced rather than relying on lenient decoding. |
+| `iambic_keyer` | Paddle-to-element state machine: Iambic Mode A/B, Ultimatic, Bug (automatic dits, hand-keyed dahs), and straight-key passthrough. Also owns Weight (`iambic_keyer_set_weight_pct()`), shared with `message_player`. Given raw dit/dah contact state and a timestamp, decides when dits/dahs start and stop. Also owns Auto Space: in Iambic/Ultimatic, `iambic_keyer_set_auto_space_pct()` makes it withhold starting a new element after too short a pause, so the signal it generates is itself correctly spaced rather than relying on lenient decoding. |
 | `morse_codec` | Timing classifier + decode tree: given key-down/key-up transitions and timestamps, classifies dit vs. dah and gap vs. character-gap vs. word-gap, and turns finished element sequences into characters or prosigns. Also `morse_text`: validates/normalizes message text (`<AR>`-style prosigns) and walks it as per-character dit/dah patterns for sending. |
 | `settings` | The `settings_t` struct, its field bounds/defaults, and pure clamp/validate helpers — no I/O. |
 | `touch_calibration` | 5-point touch calibration math (compute from raw taps, apply to map a raw sample to a screen coordinate) — no I/O, no display driver calls. |
@@ -245,7 +245,7 @@ is what makes it testable at all.
 | I want to change... | Start in |
 |---|---|
 | How dits/dahs decode into characters, prosign handling, timing thresholds | `components/morse_codec/` |
-| Iambic Mode A/B/Ultimatic keying behavior, squeeze/latch logic | `components/iambic_keyer/` |
+| Iambic Mode A/B/Ultimatic/Bug keying behavior, squeeze/latch logic, weight | `components/iambic_keyer/` |
 | A new setting (field, range, default) | `components/settings/include/settings.h` first, then `main/settings_store.c` (persistence) and `main/ui_settings.c` (UI) and `main/cli.c` (CLI key) |
 | Send screen appearance/behavior | `main/ui_send.c` |
 | Settings screen tiles/popups/navigation | `main/ui_settings.c` |

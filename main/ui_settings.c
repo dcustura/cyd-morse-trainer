@@ -178,11 +178,12 @@ static void refresh_tile_labels(void)
      * Paddle Swap tile out for a Ring Input tile, and forces Paddle
      * Debounce's switch on and disabled, whenever Key Mode is Straight
      * Key. Auto Space is an iambic_keyer encoder feature with nothing to
-     * hook into in Straight Key's direct passthrough, so its tile is
-     * disabled there too (its stored value is untouched and takes effect
-     * again as soon as a different Key Mode is selected). Weight stays
-     * enabled: it doesn't change hand keying, but it still weights message
-     * playback in Straight Key mode. */
+     * hook into in Straight Key's direct passthrough or Bug mode's
+     * hand-timed dahs, so its tile is disabled in both (its stored value
+     * is untouched and takes effect again as soon as a different Key Mode
+     * is selected); Bug mode also forces Paddle Debounce on, as its dah
+     * contact keys directly. Weight stays enabled: it doesn't change hand
+     * keying, but it still weights message playback (and Bug's dits). */
     bool straight_key = s_current_settings.keymode == IAMBIC_KEYER_MODE_STRAIGHT;
 
     set_switch_checked(s_swap_switch, s_current_settings.paddle_swap);
