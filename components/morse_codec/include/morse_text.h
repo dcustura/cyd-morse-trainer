@@ -38,7 +38,7 @@ typedef enum {
     MORSE_TEXT_ERR_UNCLOSED_PROSIGN, /* '<' with no matching '>' */
     MORSE_TEXT_ERR_EMPTY_PROSIGN,    /* "<>" */
     MORSE_TEXT_ERR_UNKNOWN_PROSIGN,  /* bracketed text that isn't one of the eight */
-    MORSE_TEXT_ERR_UNCLOSED_VARIABLE, /* '{' with no matching '}' */
+    MORSE_TEXT_ERR_UNCLOSED_VARIABLE, /* '{' with no '}' before the end or the next '{' */
     MORSE_TEXT_ERR_BAD_VARIABLE,      /* "{}", or a name that isn't 1-6 letters/digits */
     MORSE_TEXT_ERR_UNSET_VARIABLE,    /* morse_text_expand(): no value for a variable */
 } morse_text_result_t;

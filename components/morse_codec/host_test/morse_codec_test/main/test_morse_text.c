@@ -190,7 +190,14 @@ TEST(morse_text, normalize_rejects_malformed_variables)
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE,
                       morse_text_normalize("{MY CL}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE, morse_text_normalize("{A/B}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
-    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE, morse_text_normalize("{{A}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNCLOSED_VARIABLE,
+                      morse_text_normalize("{{A}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    /* An unclosed '{' followed later by another variable is reported as
+     * unclosed, at the first '{', not as a long bad name. */
+    pos = 99;
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNCLOSED_VARIABLE,
+                      morse_text_normalize("DE {CALL K {X}", MSG_FLAGS, s_out, sizeof(s_out), &pos));
+    TEST_ASSERT_EQUAL(3, pos);
 }
 
 TEST(morse_text, normalize_length_limit_counts_variable_names_as_written)

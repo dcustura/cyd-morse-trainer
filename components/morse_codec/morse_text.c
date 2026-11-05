@@ -64,8 +64,10 @@ bool morse_text_normalize_var_name(const char *in, char out[MORSE_TEXT_VAR_NAME_
  * uppercase name into name and its length including the braces into *len. */
 static morse_text_result_t parse_variable(const char *text, char name[MORSE_TEXT_VAR_NAME_MAX + 1], size_t *len)
 {
-    const char *close = strchr(text + 1, '}');
-    if (close == NULL) {
+    /* A '{' before the next '}' means this one was never closed (as in
+     * "{CALL K {X}"), not that its name runs on to that '}'. */
+    const char *close = strpbrk(text + 1, "{}");
+    if (close == NULL || *close == '{') {
         return MORSE_TEXT_ERR_UNCLOSED_VARIABLE;
     }
     size_t name_len = (size_t)(close - (text + 1));
