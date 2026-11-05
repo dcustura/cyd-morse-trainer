@@ -450,8 +450,9 @@ implemented.
     since the console would silently drop the rest) or quoted. The text is validated and
     normalized like a memory's text (up to 80 characters, prosigns in
     `<..>`). Prints `send=started` or `send=queued`; `ERR` for invalid
-    text, nothing to send, or a full queue. Sending the same text again
-    queues another copy.
+    text, text too long, nothing to send, too many unquoted words, or a
+    full queue. A whole command line is limited to 256 characters by the
+    console. Sending the same text again queues another copy.
   - `tx [on|off]` — shows (`tx=on|off`) or changes the live on-air state,
     like the touchscreen's quick toggles: not saved, so the next boot
     returns to the saved `on_air` setting.
