@@ -284,6 +284,8 @@ static const char *mode_name(iambic_keyer_mode_t mode)
         return "Straight";
     case IAMBIC_KEYER_MODE_ULTIMATIC:
         return "Ultimatic";
+    case IAMBIC_KEYER_MODE_BUG:
+        return "Bug";
     default:
         return "?";
     }

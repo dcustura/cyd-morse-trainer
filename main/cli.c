@@ -94,6 +94,8 @@ static const char *keymode_to_str(iambic_keyer_mode_t mode)
         return "straight";
     case IAMBIC_KEYER_MODE_ULTIMATIC:
         return "ultimatic";
+    case IAMBIC_KEYER_MODE_BUG:
+        return "bug";
     default:
         return "?";
     }
@@ -109,6 +111,8 @@ static bool keymode_from_str(const char *s, iambic_keyer_mode_t *out)
         *out = IAMBIC_KEYER_MODE_STRAIGHT;
     } else if (strcmp(s, "ultimatic") == 0) {
         *out = IAMBIC_KEYER_MODE_ULTIMATIC;
+    } else if (strcmp(s, "bug") == 0) {
+        *out = IAMBIC_KEYER_MODE_BUG;
     } else {
         return false;
     }

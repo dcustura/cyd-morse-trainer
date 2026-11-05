@@ -62,12 +62,6 @@ How this file works:
   key-down, and extra time added to the first element of a transmission
   only.
 
-### Bug mode
-
-- Emulate a semi-automatic "bug" key, as in K3NG: the dit paddle makes
-  automatic dits, and the dah paddle is keyed manually like a straight key.
-  This would be a new key mode alongside Iambic A/B, Ultimatic and Straight.
-
 ## Tier 3: contest and computer integration
 
 ### Macros: callsign and serial numbers

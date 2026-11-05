@@ -122,3 +122,14 @@ How this file works:
 - [ ] By ear (sidetone up): weight 75% sounds heavier and 25% lighter than
       50% at the same WPM, with paddle keying; and the Send screen still
       decodes paddle keying correctly at both 25% and 75%.
+
+## Bug mode
+
+- [ ] Settings > Keyer > Key Mode shows five modes plus Close; picking Bug
+      shows `Bug` on the Keyer tile and the Send screen's mode label, and
+      greys out Auto Space.
+- [ ] With a paddle in Bug mode: holding dit sends automatic dits at the
+      set WPM; dah keys for exactly as long as it's held; a dah pressed
+      during a dit starts after that dit; the Send screen decodes
+      bug-style sending (e.g. hand-timed dahs of about 3 dits).
+- [ ] Paddle Swap swaps which lever is the automatic one.

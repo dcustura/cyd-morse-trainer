@@ -154,11 +154,11 @@ implemented.
      takes its place in the grid instead (see below):
      - **WPM** (words per minute, 5–40): controls dit/dah/gap timing. Its
        popup has `-`/`+` buttons (press-and-hold to repeat).
-     - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key, or
-       Ultimatic. Its popup lists all four as a 3-column × 2-row grid of
-       finger-sized buttons ("Mode A"/"Mode B"/"Straight"/"Ultimatic",
-       with "Close" filling the last cell); tapping one selects it
-       immediately.
+     - **Key mode**: Iambic Mode A, Iambic Mode B, Straight Key,
+       Ultimatic, or Bug. Its popup lists all five as a 3-column × 2-row
+       grid of finger-sized buttons ("Mode A"/"Mode B"/"Straight"/
+       "Ultimatic"/"Bug", with "Close" filling the last cell); tapping one
+       selects it immediately.
        - Iambic modes use both paddle GPIOs, alternating dit/dah while
          both are held ("squeezing"). Briefly tapping the opposite paddle
          while the primary paddle is still held (e.g. dit-dah-dit)
@@ -183,6 +183,15 @@ implemented.
          and inserts that tap once, the same squeeze-insert behavior as
          Iambic — but unlike Mode B, nothing is remembered once both
          paddles are released; there is no full-release memory.
+       - Bug mode emulates a semi-automatic "bug" key: holding the dit
+         paddle sends automatic dits at the current WPM (weighted, like
+         the other paddle modes), while the dah paddle keys directly for
+         as long as it's held, like a straight key, so dahs are timed by
+         hand. A dah touched during a dit waits until that dit and its
+         trailing gap have finished; the dit paddle is ignored while dah is
+         held, and a dit starts as soon as dah is released if dit is still
+         held. Paddle Swap and Paddle Debounce apply as in the iambic
+         modes; Auto Space doesn't (its tile is greyed out).
      - **Paddle swap**: swaps which physical paddle lever is treated as
        dit vs dah, for operators who prefer the opposite orientation. Like
        Paddle Debounce below, it has no popup: the tile is itself a toggle
@@ -234,7 +243,8 @@ implemented.
        started to a standard length, it never slows down an element the
        operator is actively sending. Like Paddle Debounce, it has no
        effect in Straight Key mode (which has no automatic element timing
-       for it to act on — see above); while Key Mode is Straight Key, its
+       for it to act on — see above), nor in Bug mode (whose dahs are
+       timed by hand); while Key Mode is Straight Key or Bug, its
        tile instead shows greyed out/non-tappable (`LV_STATE_DISABLED`)
        rather than displaying or letting the operator change a setting
        that wouldn't actually apply, though the real stored value is
@@ -471,7 +481,7 @@ implemented.
   - `log <none|error|warn|info|debug|verbose>` — sets the runtime log
     verbosity for every module, so a script can quiet interleaved log
     output before sending `get`/`set` commands.
-- Keys, matching the Settings screen's Keyer/Sidetone/Display submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`),
+- Keys, matching the Settings screen's Keyer/Sidetone/Display submenus: `wpm`, `keymode` (`a`/`b`/`straight`/`ultimatic`/`bug`),
   `paddle_swap`, `paddle_debounce`, `straight_ring_input`,
   `auto_space_pct` (50–100), `weight_pct` (25–75), `tone_hz`, `volume_pct`, `envelope_ms`,
   `brightness_pct`, `brightness_auto`, `send_large_text`, and `on_air` (all

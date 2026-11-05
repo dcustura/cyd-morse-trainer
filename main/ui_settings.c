@@ -124,6 +124,8 @@ static const char *keymode_text(iambic_keyer_mode_t mode)
         return "Straight";
     case IAMBIC_KEYER_MODE_ULTIMATIC:
         return "Ultimatic";
+    case IAMBIC_KEYER_MODE_BUG:
+        return "Bug";
     default:
         return "?";
     }
@@ -192,9 +194,14 @@ static void refresh_tile_labels(void)
     set_switch_checked(s_debounce_switch, straight_key || s_current_settings.paddle_debounce);
     if (straight_key) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
-        lv_obj_add_state(s_auto_space_tile, LV_STATE_DISABLED);
     } else {
         lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);
+    }
+    /* Bug mode's dahs are hand-timed, so Auto Space doesn't apply there
+     * either. */
+    if (straight_key || s_current_settings.keymode == IAMBIC_KEYER_MODE_BUG) {
+        lv_obj_add_state(s_auto_space_tile, LV_STATE_DISABLED);
+    } else {
         lv_obj_remove_state(s_auto_space_tile, LV_STATE_DISABLED);
     }
 
@@ -490,6 +497,7 @@ static void keymode_tile_cb(lv_event_t *e)
         {"Mode B", IAMBIC_KEYER_MODE_B},
         {"Straight", IAMBIC_KEYER_MODE_STRAIGHT},
         {"Ultimatic", IAMBIC_KEYER_MODE_ULTIMATIC},
+        {"Bug", IAMBIC_KEYER_MODE_BUG},
     };
 
     for (size_t i = 0; i < sizeof(options) / sizeof(options[0]); i++) {
