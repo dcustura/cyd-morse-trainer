@@ -29,57 +29,11 @@ How this file works:
   `mem tile 1 21` … `mem tile 6 26`. Afterwards, `mem clear 21` …
   `mem clear 28` and reassign the tiles.
 
-## Popups no longer hang the UI (LVGL memory pool raised to 96 KB)
-
-- [ ] Every Settings popup opens and closes without the screen freezing:
-      Keyer (WPM, Key Mode, Auto Space, Weight), Sidetone (Pitch, Volume,
-      Smoothing), Display (Brightness), and Reset to Defaults (answer No).
-      Also the Memories panel's picker and Repeat popup, and Help's tabs.
-      Verified over serial for the Keyer popups with simulated taps; boot
-      log shows `LVGL memory: ~39000 of 91172 bytes free`.
-
-## Message memories panel (`f36b0e8`, `a6f4be1`)
-
-- [ ] Tap a tile: its memory plays; the tile turns amber with `▶`.
-- [ ] Tap another tile while one plays: it queues, showing its queue
-      position (`1`, `2`, …) in the corner. Tapping the playing or a queued
-      tile does nothing.
-- [ ] A tile assigned to an empty memory (e.g. `mem tile 6 30` with
-      memory 30 empty) shows `#30 (empty)` and a tap does nothing.
-- [ ] Long-press a tile: the memory picker opens (None row, 32 memories,
-      current one highlighted, Cancel). Picking a row reassigns the tile and
-      survives a reboot. Long-press is ignored on the playing/queued tile.
-- [ ] Repeat tile: greyed until a tile has played; tap toggles
-      `Repeat: ON/OFF` for the current tile with the behavior in the spec.
-- [ ] Repeat tile long-press: popup with Count (0 = "No limit") and Pause
-      `-`/`+`, hold to repeat, "Memory defaults", Close; changes apply at
-      once to the playing message.
-- [ ] Shorten the Pause in the popup while a repeat pause is running past
-      its new end: the next send starts at once and is actually keyed.
-- [ ] Stop tile stops playback and clears the queue.
-- [ ] Sending strip: text scrolls with the current character highlighted
-      amber; progress `2/5`, loop icon for count 0, seconds countdown during
-      a pause; empty when idle.
-- [ ] `Queue full` notice: with memory 21 playing, queue six others from
-      the CLI (`mem play 23` … `mem play 28`), then tap tile 2: the strip
-      shows `Queue full` for 2 s. (Tiles alone can't fill the queue: six
-      tiles give at most one playing plus five queued.)
-- [ ] Back returns to the Send screen with playback continuing; the sent
-      text appears decoded there.
-- [ ] Touching a paddle or the key during playback cancels it at once, the
-      touch isn't keyed, and input resumes once both paddles are released.
-- [ ] Tap a tile right after keying something (paddles released): the
-      message starts after a clean word gap, not merged with your last
-      element or character.
-
 ## Sidetone sharing (`91c1ad8`, `d4bda65`)
 
-- [ ] While a message plays, the Settings > Sidetone "Test" button and
-      the Morse Reference characters do nothing.
 - [ ] Morse Reference playing a character when a message starts (CLI
       `mem play`): no stuck tone, and the message is heard cleanly from its
       next element.
-- [ ] Help's Back while a message plays doesn't cut the message's tone.
 
 ## On-air / off-air (`7ac7e25`, `beb599a`)
 

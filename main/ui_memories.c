@@ -382,6 +382,22 @@ static void picker_cancel_cb(lv_event_t *e)
     close_picker();
 }
 
+/* Marks the row of the memory the tile has now: the list theme gives a
+ * CHECKED button no look of its own. Amber, like a playing tile. */
+static void style_picker_row(lv_obj_t *btn)
+{
+    static lv_style_t s_style;
+    static bool s_style_inited = false;
+    if (!s_style_inited) {
+        lv_style_init(&s_style);
+        lv_style_set_bg_color(&s_style, display_compensate_color(lv_palette_main(LV_PALETTE_AMBER)));
+        lv_style_set_bg_opa(&s_style, LV_OPA_COVER);
+        lv_style_set_text_color(&s_style, display_compensate_color(lv_color_black()));
+        s_style_inited = true;
+    }
+    lv_obj_add_style(btn, &s_style, LV_STATE_CHECKED);
+}
+
 /* Full-screen list of all memories, laid over the panel (a child of its
  * screen, not a screen of its own, so the panel's visit - and its repeat
  * states - carry on). Built on open and deleted on close to keep its ~70
@@ -408,6 +424,7 @@ static void open_picker(int tile)
     uint8_t assigned = memory_store_get_tile((uint8_t)tile);
     lv_obj_t *none_btn = lv_list_add_button(list, NULL, "None");
     lv_obj_add_event_cb(none_btn, picker_row_cb, LV_EVENT_CLICKED, (void *)(intptr_t)MEMORY_TILE_NONE);
+    style_picker_row(none_btn);
     if (assigned == MEMORY_TILE_NONE) {
         lv_obj_add_state(none_btn, LV_STATE_CHECKED);
     }
@@ -421,6 +438,7 @@ static void open_picker(int tile)
         lv_obj_t *label = lv_obj_get_child(btn, 0);
         lv_label_set_long_mode(label, LV_LABEL_LONG_MODE_DOTS);
         lv_obj_add_event_cb(btn, picker_row_cb, LV_EVENT_CLICKED, (void *)(intptr_t)n);
+        style_picker_row(btn);
         if (n == assigned) {
             lv_obj_add_state(btn, LV_STATE_CHECKED);
         }

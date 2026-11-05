@@ -389,8 +389,8 @@ implemented.
    - **Long-press** a tile: opens the **memory picker**, a full-screen
      scrollable list laid over the panel: a "None" row, then all 32
      memories (`#NN`, name, start of the text), with the current
-     assignment highlighted, and a Cancel button. Tapping a row assigns
-     that memory to the tile (saved to NVS) and closes the picker. If the
+     assignment highlighted (amber), and a Cancel button. Tapping a row
+     assigns that memory to the tile (saved to NVS) and closes the picker. If the
      save fails, the tile keeps its old memory and the sending strip shows
      `Save failed` for 2 s.
      Long-press is ignored on the tile that's playing or queued.
