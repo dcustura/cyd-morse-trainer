@@ -89,11 +89,13 @@ static void session_from_memory(int tile, session_repeat_t *out)
 }
 
 /* The tile the Repeat tile acts on: the one playing, else the one played
- * most recently in this visit; 0 if none. */
+ * most recently in this visit; 0 if none, or while a message that isn't a
+ * tile's plays (CLI `mem play` or `send`), so Repeat can't seem to act on
+ * that message while really changing an earlier tile. */
 static int current_tile(const message_player_status_t *st)
 {
-    if (st->active && st->tag >= 1 && st->tag <= MEMORY_TILE_COUNT) {
-        return st->tag;
+    if (st->active) {
+        return (st->tag >= 1 && st->tag <= MEMORY_TILE_COUNT) ? st->tag : 0;
     }
     return s_last_played_tile;
 }

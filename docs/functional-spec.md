@@ -373,7 +373,8 @@ implemented.
    - **Repeat tile**: shows `Repeat: ON` or `Repeat: OFF` for the current
      tile, the one playing or else the one played most recently in this
      visit. It's greyed out and inactive until a tile has played in the
-     visit.
+     visit, and while a message started from the CLI (`mem play`, `send`)
+     is playing.
      - Tap toggles repeat for the current tile. Turning it on during a
        single send makes that send repeat; turning it off during a send
        lets the send finish, then stops; turning it off during a pause
