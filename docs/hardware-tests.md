@@ -137,8 +137,8 @@ How this file works:
 ## Message variables
 
 Set up from the CLI: `var set MYCALL DL1ABC`, `mem set 21 text "DE {MYCALL} {QTH}"`,
-`mem tile 1 21`. Afterwards `mem clear 21`, `var clear MYCALL` and
-reassign tile 1.
+`mem tile 1 21`. Afterwards `mem clear 21`, `var clear MYCALL`,
+`var clear QTH` and reassign tile 1.
 
 - [ ] With `QTH` not set, tapping tile 1 sends nothing and the sending
       strip shows `{QTH} not set` for 2 s.
