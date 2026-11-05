@@ -128,8 +128,10 @@ int32_t iambic_keyer_weight_extra_ms(uint32_t unit_ms, uint8_t weight_pct);
  * IAMBIC_KEYER_MODE_BUG emulates a semi-automatic "bug" key: holding dit
  * sends automatic dits (weighted like the other paddle modes), and the dah
  * contact keys directly for as long as it's held, like a straight key. A
- * dah touched during a dit waits until that dit and its trailing gap have
- * finished; dit is ignored while dah is held. Auto Space doesn't apply.
+ * dah touched during a dit starts once that dit and its trailing gap have
+ * finished, if still held then; a dah released before that is dropped
+ * (it has no set length to replay). Dit is ignored while dah is held, and
+ * a dah's release is followed by a 1-unit gap. Auto Space doesn't apply.
  */
 
 /**

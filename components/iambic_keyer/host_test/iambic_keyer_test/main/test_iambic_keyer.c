@@ -760,6 +760,16 @@ TEST(iambic_keyer, bug_dah_during_a_dit_waits_for_the_dit_and_its_gap)
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, 2u * U)); /* now the dah */
 }
 
+TEST(iambic_keyer, bug_drops_a_dah_tap_released_before_the_dits_gap_ends)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, U / 2));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, U + U / 2));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, 3u * U));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
+}
+
 TEST(iambic_keyer, bug_dit_is_ignored_while_dah_is_held)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
@@ -838,6 +848,7 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, bug_dits_are_weighted);
     RUN_TEST_CASE(iambic_keyer, bug_dah_paddle_keys_by_hand_for_as_long_as_it_is_held);
     RUN_TEST_CASE(iambic_keyer, bug_dah_during_a_dit_waits_for_the_dit_and_its_gap);
+    RUN_TEST_CASE(iambic_keyer, bug_drops_a_dah_tap_released_before_the_dits_gap_ends);
     RUN_TEST_CASE(iambic_keyer, bug_dit_is_ignored_while_dah_is_held);
     RUN_TEST_CASE(iambic_keyer, bug_ignores_auto_space);
     RUN_TEST_CASE(iambic_keyer, element_and_gap_timing_survive_the_ms_counter_wrap);

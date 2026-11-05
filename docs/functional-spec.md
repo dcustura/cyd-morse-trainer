@@ -187,8 +187,10 @@ implemented.
          paddle sends automatic dits at the current WPM (weighted, like
          the other paddle modes), while the dah paddle keys directly for
          as long as it's held, like a straight key, so dahs are timed by
-         hand. A dah touched during a dit waits until that dit and its
-         trailing gap have finished; the dit paddle is ignored while dah is
+         hand. A dah touched during a dit starts once that dit and its
+         trailing gap have finished, if it's still held then; a shorter
+         dah tap is dropped, since a hand-timed dah has no set length to
+         replay later. The dit paddle is ignored while dah is
          held, and if dit is still held when dah is released, a dit starts
          after a 1-unit gap. Paddle Swap applies as in the iambic modes.
          Like Straight Key, Bug mode is always debounced, since its dah
