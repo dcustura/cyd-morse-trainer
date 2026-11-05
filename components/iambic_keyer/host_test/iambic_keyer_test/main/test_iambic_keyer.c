@@ -691,6 +691,18 @@ TEST(iambic_keyer, weight_extra_rounds_to_the_nearest_ms_both_ways)
     TEST_ASSERT_EQUAL_INT32(-2, iambic_keyer_weight_extra_ms(23, 45));
 }
 
+TEST(iambic_keyer, weight_change_mid_element_keeps_that_elements_total)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_A, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 75);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0)); /* 1.5u dit starts */
+    iambic_keyer_set_weight_pct(&s_keyer, 25);
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, U + U / 2)); /* key-up */
+    /* Its gap gives back the 0.5u it was started with: next dit at 2u. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, 2u * U - 1));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 2u * U));
+}
+
 TEST(iambic_keyer, auto_space_targets_the_weighted_char_gap)
 {
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
@@ -748,5 +760,6 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, weight_is_clamped_and_persists_across_set_mode);
     RUN_TEST_CASE(iambic_keyer, weight_has_no_effect_in_straight_key_mode);
     RUN_TEST_CASE(iambic_keyer, weight_extra_rounds_to_the_nearest_ms_both_ways);
+    RUN_TEST_CASE(iambic_keyer, weight_change_mid_element_keeps_that_elements_total);
     RUN_TEST_CASE(iambic_keyer, auto_space_targets_the_weighted_char_gap);
 }

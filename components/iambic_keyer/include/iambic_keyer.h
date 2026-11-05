@@ -72,6 +72,7 @@ typedef struct {
     bool auto_space_first_dit; /* which paddle was touched first during the withhold */
     uint8_t auto_space_pct;    /* 1-100; thresholds are derived from it and unit_ms on use */
     uint8_t weight_pct;        /* IAMBIC_KEYER_WEIGHT_PCT_MIN..MAX; 50 = standard */
+    int32_t element_extra_ms;  /* weight extra the current element was started with; its gap gives it back */
 } iambic_keyer_t;
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm);

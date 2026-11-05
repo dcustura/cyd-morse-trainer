@@ -27,6 +27,7 @@ static void reset_state(iambic_keyer_t *k)
     k->auto_space_dit_latched = false;
     k->auto_space_dah_latched = false;
     k->auto_space_first_dit = true;
+    k->element_extra_ms = 0;
 }
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm)
@@ -206,7 +207,8 @@ static void start_element(iambic_keyer_t *k, bool dit, uint32_t now_ms)
     k->sending_dit = dit;
     k->state = dit ? IAMBIC_KEYER_STATE_SEND_DIT : IAMBIC_KEYER_STATE_SEND_DAH;
     uint32_t standard_ms = dit ? k->unit_ms : 3u * k->unit_ms;
-    k->element_end_ms = now_ms + (uint32_t)((int32_t)standard_ms + weight_extra_ms(k));
+    k->element_extra_ms = weight_extra_ms(k);
+    k->element_end_ms = now_ms + (uint32_t)((int32_t)standard_ms + k->element_extra_ms);
     k->opposite_latched = false;
 }
 
@@ -246,7 +248,9 @@ static void advance_sending(iambic_keyer_t *k, bool dit_contact, bool dah_contac
     if (now_ms >= k->element_end_ms) {
         k->state = IAMBIC_KEYER_STATE_GAP;
         k->last_key_up_ms = now_ms;
-        k->gap_end_ms = now_ms + (uint32_t)((int32_t)k->unit_ms - weight_extra_ms(k));
+        /* The extra this element was started with, not a newer weight, so
+         * element + gap stays two units even if weight changed meanwhile. */
+        k->gap_end_ms = now_ms + (uint32_t)((int32_t)k->unit_ms - k->element_extra_ms);
     }
 }
 
