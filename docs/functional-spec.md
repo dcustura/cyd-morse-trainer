@@ -79,17 +79,16 @@ implemented.
      applying at once and saving it like the Keyer submenu's WPM popup.
      The bar hides after 5 s without a tap, on ✕, or when leaving the
      screen. Releasing the long press doesn't open the Keyer submenu.
-   - A small red indicator dot (bottom-right of the screen, vertically
-     centered on the Clear/Back buttons) lights up whenever the key/paddle
-     is down and the sidetone is sounding, and goes dark when it releases.
-   - A **TX** button (between the indicator dot and Back) is an on-air
+   - A small red indicator dot (between TX and Back, vertically centered
+     on the buttons) lights up whenever the key/paddle is down and the
+     sidetone is sounding, and goes dark when it releases.
+   - A **TX** button (between Help and the indicator dot) is an on-air
      quick toggle: red while on-air, and a tap flips the live on-air state
      only, without saving it.
    - An icon-only Memories button (envelope glyph, left of Help) opens the
      **Memories panel** (see below).
-   - An icon-only Help button (list glyph, bottom-right, left of the
-     indicator dot and Back) opens the **Morse Reference screen** (see
-     below).
+   - An icon-only Help button (list glyph, bottom-right, left of TX)
+     opens the **Morse Reference screen** (see below).
    - An icon-only Clear button (trash glyph, bottom-left) empties the
      decoded text and resets in-progress decode state.
    - "Back" button returns to the Main Menu.

@@ -605,8 +605,8 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     s_mode_label = lv_label_create(status_col);
     lv_label_set_text(s_mode_label, mode_name(initial_mode));
 
-    /* right_group (Help, then the keying dot, then Back) - likewise not
-     * clickable itself, only its button/dot children are. */
+    /* right_group (Memories, Help, TX, the keying dot, then Back) -
+     * likewise not clickable itself, only its button/dot children are. */
     lv_obj_t *right_group = lv_obj_create(btn_row);
     lv_obj_remove_style_all(right_group);
     lv_obj_clear_flag(right_group, LV_OBJ_FLAG_CLICKABLE);
@@ -635,14 +635,6 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_update_layout(btn_row);
     int32_t dot_diameter = lv_obj_get_height(clear_btn) / 2;
 
-    s_keying_dot = lv_obj_create(right_group);
-    lv_obj_remove_style_all(s_keying_dot);
-    lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(s_keying_dot, dot_diameter, dot_diameter);
-    lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_bg_color(s_keying_dot, display_alert_red(), 0);
-    lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_TRANSP, 0);
-
     /* Quick on-air toggle (live state only; see ui_on_air.h): red while
      * on-air. */
     lv_obj_t *tx_btn = lv_button_create(right_group);
@@ -650,6 +642,17 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     narrow_row_button(tx_btn);
     display_add_button_label(tx_btn, "TX");
     ui_on_air_add_toggle(tx_btn, NULL, NULL, NULL);
+
+    /* Between TX and Back, not between Help and TX: the dot is
+     * transparent while idle, and there it made Help look off-center
+     * between Memories and TX. */
+    s_keying_dot = lv_obj_create(right_group);
+    lv_obj_remove_style_all(s_keying_dot);
+    lv_obj_clear_flag(s_keying_dot, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_size(s_keying_dot, dot_diameter, dot_diameter);
+    lv_obj_set_style_radius(s_keying_dot, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(s_keying_dot, display_alert_red(), 0);
+    lv_obj_set_style_bg_opa(s_keying_dot, LV_OPA_TRANSP, 0);
 
     lv_obj_t *back_btn = lv_button_create(right_group);
     display_style_button_dismiss(back_btn);
