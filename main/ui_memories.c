@@ -443,15 +443,22 @@ static void open_picker(int tile)
             lv_obj_add_state(btn, LV_STATE_CHECKED);
         }
     }
-    if (assigned != MEMORY_TILE_NONE) {
-        lv_obj_scroll_to_view(lv_obj_get_child(list, assigned), LV_ANIM_OFF);
-    }
-
     lv_obj_t *cancel = lv_button_create(s_picker);
     display_style_button_dismiss(cancel);
     lv_obj_set_size(cancel, LV_PCT(100), FOOTER_BTN_HEIGHT);
     lv_obj_add_event_cb(cancel, picker_cancel_cb, LV_EVENT_CLICKED, NULL);
     display_add_button_label(cancel, LV_SYMBOL_CLOSE " Cancel");
+
+    /* Center the current row. The layout must be computed first (with
+     * Cancel in place, as it sets the list's height): until then the rows
+     * have no real positions and the scroll lands short of the row. */
+    if (assigned != MEMORY_TILE_NONE) {
+        lv_obj_update_layout(s_picker);
+        lv_obj_t *row = lv_obj_get_child(list, assigned);
+        int32_t y = lv_obj_get_y(row) - (lv_obj_get_content_height(list) - lv_obj_get_height(row)) / 2;
+        int32_t max_y = lv_obj_get_scroll_bottom(list); /* scroll is still 0 here */
+        lv_obj_scroll_to_y(list, y < 0 ? 0 : (y > max_y ? max_y : y), LV_ANIM_OFF);
+    }
 }
 
 static void tile_long_pressed_cb(lv_event_t *e)
