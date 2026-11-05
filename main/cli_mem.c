@@ -1,6 +1,5 @@
 #include "cli_mem.h"
 
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -287,7 +286,7 @@ int cli_send_cmd(int argc, char **argv)
 
     int rc = enqueue_and_report(&msg, "send", "text");
     if (rc == 0) {
-        s_next_tag = (s_next_tag == INT_MAX) ? SEND_TAG_FIRST : s_next_tag + 1;
+        s_next_tag++; /* ~2^31 sends to overflow: not a concern */
     }
     return rc;
 }
