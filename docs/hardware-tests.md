@@ -29,16 +29,8 @@ How this file works:
   `mem tile 1 21` … `mem tile 6 26`. Afterwards, `mem clear 21` …
   `mem clear 28` and reassign the tiles.
 
-## Sidetone sharing (`91c1ad8`, `d4bda65`)
-
-- [ ] Morse Reference playing a character when a message starts (CLI
-      `mem play`): no stuck tone, and the message is heard cleanly from its
-      next element.
-
 ## On-air / off-air (`7ac7e25`, `beb599a`)
 
-- [ ] Send screen bottom row fits on screen with the new TX button and the
-      icon-only Clear (trash) button; Clear still empties the text.
 - [ ] TX toggles and turns red while on-air.
 - [ ] Main Menu has three buttons that fit; the third reads `Off Air` /
       `On Air` and turns red while on-air.

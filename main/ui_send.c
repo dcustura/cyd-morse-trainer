@@ -17,6 +17,10 @@
 #define TEXT_LINE_SPACE_LARGE_PX 4
 #define SPEED_STEP_BTN_SIZE 44
 #define SPEED_VALUE_WIDTH 76
+/* Bottom row spacing; see narrow_row_button(). */
+#define ROW_BTN_PAD_HOR_PX 8
+#define STATUS_PAD_HOR_PX 4
+#define RIGHT_GROUP_GAP_PX 6
 #define SPEED_HIDE_AFTER_MS 5000 /* idle time before the speed bar hides itself */
 
 static lv_obj_t *s_wpm_label;
@@ -501,6 +505,15 @@ static void keyer_settings_btn_cb(lv_event_t *e)
     lv_scr_load(s_keyer_settings_screen);
 }
 
+/* The bottom row only just fits 320 px (Clear, WPM/mode, and five items
+ * on the right), so its buttons get less side padding than the theme's
+ * 13 px; with it, the row overflowed and the WPM/mode label overlapped
+ * its neighbours. Height (and so the tap target's height) is unchanged. */
+static void narrow_row_button(lv_obj_t *btn)
+{
+    lv_obj_set_style_pad_hor(btn, ROW_BTN_PAD_HOR_PX, 0);
+}
+
 lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen,
                          iambic_keyer_mode_t initial_mode, uint16_t initial_wpm,
                          bool initial_large_text)
@@ -559,6 +572,7 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
 
     lv_obj_t *clear_btn = lv_button_create(btn_row);
     display_style_tile(clear_btn);
+    narrow_row_button(clear_btn);
     lv_obj_add_event_cb(clear_btn, clear_btn_cb, LV_EVENT_CLICKED, NULL);
     /* Icon-only, to leave room in this row for the TX toggle. */
     display_add_button_label(clear_btn, LV_SYMBOL_TRASH);
@@ -574,7 +588,9 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
      * labels, much smaller than the finger-sized buttons beside it. */
     lv_obj_t *status_col = lv_obj_create(btn_row);
     lv_obj_remove_style_all(status_col);
-    lv_obj_set_style_pad_all(status_col, 10, 0);
+    /* Tall, but narrow at the sides: the row has no width to spare. */
+    lv_obj_set_style_pad_ver(status_col, 10, 0);
+    lv_obj_set_style_pad_hor(status_col, STATUS_PAD_HOR_PX, 0);
     /* SHORT_CLICKED, not CLICKED: CLICKED also fires on release after a
      * long press, which would open the Keyer submenu right after the
      * long press showed the speed bar. */
@@ -596,12 +612,13 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
     lv_obj_clear_flag(right_group, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_set_flex_flow(right_group, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(right_group, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(right_group, 8, 0);
+    lv_obj_set_style_pad_column(right_group, RIGHT_GROUP_GAP_PX, 0);
     lv_obj_set_size(right_group, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
 
     /* Icon-only, like Help: opens the message memories panel. */
     lv_obj_t *memories_btn = lv_button_create(right_group);
     display_style_tile(memories_btn);
+    narrow_row_button(memories_btn);
     lv_obj_add_event_cb(memories_btn, memories_btn_cb, LV_EVENT_CLICKED, NULL);
     display_add_button_label(memories_btn, LV_SYMBOL_ENVELOPE);
 
@@ -610,6 +627,7 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
      * reference list is what this actually opens. */
     lv_obj_t *help_btn = lv_button_create(right_group);
     display_style_tile(help_btn);
+    narrow_row_button(help_btn);
     lv_obj_add_event_cb(help_btn, help_btn_cb, LV_EVENT_CLICKED, NULL);
     display_add_button_label(help_btn, LV_SYMBOL_LIST);
 
@@ -629,11 +647,13 @@ lv_obj_t *ui_send_create(QueueHandle_t decoded_char_queue, lv_obj_t *menu_screen
      * on-air. */
     lv_obj_t *tx_btn = lv_button_create(right_group);
     display_style_tile(tx_btn);
+    narrow_row_button(tx_btn);
     display_add_button_label(tx_btn, "TX");
     ui_on_air_add_toggle(tx_btn, NULL, NULL, NULL);
 
     lv_obj_t *back_btn = lv_button_create(right_group);
     display_style_button_dismiss(back_btn);
+    narrow_row_button(back_btn);
     lv_obj_add_event_cb(back_btn, back_btn_cb, LV_EVENT_CLICKED, menu_screen);
     display_add_button_label(back_btn, "Back");
 
