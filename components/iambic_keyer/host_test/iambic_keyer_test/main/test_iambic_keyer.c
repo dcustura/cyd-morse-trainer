@@ -765,9 +765,12 @@ TEST(iambic_keyer, bug_dit_is_ignored_while_dah_is_held)
     iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, 0));
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, true, 5u * U));
-    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
-    /* Dah released with dit still held: a dit starts at once. */
-    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 6u * U));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DAH, s_keyer.state);
+    /* Dah released with dit still held: key up for one unit, then a dit,
+     * so the two never merge into one long key-down. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, 6u * U));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, 7u * U - 1));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 7u * U));
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
 }
 

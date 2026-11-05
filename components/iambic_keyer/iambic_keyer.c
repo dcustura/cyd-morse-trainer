@@ -410,6 +410,17 @@ static bool service_bug(iambic_keyer_t *k, bool dit_contact, bool dah_contact, u
         k->last_key_up_ms = now_ms;
         k->gap_end_ms = now_ms + (uint32_t)((int32_t)k->unit_ms - k->element_extra_ms);
     }
+    if (k->state == IAMBIC_KEYER_STATE_SEND_DAH) {
+        /* A hand-keyed dah: down for exactly as long as the contact, then
+         * the usual 1-unit gap, so a dit held meanwhile doesn't run into it. */
+        if (dah_contact) {
+            return true;
+        }
+        k->state = IAMBIC_KEYER_STATE_GAP;
+        k->last_key_up_ms = now_ms;
+        k->gap_end_ms = now_ms + k->unit_ms;
+        return false;
+    }
     if (k->state == IAMBIC_KEYER_STATE_GAP) {
         if (now_ms < k->gap_end_ms) {
             return false;
@@ -417,10 +428,10 @@ static bool service_bug(iambic_keyer_t *k, bool dit_contact, bool dah_contact, u
         k->state = IAMBIC_KEYER_STATE_IDLE;
     }
 
-    /* IDLE: a hand-keyed dah takes priority and follows its contact; the
-     * keyer stays idle meanwhile, so a dit can start the moment it's
-     * released. */
+    /* IDLE: a dah takes priority over a dit. */
     if (dah_contact) {
+        k->state = IAMBIC_KEYER_STATE_SEND_DAH;
+        k->sending_dit = false;
         return true;
     }
     if (dit_contact) {

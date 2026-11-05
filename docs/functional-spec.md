@@ -189,8 +189,8 @@ implemented.
          as long as it's held, like a straight key, so dahs are timed by
          hand. A dah touched during a dit waits until that dit and its
          trailing gap have finished; the dit paddle is ignored while dah is
-         held, and a dit starts as soon as dah is released if dit is still
-         held. Paddle Swap and Paddle Debounce apply as in the iambic
+         held, and if dit is still held when dah is released, a dit starts
+         after a 1-unit gap. Paddle Swap and Paddle Debounce apply as in the iambic
          modes; Auto Space doesn't (its tile is greyed out).
      - **Paddle swap**: swaps which physical paddle lever is treated as
        dit vs dah, for operators who prefer the opposite orientation. Like
