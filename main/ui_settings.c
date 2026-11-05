@@ -482,8 +482,9 @@ static void keymode_tile_cb(lv_event_t *e)
     lv_obj_t *content = lv_msgbox_get_content(mbox);
     strip_pane_style(content);
 
-    /* 3 columns x 2 rows: the four mode options fill row 0 and the start of
-     * row 1, and Close always sits in the last cell (bottom-right). */
+    /* 3 columns x 2 rows: the five mode options fill every cell but the
+     * last, where Close always sits (bottom-right). The grid is now full:
+     * a sixth mode needs another row. */
     lv_obj_t *grid = lv_obj_create(content);
     strip_pane_style(grid);
     lv_obj_set_size(grid, LV_PCT(100), LV_SIZE_CONTENT);
