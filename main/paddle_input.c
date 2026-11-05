@@ -140,9 +140,11 @@ static void paddle_task(void *arg)
         bool swapped_dah = (!straight && swap) ? raw_dit : raw_dah;
 
         /* Straight key contact always bounces mechanically, so it's always
-         * debounced regardless of the setting; paddle debounce is optional
-         * since clean paddle contacts don't usually need it. */
-        bool debounce = straight || s_paddle_debounce;
+         * debounced regardless of the setting, and so is Bug mode, whose
+         * dah contact reaches the key line directly too. In the other paddle
+         * modes debounce is optional: a bounce there only starts a timed
+         * element, and clean paddle contacts don't usually need it. */
+        bool debounce = straight || s_keyer.mode == IAMBIC_KEYER_MODE_BUG || s_paddle_debounce;
 
         bool dit_contact, dah_contact;
         if (debounce) {

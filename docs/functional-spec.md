@@ -190,8 +190,10 @@ implemented.
          hand. A dah touched during a dit waits until that dit and its
          trailing gap have finished; the dit paddle is ignored while dah is
          held, and if dit is still held when dah is released, a dit starts
-         after a 1-unit gap. Paddle Swap and Paddle Debounce apply as in the iambic
-         modes; Auto Space doesn't (its tile is greyed out).
+         after a 1-unit gap. Paddle Swap applies as in the iambic modes.
+         Like Straight Key, Bug mode is always debounced, since its dah
+         contact keys directly (the Paddle Debounce tile shows forced on),
+         and Auto Space doesn't apply (its tile is greyed out).
      - **Paddle swap**: swaps which physical paddle lever is treated as
        dit vs dah, for operators who prefer the opposite orientation. Like
        Paddle Debounce below, it has no popup: the tile is itself a toggle
@@ -206,9 +208,11 @@ implemented.
        Iambic Mode A/B/Ultimatic. The tile is itself a toggle switch,
        showing the current on/off state, and tapping anywhere on the tile
        flips it immediately. This setting has no effect in Straight Key
-       mode, which is always debounced (a mechanical straight key bounces;
-       a clean paddle contact often does not need the extra latency) —
-       while Key Mode is set to Straight Key, the tile instead shows the
+       or Bug mode, which are always debounced (a mechanical straight key
+       bounces, and in both modes a contact keys the output directly; a
+       clean paddle contact in the iambic modes often does not need the
+       extra latency) — while Key Mode is Straight Key or Bug, the tile
+       instead shows the
        switch forced on and greyed out/non-tappable, rather than
        displaying (or letting the operator change) a setting that
        wouldn't actually apply; the real stored value is untouched and
@@ -510,8 +514,9 @@ implemented.
   noise it avoided.
 - **Debounce**: raw paddle/key contact closures are debounced in software
   so mechanical contact bounce does not corrupt timing or produce spurious
-  short elements. Straight Key mode is always debounced; Iambic Mode
-  A/B/Ultimatic debouncing is controlled by the Paddle Debounce setting.
+  short elements. Straight Key and Bug modes are always debounced; Iambic
+  Mode A/B/Ultimatic debouncing is controlled by the Paddle Debounce
+  setting.
 - **Auto Space**: an Iambic Mode A/B/Ultimatic keying feature (the keyer
   that turns paddle contacts into dit/dah/gap timing, not the decoder
   that reads it back). After an element's standard 1-unit trailing gap,

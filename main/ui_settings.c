@@ -191,8 +191,10 @@ static void refresh_tile_labels(void)
     set_switch_checked(s_ring_input_switch, s_current_settings.straight_ring_input);
     set_tile_hidden(s_ring_input_tile, !straight_key);
 
-    set_switch_checked(s_debounce_switch, straight_key || s_current_settings.paddle_debounce);
-    if (straight_key) {
+    /* Bug mode is always debounced too: its dah contact keys directly. */
+    bool forced_debounce = straight_key || s_current_settings.keymode == IAMBIC_KEYER_MODE_BUG;
+    set_switch_checked(s_debounce_switch, forced_debounce || s_current_settings.paddle_debounce);
+    if (forced_debounce) {
         lv_obj_add_state(s_debounce_tile, LV_STATE_DISABLED);
     } else {
         lv_obj_remove_state(s_debounce_tile, LV_STATE_DISABLED);

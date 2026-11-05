@@ -126,8 +126,8 @@ How this file works:
 ## Bug mode
 
 - [ ] Settings > Keyer > Key Mode shows five modes plus Close; picking Bug
-      shows `Bug` on the Keyer tile and the Send screen's mode label, and
-      greys out Auto Space.
+      shows `Bug` on the Keyer tile and the Send screen's mode label,
+      greys out Auto Space, and shows Paddle Debounce forced on.
 - [ ] With a paddle in Bug mode: holding dit sends automatic dits at the
       set WPM; dah keys for exactly as long as it's held; a dah pressed
       during a dit starts after that dit; the Send screen decodes
