@@ -120,8 +120,10 @@ static uint32_t auto_space_pad_target_ms(const iambic_keyer_t *k, uint32_t idle_
     uint32_t char_threshold_ms = scale_pct_ms(char_standard_ms, pct);
     uint32_t word_threshold_ms = scale_pct_ms(word_standard_ms, pct);
 
-    /* A char-gap threshold below 2 units (less weight) would withhold on the
-     * normal 1-unit gap between elements of the same character. */
+    /* Never withhold within one unit of the gap between elements of the
+     * same character (1 unit, minus the weight extra): at any weight, the
+     * floor sits exactly one unit above that gap, as 2 units does above 1
+     * at standard weight. */
     uint32_t min_char_threshold_ms = char_standard_ms - k->unit_ms;
     if (char_threshold_ms < min_char_threshold_ms) {
         char_threshold_ms = min_char_threshold_ms;
