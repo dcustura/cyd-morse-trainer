@@ -124,24 +124,24 @@ uint8_t iambic_keyer_clamp_weight_pct(uint8_t pct);
  */
 int32_t iambic_keyer_weight_extra_ms(uint32_t unit_ms, uint8_t weight_pct);
 
-/*
- * IAMBIC_KEYER_MODE_BUG emulates a semi-automatic "bug" key: holding dit
- * sends automatic dits (weighted like the other paddle modes), and the dah
- * contact keys directly for as long as it's held, like a straight key. A
- * dah touched during a dit starts once that dit and its trailing gap have
- * finished, if still held then; a dah released before that is dropped
- * (it has no set length to replay). Dit is ignored while dah is held, and
- * a dah's release is followed by a 1-unit gap. Auto Space doesn't apply.
- */
-
 /**
  * Advance the state machine by one tick (call at a fixed rate, 1ms
  * recommended) with the current debounced, logical (post-polarity-swap)
  * paddle contact states. Returns the key-down/sidetone output for this
- * tick: true while an element (dit or dah) is being sent.
+ * tick: true while a dit or dah is being sent (state SEND_DIT/SEND_DAH,
+ * except in Straight Key mode, which has no element state).
  *
  * In IAMBIC_KEYER_MODE_STRAIGHT, dit_contact is returned directly and
  * dah_contact is ignored entirely.
+ *
+ * IAMBIC_KEYER_MODE_BUG emulates a semi-automatic "bug" key: holding dit
+ * sends automatic dits (weighted like the other paddle modes), and the dah
+ * contact keys directly (state SEND_DAH) for as long as it's held, like a
+ * straight key. A dah touched during a dit starts once that dit and its
+ * trailing gap have finished, if still held then; a dah released before
+ * that is dropped (it has no set length to replay). Dit is ignored while
+ * dah is held, and a dah's release is followed by a 1-unit gap. Auto Space
+ * doesn't apply.
  */
 bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms);
 
