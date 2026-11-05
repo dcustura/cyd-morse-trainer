@@ -723,6 +723,65 @@ TEST(iambic_keyer, auto_space_targets_the_weighted_char_gap)
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + U / 2));
 }
 
+/* ---- Bug mode ---- */
+
+TEST(iambic_keyer, bug_dit_paddle_sends_automatic_dits)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    assert_hold_train(true, U, U);
+}
+
+TEST(iambic_keyer, bug_dits_are_weighted)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 75);
+    assert_hold_train(true, U + U / 2, U / 2);
+}
+
+TEST(iambic_keyer, bug_dah_paddle_keys_by_hand_for_as_long_as_it_is_held)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    for (uint32_t t = 0; t < 10u * U; ++t) {
+        TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, t));
+    }
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, 10u * U));
+    /* Released after an arbitrary 7 ms tap: still just follows the contact. */
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, 11u * U));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, 11u * U + 7));
+}
+
+TEST(iambic_keyer, bug_dah_during_a_dit_waits_for_the_dit_and_its_gap)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, U / 2)); /* dit keeps going */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, true, U));    /* its gap */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, true, 2u * U - 1));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, 2u * U)); /* now the dah */
+}
+
+TEST(iambic_keyer, bug_dit_is_ignored_while_dah_is_held)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, false, true, 0));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, true, 5u * U));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
+    /* Dah released with dit still held: a dit starts at once. */
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 6u * U));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
+}
+
+TEST(iambic_keyer, bug_ignores_auto_space)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_BUG, TEST_WPM);
+    iambic_keyer_set_auto_space_pct(&s_keyer, 50);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, U));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, 2u * U));
+    /* 2.5 units of silence would be withheld by Auto Space elsewhere. */
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, U + 2u * U + U / 2));
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -762,4 +821,10 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, weight_extra_rounds_to_the_nearest_ms_both_ways);
     RUN_TEST_CASE(iambic_keyer, weight_change_mid_element_keeps_that_elements_total);
     RUN_TEST_CASE(iambic_keyer, auto_space_targets_the_weighted_char_gap);
+    RUN_TEST_CASE(iambic_keyer, bug_dit_paddle_sends_automatic_dits);
+    RUN_TEST_CASE(iambic_keyer, bug_dits_are_weighted);
+    RUN_TEST_CASE(iambic_keyer, bug_dah_paddle_keys_by_hand_for_as_long_as_it_is_held);
+    RUN_TEST_CASE(iambic_keyer, bug_dah_during_a_dit_waits_for_the_dit_and_its_gap);
+    RUN_TEST_CASE(iambic_keyer, bug_dit_is_ignored_while_dah_is_held);
+    RUN_TEST_CASE(iambic_keyer, bug_ignores_auto_space);
 }

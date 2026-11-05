@@ -16,6 +16,7 @@ typedef enum {
     IAMBIC_KEYER_MODE_B,
     IAMBIC_KEYER_MODE_STRAIGHT,
     IAMBIC_KEYER_MODE_ULTIMATIC,
+    IAMBIC_KEYER_MODE_BUG, /* semi-automatic "bug": automatic dits, hand-keyed dahs */
 } iambic_keyer_mode_t;
 
 typedef enum {
@@ -122,6 +123,14 @@ uint8_t iambic_keyer_clamp_weight_pct(uint8_t pct);
  * the same way.
  */
 int32_t iambic_keyer_weight_extra_ms(uint32_t unit_ms, uint8_t weight_pct);
+
+/*
+ * IAMBIC_KEYER_MODE_BUG emulates a semi-automatic "bug" key: holding dit
+ * sends automatic dits (weighted like the other paddle modes), and the dah
+ * contact keys directly for as long as it's held, like a straight key. A
+ * dah touched during a dit waits until that dit and its trailing gap have
+ * finished; dit is ignored while dah is held. Auto Space doesn't apply.
+ */
 
 /**
  * Advance the state machine by one tick (call at a fixed rate, 1ms

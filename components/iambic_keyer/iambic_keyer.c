@@ -400,11 +400,43 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
     return is_sending(k);
 }
 
+static bool service_bug(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
+{
+    if (k->state == IAMBIC_KEYER_STATE_SEND_DIT) {
+        if (now_ms < k->element_end_ms) {
+            return true;
+        }
+        k->state = IAMBIC_KEYER_STATE_GAP;
+        k->last_key_up_ms = now_ms;
+        k->gap_end_ms = now_ms + (uint32_t)((int32_t)k->unit_ms - k->element_extra_ms);
+    }
+    if (k->state == IAMBIC_KEYER_STATE_GAP) {
+        if (now_ms < k->gap_end_ms) {
+            return false;
+        }
+        k->state = IAMBIC_KEYER_STATE_IDLE;
+    }
+
+    /* IDLE: a hand-keyed dah takes priority and follows its contact; the
+     * keyer stays idle meanwhile, so a dit can start the moment it's
+     * released. */
+    if (dah_contact) {
+        return true;
+    }
+    if (dit_contact) {
+        start_element(k, true, now_ms);
+        return true;
+    }
+    return false;
+}
+
 bool iambic_keyer_service(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
 {
     switch (k->mode) {
     case IAMBIC_KEYER_MODE_STRAIGHT:
         return dit_contact;
+    case IAMBIC_KEYER_MODE_BUG:
+        return service_bug(k, dit_contact, dah_contact, now_ms);
     case IAMBIC_KEYER_MODE_ULTIMATIC:
         return service_ultimatic(k, dit_contact, dah_contact, now_ms);
     default: /* IAMBIC_KEYER_MODE_A, IAMBIC_KEYER_MODE_B */
