@@ -18,7 +18,7 @@ TEST_TEAR_DOWN(morse_text)
 
 static morse_text_result_t normalize(const char *in)
 {
-    return morse_text_normalize(in, true, s_out, sizeof(s_out), NULL);
+    return morse_text_normalize(in, MORSE_TEXT_ALLOW_PROSIGNS, s_out, sizeof(s_out), NULL);
 }
 
 TEST(morse_text, normalize_uppercases_collapses_and_trims_spaces)
@@ -50,7 +50,8 @@ TEST(morse_text, normalize_empty_and_all_space_input_give_empty_text)
 TEST(morse_text, normalize_rejects_bad_characters_and_reports_their_position)
 {
     size_t pos = 99;
-    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, morse_text_normalize("CQ#", true, s_out, sizeof(s_out), &pos));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR,
+                      morse_text_normalize("CQ#", MORSE_TEXT_ALLOW_PROSIGNS, s_out, sizeof(s_out), &pos));
     TEST_ASSERT_EQUAL_UINT(2, pos);
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, normalize("A\tB"));
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, normalize("A\\B"));
@@ -63,7 +64,7 @@ TEST(morse_text, normalize_rejects_malformed_and_unknown_prosigns)
 {
     size_t pos = 99;
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNCLOSED_PROSIGN,
-                      morse_text_normalize("TU <SK", true, s_out, sizeof(s_out), &pos));
+                      morse_text_normalize("TU <SK", MORSE_TEXT_ALLOW_PROSIGNS, s_out, sizeof(s_out), &pos));
     TEST_ASSERT_EQUAL_UINT(3, pos);
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_EMPTY_PROSIGN, normalize("A<>B"));
     TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNKNOWN_PROSIGN, normalize("<SOS>"));
@@ -73,20 +74,20 @@ TEST(morse_text, normalize_rejects_malformed_and_unknown_prosigns)
 
 TEST(morse_text, names_reject_prosign_brackets)
 {
-    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, morse_text_normalize("<AR>", false, s_out, 9, NULL));
-    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("cq dx", false, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, morse_text_normalize("<AR>", 0, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("cq dx", 0, s_out, 9, NULL));
     TEST_ASSERT_EQUAL_STRING("CQ DX", s_out);
 }
 
 TEST(morse_text, normalize_length_limit_applies_to_normalized_text)
 {
     /* 8-char limit (buffer of 9): extra spaces don't count, a prosign is 4. */
-    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("  ABC    DEFG  ", true, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("  ABC    DEFG  ", MORSE_TEXT_ALLOW_PROSIGNS, s_out, 9, NULL));
     TEST_ASSERT_EQUAL_STRING("ABC DEFG", s_out);
-    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("ABCDEFGHI", true, s_out, 9, NULL));
-    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("ABCDE<AR>", true, s_out, 9, NULL));
-    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("ABCD<AR>", true, s_out, 9, NULL));
-    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("", true, s_out, 0, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("ABCDEFGHI", MORSE_TEXT_ALLOW_PROSIGNS, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("ABCDE<AR>", MORSE_TEXT_ALLOW_PROSIGNS, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("ABCD<AR>", MORSE_TEXT_ALLOW_PROSIGNS, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("", MORSE_TEXT_ALLOW_PROSIGNS, s_out, 0, NULL));
 }
 
 TEST(morse_text, next_token_walks_characters_prosigns_and_word_gaps)
@@ -159,6 +160,123 @@ TEST(morse_text, result_str_describes_each_error)
     TEST_ASSERT_EQUAL_STRING("too long", morse_text_result_str(MORSE_TEXT_ERR_TOO_LONG));
 }
 
+#define MSG_FLAGS (MORSE_TEXT_ALLOW_PROSIGNS | MORSE_TEXT_ALLOW_VARIABLES)
+
+TEST(morse_text, normalize_accepts_variables_and_uppercases_their_names)
+{
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK,
+                      morse_text_normalize("cq de  {mycall}  {Q1}<kn>", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL_STRING("CQ DE {MYCALL} {Q1}<KN>", s_out);
+}
+
+TEST(morse_text, normalize_rejects_braces_unless_variables_are_allowed)
+{
+    size_t pos = 99;
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, morse_text_normalize("DE {X}", MORSE_TEXT_ALLOW_PROSIGNS, s_out,
+                                                                        sizeof(s_out), &pos));
+    TEST_ASSERT_EQUAL(3, pos);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_INVALID_CHAR, morse_text_normalize("A}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+}
+
+TEST(morse_text, normalize_rejects_malformed_variables)
+{
+    size_t pos = 99;
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNCLOSED_VARIABLE,
+                      morse_text_normalize("DE {CALL", MSG_FLAGS, s_out, sizeof(s_out), &pos));
+    TEST_ASSERT_EQUAL(3, pos);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE, morse_text_normalize("{}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE,
+                      morse_text_normalize("{TOOLONG}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE,
+                      morse_text_normalize("{MY CL}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE, morse_text_normalize("{A/B}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE, morse_text_normalize("{{A}", MSG_FLAGS, s_out, sizeof(s_out), NULL));
+}
+
+TEST(morse_text, normalize_length_limit_counts_variable_names_as_written)
+{
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_normalize("AB {CDE}", MSG_FLAGS, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_normalize("ABC {CDE}", MSG_FLAGS, s_out, 9, NULL));
+}
+
+TEST(morse_text, normalize_var_name_checks_and_uppercases)
+{
+    char name[MORSE_TEXT_VAR_NAME_MAX + 1];
+    TEST_ASSERT_TRUE(morse_text_normalize_var_name("myCall", name));
+    TEST_ASSERT_EQUAL_STRING("MYCALL", name);
+    TEST_ASSERT_TRUE(morse_text_normalize_var_name("Q", name));
+    TEST_ASSERT_FALSE(morse_text_normalize_var_name("", name));
+    TEST_ASSERT_FALSE(morse_text_normalize_var_name("MYCALL1", name));
+    TEST_ASSERT_FALSE(morse_text_normalize_var_name("A-B", name));
+    TEST_ASSERT_FALSE(morse_text_normalize_var_name("\xc3\xa9", name));
+}
+
+static const char *lookup(const char *name, void *ctx)
+{
+    (void)ctx;
+    if (strcmp(name, "MYCALL") == 0) {
+        return "DL1ABC/P";
+    }
+    if (strcmp(name, "NAME") == 0) {
+        return "JOHN <AR>";
+    }
+    if (strcmp(name, "EMPTY") == 0) {
+        return "";
+    }
+    return NULL;
+}
+
+TEST(morse_text, expand_replaces_variables_with_their_values)
+{
+    char missing[MORSE_TEXT_VAR_NAME_MAX + 1] = "x";
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_expand("CQ DE {MYCALL} {MYCALL}{NAME}", lookup, NULL, s_out,
+                                                       sizeof(s_out), missing));
+    TEST_ASSERT_EQUAL_STRING("CQ DE DL1ABC/P DL1ABC/PJOHN <AR>", s_out);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_expand("NO VARS", lookup, NULL, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL_STRING("NO VARS", s_out);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_expand("", lookup, NULL, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL_STRING("", s_out);
+}
+
+TEST(morse_text, expand_output_tokenizes_like_plain_text)
+{
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_expand("{NAME} K", lookup, NULL, s_out, sizeof(s_out), NULL));
+    size_t pos = 0;
+    morse_text_token_t tok;
+    int count = 0;
+    while (morse_text_next_token(s_out, &pos, &tok)) {
+        ++count;
+    }
+    TEST_ASSERT_EQUAL(6, count); /* J O H N <AR> K */
+    TEST_ASSERT_EQUAL(strlen(s_out), pos);
+}
+
+TEST(morse_text, expand_reports_the_first_unset_variable)
+{
+    char missing[MORSE_TEXT_VAR_NAME_MAX + 1] = "x";
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNSET_VARIABLE,
+                      morse_text_expand("{MYCALL} {QTH} {RIG}", lookup, NULL, s_out, sizeof(s_out), missing));
+    TEST_ASSERT_EQUAL_STRING("QTH", missing);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNSET_VARIABLE,
+                      morse_text_expand("{EMPTY}", lookup, NULL, s_out, sizeof(s_out), missing));
+    TEST_ASSERT_EQUAL_STRING("EMPTY", missing);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNSET_VARIABLE, morse_text_expand("{QTH}", lookup, NULL, s_out, sizeof(s_out), NULL));
+}
+
+TEST(morse_text, expand_limit_applies_to_the_expanded_text)
+{
+    TEST_ASSERT_EQUAL(MORSE_TEXT_OK, morse_text_expand("{MYCALL}", lookup, NULL, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL_STRING("DL1ABC/P", s_out);
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_expand("{MYCALL}X", lookup, NULL, s_out, 9, NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_TOO_LONG, morse_text_expand("", lookup, NULL, s_out, 0, NULL));
+}
+
+TEST(morse_text, expand_rejects_malformed_variables)
+{
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_UNCLOSED_VARIABLE, morse_text_expand("{MY", lookup, NULL, s_out, sizeof(s_out), NULL));
+    TEST_ASSERT_EQUAL(MORSE_TEXT_ERR_BAD_VARIABLE, morse_text_expand("{}", lookup, NULL, s_out, sizeof(s_out), NULL));
+}
+
 TEST_GROUP_RUNNER(morse_text)
 {
     RUN_TEST_CASE(morse_text, normalize_uppercases_collapses_and_trims_spaces);
@@ -173,4 +291,14 @@ TEST_GROUP_RUNNER(morse_text)
     RUN_TEST_CASE(morse_text, prosign_patterns_match_the_decoder);
     RUN_TEST_CASE(morse_text, next_token_stops_on_text_normalize_would_reject);
     RUN_TEST_CASE(morse_text, result_str_describes_each_error);
+    RUN_TEST_CASE(morse_text, normalize_accepts_variables_and_uppercases_their_names);
+    RUN_TEST_CASE(morse_text, normalize_rejects_braces_unless_variables_are_allowed);
+    RUN_TEST_CASE(morse_text, normalize_rejects_malformed_variables);
+    RUN_TEST_CASE(morse_text, normalize_length_limit_counts_variable_names_as_written);
+    RUN_TEST_CASE(morse_text, normalize_var_name_checks_and_uppercases);
+    RUN_TEST_CASE(morse_text, expand_replaces_variables_with_their_values);
+    RUN_TEST_CASE(morse_text, expand_output_tokenizes_like_plain_text);
+    RUN_TEST_CASE(morse_text, expand_reports_the_first_unset_variable);
+    RUN_TEST_CASE(morse_text, expand_limit_applies_to_the_expanded_text);
+    RUN_TEST_CASE(morse_text, expand_rejects_malformed_variables);
 }

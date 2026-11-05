@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "esp_err.h"
+#include "morse_text.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,12 +21,15 @@ extern "C" {
 #define MEMORY_NAME_MAX 8  /* chars, excluding the terminator */
 #define MEMORY_TEXT_MAX 80 /* chars, excluding the terminator */
 #define MEMORY_TILE_NONE 0 /* tile assignment meaning "no memory" */
+/* morse_text_normalize() flags for a memory's text: prosigns and {VAR}s.
+ * Names allow neither (flags 0). */
+#define MEMORY_TEXT_FLAGS (MORSE_TEXT_ALLOW_PROSIGNS | MORSE_TEXT_ALLOW_VARIABLES)
 
 #define MEMORY_DEFAULT_PAUSE_S 10
 
 typedef struct {
     char name[MEMORY_NAME_MAX + 1]; /* normalized (uppercase), may be empty */
-    char text[MEMORY_TEXT_MAX + 1]; /* normalized message text, may be empty */
+    char text[MEMORY_TEXT_MAX + 1]; /* normalized message text, may hold {VAR}s, may be empty */
     bool repeat;
     uint8_t count;   /* 0-99; 0 = repeat until stopped */
     uint8_t pause_s; /* 1-99 */

@@ -433,9 +433,10 @@ void cli_start(void)
         {.command = "get", .help = "get <key>|settings - read one setting or all of them", .hint = NULL, .func = &cmd_get},
         {.command = "set", .help = "set <key> <value> - change and apply a setting", .hint = NULL, .func = &cmd_set},
         {.command = "save", .help = "save - persist current settings to flash", .hint = NULL, .func = &cmd_save},
-        {.command = "reset", .help = "reset - erase saved settings, not memories (restart to apply defaults)", .hint = NULL, .func = &cmd_reset},
+        {.command = "reset", .help = "reset - erase saved settings, not memories or variables (restart to apply defaults)", .hint = NULL, .func = &cmd_reset},
         {.command = "mem", .help = "mem list | get <N> | set <N> name|text|repeat|count|pause <value> | clear <N> | tile <T> <N|none> | tiles | play <N> | stop - message memories", .hint = NULL, .func = &cli_mem_cmd},
         {.command = "send", .help = "send <text> - key text once, or queue it behind a playing message (stop: mem stop)", .hint = NULL, .func = &cli_send_cmd},
+        {.command = "var", .help = "var list | set <NAME> <value> | clear <NAME> - message variables, sent where text has {NAME}", .hint = NULL, .func = &cli_var_cmd},
         {.command = "tx", .help = "tx [on|off] - show or change the live on-air state (not saved; see set on_air)", .hint = NULL, .func = &cmd_tx},
         {.command = "log", .help = "log <none|error|warn|info|debug|verbose> - set log verbosity", .hint = NULL, .func = &cmd_log},
     };

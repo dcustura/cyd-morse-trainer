@@ -10,7 +10,7 @@
 #include "morse_text.h"
 #include "nvs.h"
 
-_Static_assert(MEMORY_TEXT_MAX == MESSAGE_PLAYER_TEXT_MAX, "a memory's text must fit the player");
+_Static_assert(MEMORY_TEXT_MAX <= MESSAGE_PLAYER_TEXT_MAX, "a memory's text must fit the player");
 _Static_assert(MEMORY_DEFAULT_PAUSE_S >= MESSAGE_PLAYER_PAUSE_MIN_S
                    && MEMORY_DEFAULT_PAUSE_S <= MESSAGE_PLAYER_PAUSE_MAX_S,
                "default pause out of range");
@@ -91,8 +91,8 @@ static void decode_blob(const uint8_t *blob, size_t len, memory_t *out)
 
     memory_t m;
     memory_store_default(&m);
-    if (morse_text_normalize(name, false, m.name, sizeof(m.name), NULL) != MORSE_TEXT_OK
-        || morse_text_normalize(text, true, m.text, sizeof(m.text), NULL) != MORSE_TEXT_OK) {
+    if (morse_text_normalize(name, 0, m.name, sizeof(m.name), NULL) != MORSE_TEXT_OK
+        || morse_text_normalize(text, MEMORY_TEXT_FLAGS, m.text, sizeof(m.text), NULL) != MORSE_TEXT_OK) {
         return;
     }
     m.repeat = blob[1] != 0;

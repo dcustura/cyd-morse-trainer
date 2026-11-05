@@ -46,7 +46,43 @@ static morse_text_result_t parse_prosign(const char *text, char name[3], char *c
     return (*ch != 0) ? MORSE_TEXT_OK : MORSE_TEXT_ERR_UNKNOWN_PROSIGN;
 }
 
-morse_text_result_t morse_text_normalize(const char *in, bool allow_prosigns, char *out, size_t out_size,
+bool morse_text_normalize_var_name(const char *in, char out[MORSE_TEXT_VAR_NAME_MAX + 1])
+{
+    size_t len = 0;
+    for (; in[len] != '\0'; ++len) {
+        unsigned char ch = (unsigned char)in[len];
+        if (len >= MORSE_TEXT_VAR_NAME_MAX || ch >= 0x80 || !isalnum(ch)) {
+            return false;
+        }
+        out[len] = upper(in[len]);
+    }
+    out[len] = '\0';
+    return len > 0;
+}
+
+/* Parse a variable starting at text[0] == '{'. On success, writes its
+ * uppercase name into name and its length including the braces into *len. */
+static morse_text_result_t parse_variable(const char *text, char name[MORSE_TEXT_VAR_NAME_MAX + 1], size_t *len)
+{
+    const char *close = strchr(text + 1, '}');
+    if (close == NULL) {
+        return MORSE_TEXT_ERR_UNCLOSED_VARIABLE;
+    }
+    size_t name_len = (size_t)(close - (text + 1));
+    if (name_len > MORSE_TEXT_VAR_NAME_MAX) {
+        return MORSE_TEXT_ERR_BAD_VARIABLE;
+    }
+    char raw[MORSE_TEXT_VAR_NAME_MAX + 1];
+    memcpy(raw, text + 1, name_len);
+    raw[name_len] = '\0';
+    if (!morse_text_normalize_var_name(raw, name)) {
+        return MORSE_TEXT_ERR_BAD_VARIABLE;
+    }
+    *len = name_len + 2;
+    return MORSE_TEXT_OK;
+}
+
+morse_text_result_t morse_text_normalize(const char *in, unsigned flags, char *out, size_t out_size,
                                          size_t *err_pos)
 {
     size_t n = 0;
@@ -68,9 +104,18 @@ morse_text_result_t morse_text_normalize(const char *in, bool allow_prosigns, ch
             continue;
         }
 
-        char token[PROSIGN_TEXT_LEN];
+        char token[MORSE_TEXT_VAR_NAME_MAX + 2];
         size_t token_len;
-        if (in[i] == '<' && allow_prosigns) {
+        if (in[i] == '{' && (flags & MORSE_TEXT_ALLOW_VARIABLES)) {
+            char name[MORSE_TEXT_VAR_NAME_MAX + 1];
+            result = parse_variable(&in[i], name, &token_len);
+            if (result != MORSE_TEXT_OK) {
+                break;
+            }
+            token[0] = '{';
+            memcpy(&token[1], name, token_len - 2);
+            token[token_len - 1] = '}';
+        } else if (in[i] == '<' && (flags & MORSE_TEXT_ALLOW_PROSIGNS)) {
             char name[3];
             char prosign_ch;
             result = parse_prosign(&in[i], name, &prosign_ch);
@@ -129,6 +174,12 @@ const char *morse_text_result_str(morse_text_result_t result)
         return "empty <>";
     case MORSE_TEXT_ERR_UNKNOWN_PROSIGN:
         return "unknown prosign";
+    case MORSE_TEXT_ERR_UNCLOSED_VARIABLE:
+        return "unclosed {";
+    case MORSE_TEXT_ERR_BAD_VARIABLE:
+        return "variable name must be 1-6 letters/digits";
+    case MORSE_TEXT_ERR_UNSET_VARIABLE:
+        return "variable not set";
     }
     return "unknown error";
 }
@@ -167,4 +218,44 @@ bool morse_text_next_token(const char *text, size_t *pos, morse_text_token_t *ou
 
     *pos = i + out->text_len;
     return true;
+}
+
+morse_text_result_t morse_text_expand(const char *text, morse_text_var_lookup_t lookup, void *ctx, char *out,
+                                      size_t out_size, char missing[MORSE_TEXT_VAR_NAME_MAX + 1])
+{
+    size_t n = 0;
+    size_t i = 0;
+    while (text[i] != '\0') {
+        const char *piece = &text[i];
+        size_t piece_len = 1;
+        if (text[i] == '{') {
+            char name[MORSE_TEXT_VAR_NAME_MAX + 1];
+            size_t var_len;
+            morse_text_result_t r = parse_variable(&text[i], name, &var_len);
+            if (r != MORSE_TEXT_OK) {
+                return r; /* text wasn't normalized */
+            }
+            piece = lookup(name, ctx);
+            if (piece == NULL || piece[0] == '\0') {
+                if (missing != NULL) {
+                    strcpy(missing, name);
+                }
+                return MORSE_TEXT_ERR_UNSET_VARIABLE;
+            }
+            piece_len = strlen(piece);
+            i += var_len;
+        } else {
+            ++i;
+        }
+        if (n + piece_len + 1 > out_size) {
+            return MORSE_TEXT_ERR_TOO_LONG;
+        }
+        memcpy(&out[n], piece, piece_len);
+        n += piece_len;
+    }
+    if (out_size == 0) {
+        return MORSE_TEXT_ERR_TOO_LONG;
+    }
+    out[n] = '\0';
+    return MORSE_TEXT_OK;
 }

@@ -301,8 +301,8 @@ implemented.
      version (the release tag, e.g. `v1.0.1`, for release builds), the
      "Reset to Defaults" tile below, and Back.
    - "Reset to Defaults" tile (in the System submenu), after a Yes/No confirmation, erases
-     the keyer settings, the touch calibration and the message memories
-     (with their tile assignments) and restarts the
+     the keyer settings, the touch calibration, the message memories
+     (with their tile assignments) and the message variables, and restarts the
      device, which then comes up as if never configured (lands on the
      Touch Calibration screen with compiled-in defaults).
 4. **Touch Calibration screen** — reachable from Settings' Display >
@@ -380,7 +380,10 @@ implemented.
      playing. Tapping the tile that's playing, or one already queued, does
      nothing. Queued tiles show their queue position (`1`, `2`, …) in the
      top-right corner. With the queue full, the tap does nothing and the
-     sending strip shows `Queue full` for 2 s.
+     sending strip shows `Queue full` for 2 s. If the memory uses a
+     variable that isn't set, nothing is sent and the strip shows e.g.
+     `{QTH} not set` for 2 s; if its text no longer fits once variables
+     are filled in, `Too long`.
    - The playing tile is highlighted (amber) with a `▶` in its top-right
      corner.
    - **Long-press** a tile: opens the **memory picker**, a full-screen
@@ -415,7 +418,8 @@ implemented.
        shorter pause has already run out, the next send starts at once.
    - **Stop** tile: stops playback at once and clears the queue, the same
      as a paddle cancel.
-   - **Sending strip**: while a message plays, shows its text, scrolled so
+   - **Sending strip**: while a message plays, shows its text (with
+     variables filled in), scrolled so
      the character being sent stays in view and highlighted (amber), and
      on the right the progress while repeating: `2/5` (send 2 of 5), or `2/`
      followed by a loop icon with count 0, plus a seconds countdown during
@@ -430,7 +434,7 @@ implemented.
 - The device exposes a line-based command console on the same UART already
   used for the ESP-IDF log output and `idf.py monitor` (115200 baud) — no
   separate hardware or connection is needed. Prompt: `morse> `.
-- Eight commands, chosen for scripting: every response ends with exactly one
+- Nine commands, chosen for scripting: every response ends with exactly one
   `OK` or `ERR <reason>` line, so a script can tell where a response ends
   even though log lines from elsewhere in the firmware may appear between
   commands.
@@ -445,8 +449,8 @@ implemented.
   - `save` — persists the current settings to NVS (normally unnecessary,
     since `set` already saves).
   - `reset` — erases saved settings, the same as the Settings screen's
-    "Reset to Defaults" minus the touch-calibration and message-memory
-    erase and automatic restart; a manual restart is required afterward
+    "Reset to Defaults" minus the touch-calibration, message-memory and
+    variable erase and automatic restart; a manual restart is required afterward
     for the defaults to take effect.
   - `mem` — reads and edits the message memories (see Behavior details),
     saving each change to NVS at once:
@@ -465,7 +469,9 @@ implemented.
     - `mem play <N>` — plays memory N with its own repeat settings, or
       queues it if a message is already playing (see Behavior details).
       Prints `play=started` or `play=queued`; `ERR` if the memory is empty,
-      already playing, already queued, or the queue is full.
+      already playing, already queued, or the queue is full, or if it uses
+      a variable that isn't set (naming it) or is too long once its
+      variables are filled in.
     - `mem stop` — stops playback and clears the queue.
     - Quote values that contain spaces. Inside quotes, `\"` is a literal
       `"`. `mem list` and `mem get` print name and text the same way, so
@@ -476,11 +482,20 @@ implemented.
     paddle touch or `mem stop`. Words may be given unquoted
     (`send CQ CQ DE X <AR>`, up to 29 words; more is refused with `ERR`,
     since the console would silently drop the rest) or quoted. The text is validated and
-    normalized like a memory's text (up to 80 characters, prosigns in
-    `<..>`). Prints `send=started` or `send=queued`; `ERR` for invalid
-    text, text too long, nothing to send, too many unquoted words, or a
-    full queue. A whole command line is limited to 256 characters by the
+    normalized like a memory's text (prosigns in `<..>`, variables in
+    `{..}`), and may be up to 160 characters both as typed and with its
+    variables filled in. Prints `send=started` or `send=queued`; `ERR` for
+    invalid text, text too long, an unset variable, nothing to send, too
+    many unquoted words, or a full queue. A whole command line is limited to 256 characters by the
     console. Sending the same text again queues another copy.
+  - `var` — reads and edits the message variables (see Behavior
+    details), saving each change to NVS at once:
+    - `var list` — one `NAME="value"` line per variable, sorted by name.
+    - `var set <NAME> <value>` — defines a variable or replaces its value
+      (name in any case; the value's words may be unquoted). Rejected
+      with `ERR` for a bad name, an invalid, empty or too long value, or
+      a new name when all 8 are in use. Echoes `NAME="value"`.
+    - `var clear <NAME>` — deletes a variable; `ERR` if it isn't set.
   - `tx [on|off]` — shows (`tx=on|off`) or changes the live on-air state,
     like the touchscreen's quick toggles: not saved, so the next boot
     returns to the saved `on_air` setting.
@@ -574,9 +589,25 @@ implemented.
     prosigns the decoder knows written in angle brackets (`<AR>`, `<SK>`,
     `<KN>`, `<BT>`, `<HH>`, `<VE>`, `<CT>`, `<AS>`, any case). Anything
     else, an unclosed `<`, an empty `<>`, or any other bracketed sequence
-    is rejected. The length limit applies after normalization, with a
-    prosign counting as its 4 characters. Names follow the same rules
-    without prosigns.
+    is rejected. Text may also hold variables in braces, e.g.
+    `CQ DE {MYCALL} K` (see Message variables); an unclosed `{`, an empty
+    `{}` or a name that isn't 1–6 letters and digits is rejected. Variable
+    names are uppercased like the rest. The length limit applies after
+    normalization, with a prosign counting as its 4 characters and a
+    variable as its name plus the braces. Names follow the same rules
+    without prosigns or variables.
+- **Message variables**: up to 8 user-defined name/value pairs, stored in
+  their own NVS namespace and edited only over the serial CLI (`var`).
+  A name is 1–6 letters and digits (stored uppercase); a value is 1–16
+  characters of message text with prosigns but no variables, normalized
+  the same way. None exist by default. Which ones to define is up to the
+  operator; `MYCALL` for their own callsign is the suggested convention
+  (loggers use `CALL` for the other station's).
+  - When a memory or `send` message starts (or is queued), each `{NAME}`
+    in its text is replaced by that variable's value, once: repeats send
+    the same text, and changing a variable later doesn't affect a message
+    already playing or queued. A message using a variable that isn't set
+    isn't sent. The filled-in text may be up to 160 characters.
 - **Playing memories**:
   - A message is sent at the current keyer WPM with PARIS timing: dit 1
     unit, dah 3, element gap 1, character gap 3, word gap 7, adjusted by

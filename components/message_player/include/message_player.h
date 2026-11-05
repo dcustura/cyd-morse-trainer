@@ -25,14 +25,16 @@ extern "C" {
  * when it starts, so a WPM change applies from the next one.
  */
 
-#define MESSAGE_PLAYER_TEXT_MAX 80 /* chars, excluding the terminator */
+/* Chars, excluding the terminator. Room for a memory's 80 chars once its
+ * variables are filled in (see morse_text_expand()). */
+#define MESSAGE_PLAYER_TEXT_MAX 160
 #define MESSAGE_PLAYER_QUEUE_MAX 6 /* messages waiting behind the current one */
 #define MESSAGE_PLAYER_PAUSE_MIN_S 1
 #define MESSAGE_PLAYER_PAUSE_MAX_S 99
 #define MESSAGE_PLAYER_COUNT_MAX 99
 
 typedef struct {
-    char text[MESSAGE_PLAYER_TEXT_MAX + 1]; /* normalized text */
+    char text[MESSAGE_PLAYER_TEXT_MAX + 1]; /* normalized text, variables already expanded */
     bool repeat;
     uint8_t count;   /* total transmissions when repeating; 0 = until stopped */
     uint8_t pause_s; /* silence between repeated transmissions */

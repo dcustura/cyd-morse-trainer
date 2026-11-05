@@ -3,6 +3,7 @@
 #include "cli.h"
 #include "display_init.h"
 #include "esp_lvgl_port.h"
+#include "macro_vars.h"
 #include "memory_store.h"
 #include "paddle_input.h"
 #include "settings_store.h"
@@ -28,6 +29,7 @@ void app_main(void)
     settings_t settings;
     ESP_ERROR_CHECK(settings_store_init_and_load(&settings));
     ESP_ERROR_CHECK(memory_store_init());
+    ESP_ERROR_CHECK(macro_vars_init());
 
     touch_calibration_t touch_cal;
     bool touch_cal_found = false;

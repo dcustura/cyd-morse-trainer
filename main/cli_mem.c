@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "cli.h"
+#include "macro_vars.h"
 #include "memory_store.h"
 #include "message_player.h"
 #include "paddle_input.h"
@@ -100,11 +101,12 @@ static int mem_get(uint8_t n)
     return 0;
 }
 
-/* Normalize value into dst (a name or text buffer), printing ERR on failure. */
-static bool normalize_field(const char *field, const char *value, bool allow_prosigns, char *dst, size_t dst_size)
+/* Normalize value into dst (a name or text buffer) with morse_text_normalize()
+ * flags, printing ERR on failure. */
+static bool normalize_field(const char *field, const char *value, unsigned flags, char *dst, size_t dst_size)
 {
     size_t pos = 0;
-    morse_text_result_t r = morse_text_normalize(value, allow_prosigns, dst, dst_size, &pos);
+    morse_text_result_t r = morse_text_normalize(value, flags, dst, dst_size, &pos);
     if (r == MORSE_TEXT_OK) {
         return true;
     }
@@ -122,11 +124,11 @@ static int mem_set(uint8_t n, const char *field, const char *value)
     memory_store_get(n, &m);
     long num;
     if (strcmp(field, "name") == 0) {
-        if (!normalize_field("name", value, false, m.name, sizeof(m.name))) {
+        if (!normalize_field("name", value, 0, m.name, sizeof(m.name))) {
             return 1;
         }
     } else if (strcmp(field, "text") == 0) {
-        if (!normalize_field("text", value, true, m.text, sizeof(m.text))) {
+        if (!normalize_field("text", value, MEMORY_TEXT_FLAGS, m.text, sizeof(m.text))) {
             return 1;
         }
     } else if (strcmp(field, "repeat") == 0) {
@@ -228,6 +230,25 @@ static int enqueue_and_report(const message_player_message_t *msg, const char *v
     return 0;
 }
 
+/* Fill text's {VAR}s into out (MESSAGE_PLAYER_TEXT_MAX + 1 chars), printing
+ * ERR on failure. */
+static bool expand_or_report(const char *text, char out[MESSAGE_PLAYER_TEXT_MAX + 1])
+{
+    char missing[MORSE_TEXT_VAR_NAME_MAX + 1];
+    morse_text_result_t r = macro_vars_expand(text, out, MESSAGE_PLAYER_TEXT_MAX + 1, missing);
+    if (r == MORSE_TEXT_OK) {
+        return true;
+    }
+    if (r == MORSE_TEXT_ERR_UNSET_VARIABLE) {
+        printf("ERR variable {%s} is not set (var set %s <value>)\n", missing, missing);
+    } else if (r == MORSE_TEXT_ERR_TOO_LONG) {
+        printf("ERR text too long once variables are filled in (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
+    } else {
+        printf("ERR text: %s\n", morse_text_result_str(r));
+    }
+    return false;
+}
+
 /* Plays (or queues) memory n with its own repeat defaults. CLI plays are
  * tagged -n so they never collide with a panel tile's tag (1..6). */
 static int mem_play(uint8_t n)
@@ -240,7 +261,9 @@ static int mem_play(uint8_t n)
         .pause_s = m.pause_s,
         .tag = -(int)n,
     };
-    strlcpy(msg.text, m.text, sizeof(msg.text));
+    if (!expand_or_report(m.text, msg.text)) {
+        return 1;
+    }
 
     char subject[16];
     snprintf(subject, sizeof(subject), "memory %u", (unsigned)n);
@@ -266,6 +289,34 @@ static bool append_collapsing_spaces(char *buf, size_t size, size_t *len, char c
     return true;
 }
 
+/* Join argv[first..argc) into buf with single spaces, so unquoted words work
+ * as well as one quoted argument. Runs of spaces (inside quotes too) collapse
+ * as they're copied, the way normalizing would, so only text that really is
+ * too long overflows. Prints ERR (naming max as the limit) and returns false
+ * if it doesn't fit, or if the console may have dropped words. */
+static bool join_args(int argc, char **argv, int first, char *buf, size_t size, unsigned max)
+{
+    if (argc >= CLI_MAX_ARGS - 1) {
+        /* The console may have dropped words past this point. */
+        printf("ERR too many words (max %d unquoted): quote the text\n", CLI_MAX_ARGS - 1 - first - 1);
+        return false;
+    }
+    size_t len = 0;
+    bool fits = true;
+    for (int i = first; i < argc && fits; ++i) {
+        for (const char *c = argv[i]; *c != '\0' && fits; ++c) {
+            fits = append_collapsing_spaces(buf, size, &len, *c);
+        }
+        fits = fits && append_collapsing_spaces(buf, size, &len, ' ');
+    }
+    if (!fits) {
+        printf("ERR text too long (max %u)\n", max);
+        return false;
+    }
+    buf[len] = '\0';
+    return true;
+}
+
 int cli_send_cmd(int argc, char **argv)
 {
     static int s_next_tag = SEND_TAG_FIRST;
@@ -274,32 +325,14 @@ int cli_send_cmd(int argc, char **argv)
         printf("ERR usage: send <text>\n");
         return 1;
     }
-    if (argc >= CLI_MAX_ARGS - 1) {
-        /* The console may have dropped words past this point. */
-        printf("ERR too many words (max %d unquoted): quote the text\n", CLI_MAX_ARGS - 3);
-        return 1;
-    }
-    /* Unquoted words arrive as separate arguments: join them with one
-     * space, so `send CQ CQ DE X` works as well as `send "CQ CQ DE X"`.
-     * Runs of spaces (inside quotes too) collapse as they're copied, the way
-     * normalizing would, so only text that really is too long overflows. */
     char joined[256];
-    size_t len = 0;
-    bool fits = true;
-    for (int i = 1; i < argc && fits; ++i) {
-        for (const char *c = argv[i]; *c != '\0' && fits; ++c) {
-            fits = append_collapsing_spaces(joined, sizeof(joined), &len, *c);
-        }
-        fits = fits && append_collapsing_spaces(joined, sizeof(joined), &len, ' ');
-    }
-    if (!fits) {
-        printf("ERR text too long (max %u)\n", (unsigned)MESSAGE_PLAYER_TEXT_MAX);
+    if (!join_args(argc, argv, 1, joined, sizeof(joined), MESSAGE_PLAYER_TEXT_MAX)) {
         return 1;
     }
-    joined[len] = '\0';
 
+    char text[MESSAGE_PLAYER_TEXT_MAX + 1];
     message_player_message_t msg = {.repeat = false};
-    if (!normalize_field("text", joined, true, msg.text, sizeof(msg.text))) {
+    if (!normalize_field("text", joined, MEMORY_TEXT_FLAGS, text, sizeof(text)) || !expand_or_report(text, msg.text)) {
         return 1;
     }
     msg.tag = s_next_tag;
@@ -348,5 +381,96 @@ int cli_mem_cmd(int argc, char **argv)
         return mem_tile(argv[2], argv[3]);
     }
     printf(USAGE);
+    return 1;
+}
+
+#define VAR_USAGE "ERR usage: var list | set <NAME> <value> | clear <NAME>\n"
+
+static bool parse_var_name(const char *s, char name[MORSE_TEXT_VAR_NAME_MAX + 1])
+{
+    if (!morse_text_normalize_var_name(s, name)) {
+        printf("ERR variable name must be 1-%d letters/digits\n", MORSE_TEXT_VAR_NAME_MAX);
+        return false;
+    }
+    return true;
+}
+
+static void print_var(const macro_var_t *v)
+{
+    printf("%s=", v->name);
+    print_quoted(v->value);
+    putchar('\n');
+}
+
+static int var_list(void)
+{
+    macro_var_t vars[MACRO_VARS_MAX];
+    size_t count = macro_vars_list(vars);
+    for (size_t i = 0; i < count; ++i) {
+        print_var(&vars[i]);
+    }
+    printf("OK\n");
+    return 0;
+}
+
+static int var_set(int argc, char **argv)
+{
+    macro_var_t v;
+    if (!parse_var_name(argv[2], v.name)) {
+        return 1;
+    }
+    char joined[64];
+    if (!join_args(argc, argv, 3, joined, sizeof(joined), MACRO_VAR_VALUE_MAX)
+        || !normalize_field("value", joined, MACRO_VAR_VALUE_FLAGS, v.value, sizeof(v.value))) {
+        return 1;
+    }
+    if (v.value[0] == '\0') {
+        printf("ERR value is empty (to delete: var clear %s)\n", v.name);
+        return 1;
+    }
+    esp_err_t err = macro_vars_set(v.name, v.value);
+    if (err == ESP_ERR_NO_MEM) {
+        printf("ERR all %d variables in use (var clear one first)\n", MACRO_VARS_MAX);
+        return 1;
+    }
+    if (print_save_error(err)) {
+        return 1;
+    }
+    print_var(&v);
+    printf("OK\n");
+    return 0;
+}
+
+static int var_clear(const char *arg)
+{
+    char name[MORSE_TEXT_VAR_NAME_MAX + 1];
+    if (!parse_var_name(arg, name)) {
+        return 1;
+    }
+    esp_err_t err = macro_vars_clear(name);
+    if (err == ESP_ERR_NOT_FOUND) {
+        printf("ERR variable %s is not set\n", name);
+        return 1;
+    }
+    if (print_save_error(err)) {
+        return 1;
+    }
+    printf("OK\n");
+    return 0;
+}
+
+int cli_var_cmd(int argc, char **argv)
+{
+    const char *sub = (argc >= 2) ? argv[1] : "";
+    if (strcmp(sub, "list") == 0 && argc == 2) {
+        return var_list();
+    }
+    if (strcmp(sub, "set") == 0 && argc >= 4) {
+        return var_set(argc, argv);
+    }
+    if (strcmp(sub, "clear") == 0 && argc == 3) {
+        return var_clear(argv[2]);
+    }
+    printf(VAR_USAGE);
     return 1;
 }

@@ -36,6 +36,10 @@ How this file works:
   reuse that word-level HH, or add a per-character delete (an on-screen
   backspace, or a different prosign) for fixing a single wrong letter in a
   memory.
+- Message variables (`{MYCALL}` etc., see `docs/functional-spec.md`)
+  need covering too: braces have no Morse code, so inserting a variable
+  into a memory needs another way (e.g. a picker of defined variables),
+  and variable values (`var`) are CLI-only as well.
 
 ## Tier 2: keyer timing for experienced operators
 
@@ -63,12 +67,6 @@ How this file works:
   only.
 
 ## Tier 3: contest and computer integration
-
-### Macros: callsign
-
-- A stored callsign, sent wherever a memory (or CLI `send`) contains a
-  placeholder for it, e.g. `CQ CQ DE {CALL} K`, so the memories don't
-  each hard-code it.
 
 ### WinKeyer protocol emulation
 
@@ -129,5 +127,6 @@ How this file works:
   leading zeros (001) and "cut numbers" (e.g. T for 0, N for 9).
 - A small serial-number display or control on the Send screen, so the
   operator can see and correct the next number to send.
-- Low priority: only contests with serial-number exchanges need it. Builds
-  on the callsign macro's placeholder syntax.
+- Low priority: only contests with serial-number exchanges need it. Fits
+  the message variables' `{NAME}` syntax (see `docs/functional-spec.md`),
+  as a built-in variable.

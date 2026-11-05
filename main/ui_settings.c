@@ -2,6 +2,7 @@
 
 #include "auto_brightness.h"
 #include "display_init.h"
+#include "macro_vars.h"
 #include "memory_store.h"
 #include "paddle_input.h"
 #include "settings_store.h"
@@ -573,6 +574,7 @@ static void reset_confirm_btn_cb(lv_event_t *e)
         settings_store_reset();
         touch_cal_store_reset();
         memory_store_reset();
+        macro_vars_reset();
         esp_restart();
     }
 

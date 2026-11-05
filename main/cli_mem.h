@@ -10,6 +10,9 @@ int cli_mem_cmd(int argc, char **argv);
 /** The serial CLI's "send" command: key arbitrary text once; see cli.c. */
 int cli_send_cmd(int argc, char **argv);
 
+/** The serial CLI's "var" command (message variables); see cli.c. */
+int cli_var_cmd(int argc, char **argv);
+
 #ifdef __cplusplus
 }
 #endif

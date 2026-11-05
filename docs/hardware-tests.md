@@ -133,3 +133,20 @@ How this file works:
       during a dit starts after that dit; the Send screen decodes
       bug-style sending (e.g. hand-timed dahs of about 3 dits).
 - [ ] Paddle Swap swaps which lever is the automatic one.
+
+## Message variables
+
+Set up from the CLI: `var set MYCALL DL1ABC`, `mem set 21 text "DE {MYCALL} {QTH}"`,
+`mem tile 1 21`. Afterwards `mem clear 21`, `var clear MYCALL` and
+reassign tile 1.
+
+- [ ] With `QTH` not set, tapping tile 1 sends nothing and the sending
+      strip shows `{QTH} not set` for 2 s.
+- [ ] After `var set QTH BERLIN`, tapping tile 1 sends `DE DL1ABC BERLIN`,
+      and the sending strip shows that filled-in text with the highlight
+      on the right characters.
+- [ ] The tile and the memory picker show the memory's text as stored
+      (`DE {MYCALL} {QTH}`), braces readable.
+- [ ] Only if you're doing a Settings > Reset to Defaults anyway (it also
+      erases the calibration and memories): afterwards `var list` is
+      empty.
