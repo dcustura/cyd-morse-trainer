@@ -70,14 +70,20 @@ void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct)
     k->auto_space_pct = pct;
 }
 
-void iambic_keyer_set_weight_pct(iambic_keyer_t *k, uint8_t pct)
+uint8_t iambic_keyer_clamp_weight_pct(uint8_t pct)
 {
     if (pct < IAMBIC_KEYER_WEIGHT_PCT_MIN) {
-        pct = IAMBIC_KEYER_WEIGHT_PCT_MIN;
-    } else if (pct > IAMBIC_KEYER_WEIGHT_PCT_MAX) {
-        pct = IAMBIC_KEYER_WEIGHT_PCT_MAX;
+        return IAMBIC_KEYER_WEIGHT_PCT_MIN;
     }
-    k->weight_pct = pct; /* one byte: never seen half-written by the keyer task */
+    if (pct > IAMBIC_KEYER_WEIGHT_PCT_MAX) {
+        return IAMBIC_KEYER_WEIGHT_PCT_MAX;
+    }
+    return pct;
+}
+
+void iambic_keyer_set_weight_pct(iambic_keyer_t *k, uint8_t pct)
+{
+    k->weight_pct = iambic_keyer_clamp_weight_pct(pct); /* one byte: never seen half-written */
 }
 
 int32_t iambic_keyer_weight_extra_ms(uint32_t unit_ms, uint8_t weight_pct)

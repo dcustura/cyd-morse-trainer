@@ -37,7 +37,7 @@ uint8_t settings_clamp_auto_space_pct(uint8_t pct)
 
 uint8_t settings_clamp_weight_pct(uint8_t pct)
 {
-    return (uint8_t)clamp(pct, SETTINGS_WEIGHT_PCT_MIN, SETTINGS_WEIGHT_PCT_MAX);
+    return iambic_keyer_clamp_weight_pct(pct);
 }
 
 iambic_keyer_mode_t settings_validate_keymode(uint8_t raw)

@@ -150,7 +150,7 @@ void message_player_set_wpm(message_player_t *p, uint16_t wpm)
 
 void message_player_set_weight_pct(message_player_t *p, uint8_t pct)
 {
-    p->weight_pct = clamp_u8(pct, IAMBIC_KEYER_WEIGHT_PCT_MIN, IAMBIC_KEYER_WEIGHT_PCT_MAX);
+    p->weight_pct = iambic_keyer_clamp_weight_pct(pct);
 }
 
 message_player_enqueue_result_t message_player_enqueue(message_player_t *p, const message_player_message_t *msg,

@@ -112,6 +112,9 @@ void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct);
  */
 void iambic_keyer_set_weight_pct(iambic_keyer_t *k, uint8_t pct);
 
+/** Clamp a weight to IAMBIC_KEYER_WEIGHT_PCT_MIN..MAX: the one weight range. */
+uint8_t iambic_keyer_clamp_weight_pct(uint8_t pct);
+
 /**
  * The signed ms a weight adds to each key-down (and takes from the gap after
  * it) at a given unit length: unit_ms * (weight_pct - 50) * 2 / 100,
