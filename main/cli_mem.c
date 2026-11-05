@@ -200,6 +200,35 @@ static int mem_tiles(void)
     return 0;
 }
 
+/* Enqueue msg and print the outcome: `<verb>=started|queued` then OK, or
+ * an ERR line naming subject (e.g. "memory 3"). Returns the command's exit
+ * code. */
+static int enqueue_and_report(const message_player_message_t *msg, const char *verb, const char *subject)
+{
+    switch (paddle_input_message_enqueue(msg)) {
+    case MESSAGE_PLAYER_STARTED:
+        printf("%s=started\n", verb);
+        break;
+    case MESSAGE_PLAYER_QUEUED:
+        printf("%s=queued\n", verb);
+        break;
+    case MESSAGE_PLAYER_IGNORED_PLAYING:
+        printf("ERR %s is already playing\n", subject);
+        return 1;
+    case MESSAGE_PLAYER_IGNORED_QUEUED:
+        printf("ERR %s is already queued\n", subject);
+        return 1;
+    case MESSAGE_PLAYER_QUEUE_FULL:
+        printf("ERR queue full\n");
+        return 1;
+    case MESSAGE_PLAYER_INVALID:
+        printf("ERR %s is empty\n", subject);
+        return 1;
+    }
+    printf("OK\n");
+    return 0;
+}
+
 /* Plays (or queues) memory n with its own repeat defaults. CLI plays are
  * tagged -n so they never collide with a panel tile's tag (1..6). */
 static int mem_play(uint8_t n)
@@ -214,28 +243,9 @@ static int mem_play(uint8_t n)
     };
     strlcpy(msg.text, m.text, sizeof(msg.text));
 
-    switch (paddle_input_message_enqueue(&msg)) {
-    case MESSAGE_PLAYER_STARTED:
-        printf("play=started\n");
-        break;
-    case MESSAGE_PLAYER_QUEUED:
-        printf("play=queued\n");
-        break;
-    case MESSAGE_PLAYER_IGNORED_PLAYING:
-        printf("ERR memory %u is already playing\n", (unsigned)n);
-        return 1;
-    case MESSAGE_PLAYER_IGNORED_QUEUED:
-        printf("ERR memory %u is already queued\n", (unsigned)n);
-        return 1;
-    case MESSAGE_PLAYER_QUEUE_FULL:
-        printf("ERR queue full\n");
-        return 1;
-    case MESSAGE_PLAYER_INVALID:
-        printf("ERR memory %u is empty\n", (unsigned)n);
-        return 1;
-    }
-    printf("OK\n");
-    return 0;
+    char subject[16];
+    snprintf(subject, sizeof(subject), "memory %u", (unsigned)n);
+    return enqueue_and_report(&msg, "play", subject);
 }
 
 /* `send` messages get tags from here up, each one new, so repeated sends of
@@ -275,26 +285,11 @@ int cli_send_cmd(int argc, char **argv)
     }
     msg.tag = s_next_tag;
 
-    switch (paddle_input_message_enqueue(&msg)) {
-    case MESSAGE_PLAYER_STARTED:
-        printf("send=started\n");
-        break;
-    case MESSAGE_PLAYER_QUEUED:
-        printf("send=queued\n");
-        break;
-    case MESSAGE_PLAYER_QUEUE_FULL:
-        printf("ERR queue full\n");
-        return 1;
-    case MESSAGE_PLAYER_INVALID:
-        printf("ERR nothing to send\n");
-        return 1;
-    default: /* a fresh tag is never already playing or queued */
-        printf("ERR not sent\n");
-        return 1;
+    int rc = enqueue_and_report(&msg, "send", "text");
+    if (rc == 0) {
+        s_next_tag = (s_next_tag == INT_MAX) ? SEND_TAG_FIRST : s_next_tag + 1;
     }
-    s_next_tag = (s_next_tag == INT_MAX) ? SEND_TAG_FIRST : s_next_tag + 1;
-    printf("OK\n");
-    return 0;
+    return rc;
 }
 
 static int mem_stop(void)
