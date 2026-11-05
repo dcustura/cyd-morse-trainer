@@ -8,6 +8,14 @@
 /* The pre-Auto-Space behavior: never withhold. */
 #define IAMBIC_KEYER_AUTO_SPACE_PCT_DISABLED 100u
 
+/* Whether now_ms has reached t_ms, correct across the uint32 ms counter's
+ * wrap (~49.7 days) as long as the two are within ~24.8 days of each
+ * other. */
+static bool time_reached(uint32_t now_ms, uint32_t t_ms)
+{
+    return (int32_t)(now_ms - t_ms) >= 0;
+}
+
 static void reset_state(iambic_keyer_t *k)
 {
     k->state = IAMBIC_KEYER_STATE_IDLE;
@@ -177,7 +185,7 @@ static bool auto_space_resolve(iambic_keyer_t *k, bool dit_contact, bool dah_con
         k->auto_space_dit_latched = k->auto_space_dit_latched || dit_contact;
         k->auto_space_dah_latched = k->auto_space_dah_latched || dah_contact;
         /* Wrap-safe: now_ms wraps after ~49.7 days of uptime. */
-        if ((int32_t)(now_ms - k->auto_space_wait_until_ms) < 0) {
+        if (!time_reached(now_ms, k->auto_space_wait_until_ms)) {
             return false;
         }
         *want_dit = k->auto_space_dit_latched;
@@ -253,7 +261,7 @@ static void enter_idle(iambic_keyer_t *k)
 static void advance_sending(iambic_keyer_t *k, bool dit_contact, bool dah_contact, uint32_t now_ms)
 {
     latch_opposite(k, dit_contact, dah_contact);
-    if (now_ms >= k->element_end_ms) {
+    if (time_reached(now_ms, k->element_end_ms)) {
         k->state = IAMBIC_KEYER_STATE_GAP;
         k->last_key_up_ms = now_ms;
         /* The extra this element was started with, not a newer weight, so
@@ -292,7 +300,7 @@ static bool service_iambic(iambic_keyer_t *k, bool dit_contact, bool dah_contact
 
     case IAMBIC_KEYER_STATE_GAP:
         latch_opposite(k, dit_contact, dah_contact);
-        if (now_ms >= k->gap_end_ms) {
+        if (time_reached(now_ms, k->gap_end_ms)) {
             bool opposite_now = k->sending_dit ? dah_contact : dit_contact;
             bool same_now = k->sending_dit ? dit_contact : dah_contact;
 
@@ -369,7 +377,7 @@ static bool service_ultimatic(iambic_keyer_t *k, bool dit_contact, bool dah_cont
 
     case IAMBIC_KEYER_STATE_GAP:
         latch_opposite(k, dit_contact, dah_contact);
-        if (now_ms >= k->gap_end_ms) {
+        if (time_reached(now_ms, k->gap_end_ms)) {
             bool same_now = k->sending_dit ? dit_contact : dah_contact;
 
             if (dit_contact && dah_contact) {
@@ -420,7 +428,7 @@ static bool service_bug(iambic_keyer_t *k, bool dit_contact, bool dah_contact, u
         return false;
     }
     if (k->state == IAMBIC_KEYER_STATE_GAP) {
-        if (now_ms < k->gap_end_ms) {
+        if (!time_reached(now_ms, k->gap_end_ms)) {
             return false;
         }
         k->state = IAMBIC_KEYER_STATE_IDLE;

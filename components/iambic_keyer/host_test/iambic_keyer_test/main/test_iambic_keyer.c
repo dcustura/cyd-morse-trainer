@@ -785,6 +785,16 @@ TEST(iambic_keyer, bug_ignores_auto_space)
     TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, U + 2u * U + U / 2));
 }
 
+TEST(iambic_keyer, element_and_gap_timing_survive_the_ms_counter_wrap)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_A, TEST_WPM);
+    uint32_t t0 = UINT32_MAX - U / 2; /* the dit's end wraps past zero */
+    for (uint32_t i = 0; i < 4u * U; ++i) {
+        bool out = iambic_keyer_service(&s_keyer, true, false, t0 + i);
+        TEST_ASSERT_EQUAL_MESSAGE((i % (2u * U)) < U, out, "dit train broken across the wrap");
+    }
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -830,4 +840,5 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, bug_dah_during_a_dit_waits_for_the_dit_and_its_gap);
     RUN_TEST_CASE(iambic_keyer, bug_dit_is_ignored_while_dah_is_held);
     RUN_TEST_CASE(iambic_keyer, bug_ignores_auto_space);
+    RUN_TEST_CASE(iambic_keyer, element_and_gap_timing_survive_the_ms_counter_wrap);
 }
