@@ -64,14 +64,11 @@ How this file works:
 
 ## Tier 3: contest and computer integration
 
-### Macros: callsign and serial numbers
+### Macros: callsign
 
-- Placeholders inside memories, as in K3NG/WinKeyer: a stored callsign, and
-  a contest serial number that can be sent as-is or sent and then
-  incremented. Optionally send numbers as "cut numbers" (e.g. T for 0, N
-  for 9).
-- A small serial-number display or control on the Send screen, so the
-  operator can see and correct the next number to send.
+- A stored callsign, sent wherever a memory (or CLI `send`) contains a
+  placeholder for it, e.g. `CQ CQ DE {CALL} K`, so the memories don't
+  each hard-code it.
 
 ### WinKeyer protocol emulation
 
@@ -124,3 +121,13 @@ How this file works:
   (the on-screen quick speed bar is in `docs/functional-spec.md`). GPIO35
   (input-only, analog-capable) is a candidate, but confirm it on the board
   first.
+
+### Macros: contest serial numbers
+
+- A contest serial number placeholder in memories, sent as-is or sent and
+  then incremented (e.g. `5NN {NR+}`), as in K3NG/WinKeyer. Optionally
+  leading zeros (001) and "cut numbers" (e.g. T for 0, N for 9).
+- A small serial-number display or control on the Send screen, so the
+  operator can see and correct the next number to send.
+- Low priority: only contests with serial-number exchanges need it. Builds
+  on the callsign macro's placeholder syntax.
