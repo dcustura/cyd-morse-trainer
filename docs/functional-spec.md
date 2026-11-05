@@ -482,9 +482,10 @@ implemented.
     paddle touch or `mem stop`. Words may be given unquoted
     (`send CQ CQ DE X <AR>`, up to 29 words; more is refused with `ERR`,
     since the console would silently drop the rest) or quoted. The text is validated and
-    normalized like a memory's text (prosigns in `<..>`, variables in
-    `{..}`), and may be up to 160 characters both as typed and with its
-    variables filled in. Prints `send=started` or `send=queued`; `ERR` for
+    normalized with the same rules as a memory's text (prosigns in `<..>`,
+    variables in `{..}`), but its limit is the player's rather than a
+    memory's: up to 160 characters both as typed and with its variables
+    filled in (a memory's text is limited to 80 as stored). Prints `send=started` or `send=queued`; `ERR` for
     invalid text, text too long, an unset variable, nothing to send, too
     many unquoted words, or a full queue. A whole command line is limited to 256 characters by the
     console. Sending the same text again queues another copy.
