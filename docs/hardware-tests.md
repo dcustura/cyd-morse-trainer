@@ -101,3 +101,12 @@ How this file works:
       doesn't cover anything important.
 - [ ] A WPM changed here survives a reboot (wait a few seconds after the
       last step before rebooting).
+
+## CLI `send` (`0b0b563`, `7ff61af`)
+
+- [ ] While a `send` message plays (e.g. `send "VVV VVV VVV VVV VVV"`),
+      touching a paddle or the key cancels it at once and the touch isn't
+      keyed.
+- [ ] While a `send` or CLI `mem play` message plays, the Memories panel's
+      Repeat tile is greyed out and does nothing, the sending strip shows
+      the text, and no tile is highlighted as playing.
