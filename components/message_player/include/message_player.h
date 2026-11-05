@@ -65,6 +65,7 @@ typedef struct {
     uint32_t phase_start_ms;
     uint32_t phase_end_ms;
     uint32_t unit_ms;
+    uint8_t weight_pct; /* see message_player_set_weight_pct() */
     uint32_t sends_done; /* finished transmissions of the current message */
 
     size_t cursor;             /* text offset after the token being sent */
@@ -95,6 +96,15 @@ void message_player_init(message_player_t *p, uint16_t wpm);
 
 /** Change speed; applies from the next element or gap. */
 void message_player_set_wpm(message_player_t *p, uint16_t wpm);
+
+/**
+ * Weight, the same as the keyer's (see iambic_keyer_set_weight_pct()):
+ * each element gains (or loses) iambic_keyer_weight_extra_ms() and the gap
+ * after it loses (or gains) the same, so speed is unchanged. Clamped to
+ * IAMBIC_KEYER_WEIGHT_PCT_MIN..MAX; 50 (standard) after init. Applies from
+ * the next element or gap.
+ */
+void message_player_set_weight_pct(message_player_t *p, uint8_t pct);
 
 /**
  * Send msg now if idle, else queue it. If idle but the operator's own key

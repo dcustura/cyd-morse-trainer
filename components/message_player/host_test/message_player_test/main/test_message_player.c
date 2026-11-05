@@ -2,6 +2,7 @@
 #include "unity.h"
 #include "unity_fixture.h"
 #include "message_player.h"
+#include "morse_codec.h"
 
 TEST_GROUP(message_player);
 
@@ -316,6 +317,76 @@ TEST(message_player, a_key_down_a_word_gap_old_is_forgotten)
     assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
 }
 
+TEST(message_player, weight_lengthens_elements_and_shortens_the_gaps_after_them)
+{
+    message_player_set_weight_pct(&s_p, 75); /* +U/2 on, -U/2 off */
+    enqueue_ok(msg("EE T", 1), 0, MESSAGE_PLAYER_STARTED);
+    run(0, 3000);
+    const uint32_t on = U + U / 2;
+    const uint32_t expected[] = {
+        0, on,                                        /* E */
+        on + 3 * U - U / 2, 2 * on + 3 * U - U / 2,   /* E after a weighted char gap */
+        2 * on + 10 * U - U, 2 * on + 10 * U - U + 3 * U + U / 2, /* T after a weighted word gap */
+    };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
+TEST(message_player, weight_below_standard_shortens_elements)
+{
+    message_player_set_weight_pct(&s_p, 25); /* -U/2 on, +U/2 off */
+    enqueue_ok(msg("A", 1), 0, MESSAGE_PLAYER_STARTED);
+    run(0, 1000);
+    const uint32_t expected[] = { 0, U / 2, 2 * U, 2 * U + 3 * U - U / 2 };
+    assert_edges(expected, sizeof(expected) / sizeof(expected[0]));
+}
+
+TEST(message_player, weight_is_clamped)
+{
+    message_player_set_weight_pct(&s_p, 0);
+    TEST_ASSERT_EQUAL_UINT8(25, s_p.weight_pct);
+    message_player_set_weight_pct(&s_p, 100);
+    TEST_ASSERT_EQUAL_UINT8(75, s_p.weight_pct);
+}
+
+/* Plays text at 20 WPM with the given weight through the real decoder,
+ * returning what it decoded (word gaps as spaces). */
+static void decode_played(uint8_t weight_pct, const char *text, char *out, size_t out_size)
+{
+    morse_codec_t codec;
+    morse_codec_init(&codec, 20);
+    message_player_set_weight_pct(&s_p, weight_pct);
+    enqueue_ok(msg(text, 1), 0, MESSAGE_PLAYER_STARTED);
+
+    size_t n = 0;
+    bool key = false;
+    for (uint32_t t = 0; t < 30000 && n + 1 < out_size; ++t) {
+        bool now_key = message_player_service(&s_p, t);
+        char ch = 0;
+        morse_codec_event_t ev = (now_key != key) ? morse_codec_key_event(&codec, now_key, t, &ch)
+                                                  : morse_codec_tick(&codec, t, &ch);
+        key = now_key;
+        if (ev == MORSE_CODEC_EVENT_CHAR || ev == MORSE_CODEC_EVENT_UNKNOWN) {
+            out[n++] = ch;
+        } else if (ev == MORSE_CODEC_EVENT_SPACE) {
+            out[n++] = ' ';
+        }
+    }
+    out[n] = '\0';
+}
+
+TEST(message_player, weighted_playback_still_decodes_at_both_limits)
+{
+    static const char text[] = "PARIS 73 BK";
+    char decoded[32];
+
+    decode_played(25, text, decoded, sizeof(decoded));
+    TEST_ASSERT_EQUAL_STRING("PARIS 73 BK ", decoded);
+
+    message_player_init(&s_p, 20);
+    decode_played(75, text, decoded, sizeof(decoded));
+    TEST_ASSERT_EQUAL_STRING("PARIS 73 BK ", decoded);
+}
+
 TEST(message_player, enqueue_clamps_count_and_pause)
 {
     enqueue_ok(repeating("E", 1, 200, 0), 0, MESSAGE_PLAYER_STARTED);
@@ -397,6 +468,10 @@ TEST_GROUP_RUNNER(message_player)
     RUN_TEST_CASE(message_player, start_counts_the_word_gap_from_the_operators_last_key_down);
     RUN_TEST_CASE(message_player, start_is_immediate_once_the_operators_key_has_been_idle_a_word_gap);
     RUN_TEST_CASE(message_player, a_key_down_a_word_gap_old_is_forgotten);
+    RUN_TEST_CASE(message_player, weight_lengthens_elements_and_shortens_the_gaps_after_them);
+    RUN_TEST_CASE(message_player, weight_below_standard_shortens_elements);
+    RUN_TEST_CASE(message_player, weight_is_clamped);
+    RUN_TEST_CASE(message_player, weighted_playback_still_decodes_at_both_limits);
     RUN_TEST_CASE(message_player, enqueue_clamps_count_and_pause);
     RUN_TEST_CASE(message_player, status_reports_progress_for_the_sending_strip);
     RUN_TEST_CASE(message_player, late_service_calls_do_not_shift_later_elements);

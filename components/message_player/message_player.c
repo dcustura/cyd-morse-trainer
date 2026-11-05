@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "iambic_keyer.h"
 #include "morse_codec.h"
 
 #define DAH_UNITS 3u
@@ -36,10 +37,23 @@ static bool more_repeats(const message_player_t *p)
     return p->current.repeat && (p->current.count == 0 || p->sends_done < p->current.count);
 }
 
+static int32_t weight_extra_ms(const message_player_t *p)
+{
+    return iambic_keyer_weight_extra_ms(p->unit_ms, p->weight_pct);
+}
+
+/* A gap that follows a key-up: weight takes from (or adds to) it whatever
+ * it added to (or took from) the element before. */
+static uint32_t gap_after_element_ms(const message_player_t *p, uint32_t units)
+{
+    return (uint32_t)((int32_t)(units * p->unit_ms) - weight_extra_ms(p));
+}
+
 static void key_element(message_player_t *p, uint32_t t_ms)
 {
     uint32_t units = (p->token.pattern[p->element] == '-') ? DAH_UNITS : 1u;
-    set_phase(p, MESSAGE_PLAYER_PHASE_KEY_DOWN, t_ms, units * p->unit_ms);
+    uint32_t ms = (uint32_t)((int32_t)(units * p->unit_ms) + weight_extra_ms(p));
+    set_phase(p, MESSAGE_PLAYER_PHASE_KEY_DOWN, t_ms, ms);
 }
 
 static void start_transmission(message_player_t *p, uint32_t t_ms)
@@ -60,7 +74,7 @@ static void start_next_queued(message_player_t *p, uint32_t gap_start_ms, uint32
     memmove(&p->queue[0], &p->queue[1], p->queue_len * sizeof(p->queue[0]));
     p->sends_done = 0;
     p->lead_in_is_pause = false;
-    uint32_t end_ms = gap_start_ms + WORD_GAP_UNITS * p->unit_ms;
+    uint32_t end_ms = gap_start_ms + gap_after_element_ms(p, WORD_GAP_UNITS);
     if (time_reached(now_ms, end_ms)) {
         end_ms = now_ms;
     }
@@ -91,7 +105,7 @@ static void advance(message_player_t *p, uint32_t t_ms)
     case MESSAGE_PLAYER_PHASE_KEY_DOWN: {
         p->element++;
         if (p->token.pattern[p->element] != '\0') {
-            set_phase(p, MESSAGE_PLAYER_PHASE_KEY_UP, t_ms, p->unit_ms);
+            set_phase(p, MESSAGE_PLAYER_PHASE_KEY_UP, t_ms, gap_after_element_ms(p, 1u));
             break;
         }
         size_t peek = p->cursor;
@@ -101,7 +115,7 @@ static void advance(message_player_t *p, uint32_t t_ms)
             break;
         }
         uint32_t units = next.word_gap_before ? WORD_GAP_UNITS : CHAR_GAP_UNITS;
-        set_phase(p, MESSAGE_PLAYER_PHASE_KEY_UP, t_ms, units * p->unit_ms);
+        set_phase(p, MESSAGE_PLAYER_PHASE_KEY_UP, t_ms, gap_after_element_ms(p, units));
         break;
     }
 
@@ -124,11 +138,17 @@ void message_player_init(message_player_t *p, uint16_t wpm)
     memset(p, 0, sizeof(*p));
     p->phase = MESSAGE_PLAYER_PHASE_IDLE;
     message_player_set_wpm(p, wpm);
+    message_player_set_weight_pct(p, IAMBIC_KEYER_WEIGHT_PCT_STANDARD);
 }
 
 void message_player_set_wpm(message_player_t *p, uint16_t wpm)
 {
     p->unit_ms = morse_codec_wpm_to_unit_ms(wpm);
+}
+
+void message_player_set_weight_pct(message_player_t *p, uint8_t pct)
+{
+    p->weight_pct = clamp_u8(pct, IAMBIC_KEYER_WEIGHT_PCT_MIN, IAMBIC_KEYER_WEIGHT_PCT_MAX);
 }
 
 message_player_enqueue_result_t message_player_enqueue(message_player_t *p, const message_player_message_t *msg,
