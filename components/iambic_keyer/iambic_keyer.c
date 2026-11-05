@@ -35,6 +35,7 @@ void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm
     reset_state(k);
     iambic_keyer_set_wpm(k, wpm);
     iambic_keyer_set_auto_space_pct(k, IAMBIC_KEYER_AUTO_SPACE_PCT_DISABLED);
+    iambic_keyer_set_weight_pct(k, IAMBIC_KEYER_WEIGHT_PCT_STANDARD);
 }
 
 void iambic_keyer_set_mode(iambic_keyer_t *k, iambic_keyer_mode_t mode)
@@ -68,6 +69,27 @@ void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct)
     k->auto_space_pct = pct;
 }
 
+void iambic_keyer_set_weight_pct(iambic_keyer_t *k, uint8_t pct)
+{
+    if (pct < IAMBIC_KEYER_WEIGHT_PCT_MIN) {
+        pct = IAMBIC_KEYER_WEIGHT_PCT_MIN;
+    } else if (pct > IAMBIC_KEYER_WEIGHT_PCT_MAX) {
+        pct = IAMBIC_KEYER_WEIGHT_PCT_MAX;
+    }
+    k->weight_pct = pct; /* one byte: never seen half-written by the keyer task */
+}
+
+int32_t iambic_keyer_weight_extra_ms(uint32_t unit_ms, uint8_t weight_pct)
+{
+    int32_t num = (int32_t)unit_ms * ((int32_t)weight_pct - IAMBIC_KEYER_WEIGHT_PCT_STANDARD) * 2;
+    return (num >= 0) ? (num + 50) / 100 : -((-num + 50) / 100);
+}
+
+static int32_t weight_extra_ms(const iambic_keyer_t *k)
+{
+    return iambic_keyer_weight_extra_ms(k->unit_ms, k->weight_pct);
+}
+
 /* standard_ms scaled by pct%, rounded half-up to the nearest ms. Done in
  * ms rather than whole dit units so every percentage step gives its own
  * threshold (rounding to units collapsed most of the 50-100% range into
@@ -88,15 +110,20 @@ static uint32_t scale_pct_ms(uint32_t standard_ms, uint8_t pct)
 static uint32_t auto_space_pad_target_ms(const iambic_keyer_t *k, uint32_t idle_elapsed_ms)
 {
     uint8_t pct = k->auto_space_pct;
-    uint32_t char_standard_ms = IAMBIC_KEYER_CHAR_GAP_STANDARD_UNITS * k->unit_ms;
-    uint32_t word_standard_ms = IAMBIC_KEYER_WORD_GAP_STANDARD_UNITS * k->unit_ms;
+    /* Silence after a key-up: weight moves time between an element and the
+     * gap after it, so the standard gaps shrink (or grow) by the same
+     * amount the element grew (or shrank). */
+    int32_t extra_ms = weight_extra_ms(k);
+    uint32_t char_standard_ms = (uint32_t)((int32_t)(IAMBIC_KEYER_CHAR_GAP_STANDARD_UNITS * k->unit_ms) - extra_ms);
+    uint32_t word_standard_ms = (uint32_t)((int32_t)(IAMBIC_KEYER_WORD_GAP_STANDARD_UNITS * k->unit_ms) - extra_ms);
     uint32_t char_threshold_ms = scale_pct_ms(char_standard_ms, pct);
     uint32_t word_threshold_ms = scale_pct_ms(word_standard_ms, pct);
 
-    /* A char-gap threshold below 2 units would withhold on the normal
-     * 1-unit gap between elements of the same character. */
-    if (char_threshold_ms < 2u * k->unit_ms) {
-        char_threshold_ms = 2u * k->unit_ms;
+    /* A char-gap threshold below 2 units (less weight) would withhold on the
+     * normal 1-unit gap between elements of the same character. */
+    uint32_t min_char_threshold_ms = char_standard_ms - k->unit_ms;
+    if (char_threshold_ms < min_char_threshold_ms) {
+        char_threshold_ms = min_char_threshold_ms;
     }
     /* Keep the word-gap threshold strictly past the char standard, so a
      * just-completed character gap never also triggers a word-gap
@@ -178,7 +205,8 @@ static void start_element(iambic_keyer_t *k, bool dit, uint32_t now_ms)
 {
     k->sending_dit = dit;
     k->state = dit ? IAMBIC_KEYER_STATE_SEND_DIT : IAMBIC_KEYER_STATE_SEND_DAH;
-    k->element_end_ms = now_ms + (dit ? k->unit_ms : 3u * k->unit_ms);
+    uint32_t standard_ms = dit ? k->unit_ms : 3u * k->unit_ms;
+    k->element_end_ms = now_ms + (uint32_t)((int32_t)standard_ms + weight_extra_ms(k));
     k->opposite_latched = false;
 }
 
@@ -218,7 +246,7 @@ static void advance_sending(iambic_keyer_t *k, bool dit_contact, bool dah_contac
     if (now_ms >= k->element_end_ms) {
         k->state = IAMBIC_KEYER_STATE_GAP;
         k->last_key_up_ms = now_ms;
-        k->gap_end_ms = now_ms + k->unit_ms;
+        k->gap_end_ms = now_ms + (uint32_t)((int32_t)k->unit_ms - weight_extra_ms(k));
     }
 }
 

@@ -7,6 +7,10 @@
 extern "C" {
 #endif
 
+#define IAMBIC_KEYER_WEIGHT_PCT_MIN 25
+#define IAMBIC_KEYER_WEIGHT_PCT_MAX 75
+#define IAMBIC_KEYER_WEIGHT_PCT_STANDARD 50
+
 typedef enum {
     IAMBIC_KEYER_MODE_A = 0,
     IAMBIC_KEYER_MODE_B,
@@ -67,6 +71,7 @@ typedef struct {
     bool auto_space_dah_latched;
     bool auto_space_first_dit; /* which paddle was touched first during the withhold */
     uint8_t auto_space_pct;    /* 1-100; thresholds are derived from it and unit_ms on use */
+    uint8_t weight_pct;        /* IAMBIC_KEYER_WEIGHT_PCT_MIN..MAX; 50 = standard */
 } iambic_keyer_t;
 
 void iambic_keyer_init(iambic_keyer_t *k, iambic_keyer_mode_t mode, uint16_t wpm);
@@ -94,6 +99,25 @@ void iambic_keyer_set_wpm(iambic_keyer_t *k, uint16_t wpm);
  * Persists across iambic_keyer_set_mode()/a mode's own reset.
  */
 void iambic_keyer_set_auto_space_pct(iambic_keyer_t *k, uint8_t pct);
+
+/**
+ * Weight (dit/dah ratio), Iambic Mode A/B and Ultimatic only (Straight Key
+ * passes the key through untouched). 50 is standard. Above 50 every
+ * element is lengthened by iambic_keyer_weight_extra_ms() and the gap that
+ * follows it shortened by the same amount, so overall speed is unchanged;
+ * below 50 the reverse. Auto Space's gap targets shift with it. Clamped to
+ * IAMBIC_KEYER_WEIGHT_PCT_MIN..MAX. Defaults to 50 at iambic_keyer_init();
+ * persists across iambic_keyer_set_mode().
+ */
+void iambic_keyer_set_weight_pct(iambic_keyer_t *k, uint8_t pct);
+
+/**
+ * The signed ms a weight adds to each key-down (and takes from the gap after
+ * it) at a given unit length: unit_ms * (weight_pct - 50) * 2 / 100,
+ * rounded to the nearest ms. Shared with message playback so both weight
+ * the same way.
+ */
+int32_t iambic_keyer_weight_extra_ms(uint32_t unit_ms, uint8_t weight_pct);
 
 /**
  * Advance the state machine by one tick (call at a fixed rate, 1ms

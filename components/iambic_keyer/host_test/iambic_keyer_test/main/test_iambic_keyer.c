@@ -626,6 +626,91 @@ TEST(iambic_keyer, auto_space_withhold_preserves_paddle_touch_order)
     TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_SEND_DIT, s_keyer.state);
 }
 
+/* ---- Weight ---- */
+
+/* Holding one paddle: key-down for down_ms, then up for up_ms, repeated. */
+static void assert_hold_train(bool dit, uint32_t down_ms, uint32_t up_ms)
+{
+    uint32_t cycle = down_ms + up_ms;
+    for (uint32_t t = 0; t < 2 * cycle; ++t) {
+        bool out = iambic_keyer_service(&s_keyer, dit, !dit, t);
+        TEST_ASSERT_EQUAL_MESSAGE(t % cycle < down_ms, out, "weighted hold cycle mismatch");
+    }
+}
+
+TEST(iambic_keyer, weight_above_standard_lengthens_elements_and_shortens_gaps)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_A, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 75); /* +0.5 unit on, -0.5 unit off */
+    assert_hold_train(true, U + U / 2, U / 2);
+}
+
+TEST(iambic_keyer, weight_below_standard_shortens_elements_and_lengthens_gaps)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 25); /* -0.5 unit on, +0.5 unit off */
+    assert_hold_train(false, 3u * U - U / 2, U + U / 2);
+}
+
+TEST(iambic_keyer, weight_applies_in_ultimatic)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_ULTIMATIC, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 60); /* +0.2 unit */
+    assert_hold_train(true, U + U / 5, U - U / 5);
+}
+
+TEST(iambic_keyer, weight_is_clamped_and_persists_across_set_mode)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_A, TEST_WPM);
+    TEST_ASSERT_EQUAL_UINT8(IAMBIC_KEYER_WEIGHT_PCT_STANDARD, s_keyer.weight_pct);
+    iambic_keyer_set_weight_pct(&s_keyer, 5);
+    TEST_ASSERT_EQUAL_UINT8(IAMBIC_KEYER_WEIGHT_PCT_MIN, s_keyer.weight_pct);
+    iambic_keyer_set_weight_pct(&s_keyer, 95);
+    TEST_ASSERT_EQUAL_UINT8(IAMBIC_KEYER_WEIGHT_PCT_MAX, s_keyer.weight_pct);
+    iambic_keyer_set_mode(&s_keyer, IAMBIC_KEYER_MODE_B);
+    TEST_ASSERT_EQUAL_UINT8(IAMBIC_KEYER_WEIGHT_PCT_MAX, s_keyer.weight_pct);
+}
+
+TEST(iambic_keyer, weight_has_no_effect_in_straight_key_mode)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_STRAIGHT, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 75);
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, 1));
+}
+
+TEST(iambic_keyer, weight_extra_rounds_to_the_nearest_ms_both_ways)
+{
+    TEST_ASSERT_EQUAL_INT32(0, iambic_keyer_weight_extra_ms(60, 50));
+    TEST_ASSERT_EQUAL_INT32(30, iambic_keyer_weight_extra_ms(60, 75));
+    TEST_ASSERT_EQUAL_INT32(-30, iambic_keyer_weight_extra_ms(60, 25));
+    TEST_ASSERT_EQUAL_INT32(5, iambic_keyer_weight_extra_ms(50, 55)); /* 5.0 */
+    TEST_ASSERT_EQUAL_INT32(-5, iambic_keyer_weight_extra_ms(50, 45));
+    TEST_ASSERT_EQUAL_INT32(3, iambic_keyer_weight_extra_ms(30, 55)); /* 3.0 */
+    TEST_ASSERT_EQUAL_INT32(2, iambic_keyer_weight_extra_ms(23, 55)); /* 2.3 */
+    TEST_ASSERT_EQUAL_INT32(-2, iambic_keyer_weight_extra_ms(23, 45));
+}
+
+TEST(iambic_keyer, auto_space_targets_the_weighted_char_gap)
+{
+    iambic_keyer_init(&s_keyer, IAMBIC_KEYER_MODE_B, TEST_WPM);
+    iambic_keyer_set_weight_pct(&s_keyer, 75); /* char gap silence = 3u - 0.5u */
+    iambic_keyer_set_auto_space_pct(&s_keyer, 70);
+
+    /* One weighted dit: 1.5 units on, then a 0.5-unit trailing gap. */
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, 0));
+    uint32_t key_up = U + U / 2;
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, false, false, key_up + U / 2));
+    TEST_ASSERT_EQUAL(IAMBIC_KEYER_STATE_IDLE, s_keyer.state);
+
+    /* Touched at 2 units of silence: inside [70% of 2.5u, 2.5u), withheld
+     * until the weighted 2.5-unit standard, not the unweighted 3. */
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U));
+    TEST_ASSERT_FALSE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + U / 2 - 1));
+    TEST_ASSERT_TRUE(iambic_keyer_service(&s_keyer, true, false, key_up + 2u * U + U / 2));
+}
+
 TEST_GROUP_RUNNER(iambic_keyer)
 {
     RUN_TEST_CASE(iambic_keyer, pure_dit_hold_produces_continuous_dit_train);
@@ -657,4 +742,11 @@ TEST_GROUP_RUNNER(iambic_keyer)
     RUN_TEST_CASE(iambic_keyer, auto_space_95_pct_still_withholds_just_below_the_standard_gap);
     RUN_TEST_CASE(iambic_keyer, auto_space_adjacent_pct_steps_give_distinct_word_thresholds);
     RUN_TEST_CASE(iambic_keyer, auto_space_withhold_preserves_paddle_touch_order);
+    RUN_TEST_CASE(iambic_keyer, weight_above_standard_lengthens_elements_and_shortens_gaps);
+    RUN_TEST_CASE(iambic_keyer, weight_below_standard_shortens_elements_and_lengthens_gaps);
+    RUN_TEST_CASE(iambic_keyer, weight_applies_in_ultimatic);
+    RUN_TEST_CASE(iambic_keyer, weight_is_clamped_and_persists_across_set_mode);
+    RUN_TEST_CASE(iambic_keyer, weight_has_no_effect_in_straight_key_mode);
+    RUN_TEST_CASE(iambic_keyer, weight_extra_rounds_to_the_nearest_ms_both_ways);
+    RUN_TEST_CASE(iambic_keyer, auto_space_targets_the_weighted_char_gap);
 }
